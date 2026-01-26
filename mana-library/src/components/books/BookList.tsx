@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { useBooks, type SortField, type SortDirection } from "../../hooks/useBooks";
+import { type Book } from "../../types";
 import { BookItem } from "./BookItem";
 import { BookForm } from "./BookForm";
+import { BookDetailModal } from "./BookDetailModal";
 import { Button } from "../ui/Button";
 import { Plus } from "lucide-react";
 import { Input } from "../ui/Input";
-
-
 
 export const BookList: React.FC = () => {
   const [sortField, setSortField] = useState<SortField>('createdAt');
@@ -14,6 +14,7 @@ export const BookList: React.FC = () => {
   const { books, loading, error, addBook, updateBook, deleteBook, uploadImage } = useBooks(sortField, sortDirection);
   const [isAdding, setIsAdding] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
 
   const filteredBooks = books.filter(book => 
     book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -84,13 +85,24 @@ export const BookList: React.FC = () => {
             <BookItem
               key={book.id}
               book={book}
-              onUpdate={updateBook}
+              onSelect={(selected) => setSelectedBook(selected)}
+              onEdit={(book) => setSelectedBook(book)}
               onDelete={deleteBook}
-              onUploadImage={uploadImage}
             />
           ))
         )}
       </div>
+
+      {selectedBook && (
+        <BookDetailModal 
+            book={selectedBook} 
+            isOpen={!!selectedBook} 
+            onClose={() => setSelectedBook(null)}
+            onUpdate={updateBook}
+            onDelete={deleteBook}
+            onUploadImage={uploadImage}
+        />
+      )}
     </div>
   );
 };

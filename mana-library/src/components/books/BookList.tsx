@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { useBooks, type SortField, type SortDirection } from "../../hooks/useBooks";
+import { type Book } from "../../types";
 import { BookItem } from "./BookItem";
 import { BookForm } from "./BookForm";
+import { BookDetailModal } from "./BookDetailModal";
 import { Button } from "../ui/Button";
 import { Plus } from "lucide-react";
 import { Input } from "../ui/Input";
-
-
+import { AnimatePresence, motion } from "framer-motion";
 
 export const BookList: React.FC = () => {
   const [sortField, setSortField] = useState<SortField>('createdAt');
@@ -14,11 +15,16 @@ export const BookList: React.FC = () => {
   const { books, loading, error, addBook, updateBook, deleteBook, uploadImage } = useBooks(sortField, sortDirection);
   const [isAdding, setIsAdding] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+  const [selectedType, setSelectedType] = useState<Book['type']>('commercial');
 
-  const filteredBooks = books.filter(book => 
-    book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    book.author.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredBooks = books.filter(book => {
+    const matchesType = book.type === selectedType;
+    const matchesSearch = 
+      book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      book.author.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesType && matchesSearch;
+  });
 
   if (loading) return <div className="text-center py-8">Loading books...</div>;
   if (error) return <div className="text-center py-8 text-red-500">{error}</div>;
@@ -32,31 +38,69 @@ export const BookList: React.FC = () => {
         </Button>
       </div>
 
-      <div className="mb-6 flex flex-col sm:flex-row gap-4">
-        <Input
-          placeholder="Search by title or author..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="flex-grow"
-        />
-        <div className="flex gap-2">
-          <select
-            value={sortField}
-            onChange={(e) => setSortField(e.target.value as SortField)}
-            className="rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+      <div className="mb-6 space-y-4">
+        {/* Tabs for Book Type */}
+        <div className="flex border-b border-gray-200">
+          <button
+            className={`px-4 py-2 font-medium text-sm transition-colors relative ${
+              selectedType === 'commercial' 
+                ? 'text-blue-600' 
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+            onClick={() => setSelectedType('commercial')}
           >
-            <option value="createdAt">Date Added</option>
-            <option value="title">Title</option>
-            <option value="author">Author</option>
-          </select>
-          <select
-            value={sortDirection}
-            onChange={(e) => setSortDirection(e.target.value as SortDirection)}
-            className="rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+            Commercial
+            {selectedType === 'commercial' && (
+              <motion.div 
+                layoutId="activeTab"
+                className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"
+              />
+            )}
+          </button>
+          <button
+            className={`px-4 py-2 font-medium text-sm transition-colors relative ${
+              selectedType === 'doujin' 
+                ? 'text-purple-600' 
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+            onClick={() => setSelectedType('doujin')}
           >
-            <option value="desc">Desc</option>
-            <option value="asc">Asc</option>
-          </select>
+            Fan-made
+            {selectedType === 'doujin' && (
+              <motion.div 
+                layoutId="activeTab"
+                className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-600"
+              />
+            )}
+          </button>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-4">
+            <Input
+            placeholder="Search by title or author..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="flex-grow"
+            />
+            <div className="flex gap-2">
+            <select
+                value={sortField}
+                onChange={(e) => setSortField(e.target.value as SortField)}
+                className="rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+            >
+                <option value="createdAt">Date Added</option>
+                <option value="title">Title</option>
+                <option value="author">Author</option>
+            </select>
+            <select
+                value={sortDirection}
+                onChange={(e) => setSortDirection(e.target.value as SortDirection)}
+                className="rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+            >
+                <option value="desc">Desc</option>
+                <option value="asc">Asc</option>
+            </select>
+            </div>
         </div>
       </div>
 
@@ -84,13 +128,26 @@ export const BookList: React.FC = () => {
             <BookItem
               key={book.id}
               book={book}
-              onUpdate={updateBook}
+              onSelect={(selected) => setSelectedBook(selected)}
+              onEdit={(book) => setSelectedBook(book)}
               onDelete={deleteBook}
-              onUploadImage={uploadImage}
             />
           ))
         )}
       </div>
+
+      <AnimatePresence>
+        {selectedBook && (
+            <BookDetailModal 
+                book={selectedBook} 
+                isOpen={!!selectedBook} 
+                onClose={() => setSelectedBook(null)}
+                onUpdate={updateBook}
+                onDelete={deleteBook}
+                onUploadImage={uploadImage}
+            />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -2,17 +2,8 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { ProtectedRoute } from "./components/layout/ProtectedRoute";
 import { Login } from "./pages/Login";
-import { Header } from "./components/layout/Header";
+import { AppLayout } from "./components/layout/AppLayout";
 import { BookList } from "./components/books/BookList";
-
-const Layout = ({ children }: { children: React.ReactNode }) => (
-  <div className="min-h-screen bg-gray-50">
-    <Header />
-    <main className="py-8">
-      {children}
-    </main>
-  </div>
-);
 
 function App() {
   return (
@@ -24,9 +15,9 @@ function App() {
             path="/"
             element={
               <ProtectedRoute>
-                <Layout>
+                <AppLayout>
                   <BookList />
-                </Layout>
+                </AppLayout>
               </ProtectedRoute>
             }
           />

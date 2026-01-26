@@ -7,6 +7,7 @@ import { BookDetailModal } from "./BookDetailModal";
 import { Button } from "../ui/Button";
 import { Plus } from "lucide-react";
 import { Input } from "../ui/Input";
+import { AnimatePresence } from "framer-motion";
 
 export const BookList: React.FC = () => {
   const [sortField, setSortField] = useState<SortField>('createdAt');
@@ -93,16 +94,18 @@ export const BookList: React.FC = () => {
         )}
       </div>
 
-      {selectedBook && (
-        <BookDetailModal 
-            book={selectedBook} 
-            isOpen={!!selectedBook} 
-            onClose={() => setSelectedBook(null)}
-            onUpdate={updateBook}
-            onDelete={deleteBook}
-            onUploadImage={uploadImage}
-        />
-      )}
+      <AnimatePresence>
+        {selectedBook && (
+            <BookDetailModal 
+                book={selectedBook} 
+                isOpen={!!selectedBook} 
+                onClose={() => setSelectedBook(null)}
+                onUpdate={updateBook}
+                onDelete={deleteBook}
+                onUploadImage={uploadImage}
+            />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

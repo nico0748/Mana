@@ -1,6 +1,7 @@
 import React from "react";
 import { type Book } from "../../types";
 import { Pencil, Trash2 } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface BookItemProps {
   book: Book;
@@ -11,8 +12,9 @@ interface BookItemProps {
 
 export const BookItem: React.FC<BookItemProps> = ({ book, onSelect, onEdit, onDelete }) => {
   return (
-    <div 
-        className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all cursor-pointer group relative hover:border-blue-200"
+    <motion.div 
+        layoutId={`book-${book.id}`}
+        className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer group relative hover:border-blue-200"
         onClick={() => onSelect(book)}
     >
       <div className="flex gap-5">
@@ -78,6 +80,6 @@ export const BookItem: React.FC<BookItemProps> = ({ book, onSelect, onEdit, onDe
           )}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };

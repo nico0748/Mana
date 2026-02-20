@@ -16,7 +16,7 @@ interface BookDetailModalProps {
 
 export const BookDetailModal: React.FC<BookDetailModalProps> = ({
   book,
-  isOpen,
+  isOpen: _isOpen,
   onClose,
   onUpdate,
   onDelete,

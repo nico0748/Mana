@@ -1,6 +1,5 @@
 export interface Book {
   id: string;
-  uid: string;
   title: string;
   author: string;
   isbn?: string;
@@ -9,7 +8,8 @@ export interface Book {
   status: 'owned' | 'lending' | 'wishlist';
   memo?: string;
   coverUrl?: string;
-  createdAt: any;
+  createdAt: number;
+  updatedAt: number;
 }
 
 export type BookStatus = Book['status'];

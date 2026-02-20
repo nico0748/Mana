@@ -1,18 +1,30 @@
-import React from 'react';
-import { useAuth } from '../../context/AuthContext';
-import { signOut } from 'firebase/auth';
-import { auth } from '../../lib/firebase';
-import { Book, LogOut } from 'lucide-react';
+import React, { useRef } from 'react';
+import { Book, Download, Upload } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { clsx } from 'clsx';
+import { useSync } from '../../hooks/useSync';
 
 export const Sidebar: React.FC = () => {
-  const { currentUser } = useAuth();
   const location = useLocation();
+  const { exportBooks, importBooks } = useSync();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const navItems = [
     { label: 'My Library', icon: Book, path: '/' },
   ];
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      await importBooks(file);
+    } catch (err) {
+      console.error('Import failed:', err);
+      alert('Failed to import data. Please check the file format.');
+    } finally {
+      e.target.value = '';
+    }
+  };
 
   return (
     <div className="w-64 bg-white border-r border-gray-200 h-screen flex flex-col fixed left-0 top-0">
@@ -43,27 +55,29 @@ export const Sidebar: React.FC = () => {
         ))}
       </nav>
 
-      <div className="p-4 border-t border-gray-200 bg-gray-50/50">
-        <div className="flex items-center gap-3 px-2 py-2 mb-2">
-             <div className="h-9 w-9 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold shadow-sm">
-                {currentUser?.email?.[0].toUpperCase()}
-             </div>
-             <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900 truncate">
-                    {currentUser?.email?.split('@')[0]}
-                </p>
-                <p className="text-xs text-gray-500 truncate">
-                    {currentUser?.email}
-                </p>
-             </div>
-        </div>
+      <div className="p-4 border-t border-gray-200 bg-gray-50/50 space-y-2">
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-2 mb-1">Sync</p>
         <button
-          onClick={() => signOut(auth)}
-          className="flex items-center gap-3 px-2 py-2 w-full text-left text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors group"
+          onClick={exportBooks}
+          className="flex items-center gap-3 px-2 py-2 w-full text-left text-sm font-medium text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
         >
-          <LogOut className="h-4 w-4 text-gray-400 group-hover:text-red-500" />
-          Sign out
+          <Download className="h-4 w-4 text-gray-400" />
+          Export JSON
         </button>
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          className="flex items-center gap-3 px-2 py-2 w-full text-left text-sm font-medium text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+        >
+          <Upload className="h-4 w-4 text-gray-400" />
+          Import JSON
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json"
+          className="hidden"
+          onChange={handleImport}
+        />
       </div>
     </div>
   );

@@ -8,7 +8,7 @@ import { Scan, Search } from "lucide-react";
 
 interface BookFormProps {
   initialData?: Partial<Book>;
-  onSubmit: (data: Omit<Book, "id" | "uid" | "createdAt">) => Promise<void>;
+  onSubmit: (data: Omit<Book, "id" | "createdAt" | "updatedAt">) => Promise<void>;
   onCancel: () => void;
   onUploadImage?: (file: File) => Promise<string>;
 }

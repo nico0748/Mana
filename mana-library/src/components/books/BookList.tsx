@@ -5,7 +5,7 @@ import { BookItem } from "./BookItem";
 import { BookForm } from "./BookForm";
 import { BookDetailModal } from "./BookDetailModal";
 import { Button } from "../ui/Button";
-import { Plus } from "lucide-react";
+import { Plus, ArrowUpAZ, ArrowDownAZ } from "lucide-react";
 import { Input } from "../ui/Input";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -20,7 +20,7 @@ export const BookList: React.FC = () => {
 
   const filteredBooks = books.filter(book => {
     const matchesType = book.type === selectedType;
-    const matchesSearch = 
+    const matchesSearch =
       book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       book.author.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesType && matchesSearch;
@@ -30,28 +30,28 @@ export const BookList: React.FC = () => {
   if (error) return <div className="text-center py-8 text-red-500">{error}</div>;
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">My Library</h1>
+    <div className="max-w-4xl mx-auto">
+      {/* Add Book ボタン */}
+      <div className="flex justify-end mb-6">
         <Button onClick={() => setIsAdding(true)} disabled={isAdding}>
           <Plus className="mr-2 h-4 w-4" /> Add Book
         </Button>
       </div>
 
       <div className="mb-6 space-y-4">
-        {/* Tabs for Book Type */}
+        {/* タブ */}
         <div className="flex border-b border-gray-200">
           <button
             className={`px-4 py-2 font-medium text-sm transition-colors relative ${
-              selectedType === 'commercial' 
-                ? 'text-blue-600' 
+              selectedType === 'commercial'
+                ? 'text-blue-600'
                 : 'text-gray-500 hover:text-gray-700'
             }`}
             onClick={() => setSelectedType('commercial')}
           >
             Commercial
             {selectedType === 'commercial' && (
-              <motion.div 
+              <motion.div
                 layoutId="activeTab"
                 className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"
               />
@@ -59,15 +59,15 @@ export const BookList: React.FC = () => {
           </button>
           <button
             className={`px-4 py-2 font-medium text-sm transition-colors relative ${
-              selectedType === 'doujin' 
-                ? 'text-purple-600' 
+              selectedType === 'doujin'
+                ? 'text-purple-600'
                 : 'text-gray-500 hover:text-gray-700'
             }`}
             onClick={() => setSelectedType('doujin')}
           >
             Fan-made
             {selectedType === 'doujin' && (
-              <motion.div 
+              <motion.div
                 layoutId="activeTab"
                 className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-600"
               />
@@ -75,32 +75,34 @@ export const BookList: React.FC = () => {
           </button>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-4">
-            <Input
+        {/* 検索 + ソート */}
+        <div className="flex gap-2">
+          <Input
             placeholder="Search by title or author..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="flex-grow"
-            />
-            <div className="flex gap-2">
-            <select
-                value={sortField}
-                onChange={(e) => setSortField(e.target.value as SortField)}
-                className="rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-            >
-                <option value="createdAt">Date Added</option>
-                <option value="title">Title</option>
-                <option value="author">Author</option>
-            </select>
-            <select
-                value={sortDirection}
-                onChange={(e) => setSortDirection(e.target.value as SortDirection)}
-                className="rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-            >
-                <option value="desc">Desc</option>
-                <option value="asc">Asc</option>
-            </select>
-            </div>
+          />
+          <select
+            value={sortField}
+            onChange={(e) => setSortField(e.target.value as SortField)}
+            className="rounded-md border border-gray-300 py-2 pl-3 pr-8 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+          >
+            <option value="createdAt">Date</option>
+            <option value="title">Title</option>
+            <option value="author">Author</option>
+          </select>
+          {/* 昇順・降順トグルボタン */}
+          <button
+            onClick={() => setSortDirection(d => d === 'asc' ? 'desc' : 'asc')}
+            className="flex items-center justify-center w-10 h-10 rounded-md border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors flex-shrink-0"
+            title={sortDirection === 'asc' ? '昇順（クリックで降順に変更）' : '降順（クリックで昇順に変更）'}
+          >
+            {sortDirection === 'asc'
+              ? <ArrowUpAZ className="h-5 w-5" />
+              : <ArrowDownAZ className="h-5 w-5" />
+            }
+          </button>
         </div>
       </div>
 
@@ -138,14 +140,14 @@ export const BookList: React.FC = () => {
 
       <AnimatePresence>
         {selectedBook && (
-            <BookDetailModal 
-                book={selectedBook} 
-                isOpen={!!selectedBook} 
-                onClose={() => setSelectedBook(null)}
-                onUpdate={updateBook}
-                onDelete={deleteBook}
-                onUploadImage={uploadImage}
-            />
+          <BookDetailModal
+            book={selectedBook}
+            isOpen={!!selectedBook}
+            onClose={() => setSelectedBook(null)}
+            onUpdate={updateBook}
+            onDelete={deleteBook}
+            onUploadImage={uploadImage}
+          />
         )}
       </AnimatePresence>
     </div>

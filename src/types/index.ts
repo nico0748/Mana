@@ -5,6 +5,7 @@ export interface Book {
   isbn?: string;
   type: 'commercial' | 'doujin';
   category?: string;
+  ndcCode?: string;
   status: 'owned' | 'lending' | 'wishlist';
   memo?: string;
   coverUrl?: string;

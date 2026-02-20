@@ -109,6 +109,11 @@ export const BookDetailModal: React.FC<BookDetailModalProps> = ({
                             {book.category}
                         </span>
                         )}
+                        {book.ndcCode && (
+                        <span className="px-2.5 py-1 text-sm rounded-full font-mono bg-amber-50 text-amber-700 border border-amber-100">
+                            NDC {book.ndcCode}
+                        </span>
+                        )}
                     </div>
 
                     <div className="mt-6 flex-grow">

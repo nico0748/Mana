@@ -23,6 +23,7 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
     isbn: initialData?.isbn || "",
     type: initialData?.type || "commercial",
     category: initialData?.category || "",
+    ndcCode: initialData?.ndcCode || "",
     status: initialData?.status || "owned",
     memo: initialData?.memo || "",
     coverUrl: initialData?.coverUrl || "",
@@ -40,6 +41,7 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
           author: bookData.author,
           isbn: bookData.isbn,
           coverUrl: bookData.coverUrl || prev.coverUrl,
+          ndcCode: bookData.ndcCode || prev.ndcCode,
         }));
       } else {
         alert("Book not found");
@@ -222,7 +224,7 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
           </select>
         </div>
 
-        <div className="col-span-2">
+        <div className="col-span-2 sm:col-span-1">
           <label className="block text-sm font-medium text-gray-700">Category</label>
           <Input
             name="category"
@@ -230,6 +232,45 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
             onChange={handleChange}
             placeholder="Category (e.g., Tech, Manga)"
           />
+        </div>
+
+        <div className="col-span-2 sm:col-span-1">
+          <label className="block text-sm font-medium text-gray-700">NDC（日本十進分類法）</label>
+          <Input
+            name="ndcCode"
+            value={formData.ndcCode}
+            onChange={handleChange}
+            placeholder="例: 913.6, 007.6"
+            list="ndc-suggestions"
+          />
+          <datalist id="ndc-suggestions">
+            <option value="007">情報科学</option>
+            <option value="007.6">コンピュータ</option>
+            <option value="141">心理学</option>
+            <option value="159">自己啓発</option>
+            <option value="210">日本史</option>
+            <option value="302">社会</option>
+            <option value="316">社会問題</option>
+            <option value="336">経営管理</option>
+            <option value="375">教育課程</option>
+            <option value="410">数学</option>
+            <option value="420">物理学</option>
+            <option value="460">生物学</option>
+            <option value="490">医学</option>
+            <option value="500">技術・工学</option>
+            <option value="590">家政学</option>
+            <option value="600">産業</option>
+            <option value="700">芸術</option>
+            <option value="726">漫画・アニメ</option>
+            <option value="726.1">コミック</option>
+            <option value="800">言語</option>
+            <option value="810">日本語</option>
+            <option value="900">文学</option>
+            <option value="910">日本文学</option>
+            <option value="913">日本語小説</option>
+            <option value="913.6">現代日本語小説</option>
+            <option value="936">英米語小説</option>
+          </datalist>
         </div>
 
         <div className="col-span-2">

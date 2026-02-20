@@ -1,8 +1,8 @@
 import React, { useRef } from 'react';
-import { Book, Download, Upload, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Book, Download, Upload, Share2, ChevronRight, ChevronLeft } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { clsx } from 'clsx';
-import { useSync } from '../../hooks/useSync';
+import { useSync, isShareSupported } from '../../hooks/useSync';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -113,18 +113,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle }) => {
 
         <button
           onClick={exportBooks}
-          title="Export JSON"
+          title={isShareSupported ? 'Share' : 'Export JSON'}
           className={clsx(
             'flex items-center gap-3 px-2 py-2 w-full text-sm font-medium text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors',
             expanded ? 'justify-start' : 'justify-center sm:justify-start',
           )}
         >
-          <Download className="h-4 w-4 flex-shrink-0 text-gray-400" />
+          {isShareSupported
+            ? <Share2 className="h-4 w-4 flex-shrink-0 text-gray-400" />
+            : <Download className="h-4 w-4 flex-shrink-0 text-gray-400" />
+          }
           <span className={clsx(
             expanded ? 'opacity-100 w-auto' : 'opacity-0 w-0 overflow-hidden',
             'sm:opacity-100 sm:w-auto sm:overflow-visible',
           )}>
-            Export JSON
+            {isShareSupported ? 'Share' : 'Export JSON'}
           </span>
         </button>
 

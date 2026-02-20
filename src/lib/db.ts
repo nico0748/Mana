@@ -9,6 +9,9 @@ class ManaDatabase extends Dexie {
     this.version(1).stores({
       books: 'id, title, author, createdAt, updatedAt',
     });
+    this.version(2).stores({
+      books: 'id, title, author, ndcCode, createdAt, updatedAt',
+    });
   }
 }
 

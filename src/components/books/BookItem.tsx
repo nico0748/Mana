@@ -81,6 +81,12 @@ export const BookItem: React.FC<BookItemProps> = ({ book, onSelect, onEdit, onDe
             </span>
           </div>
 
+          {book.ndcCode && (
+            <span className="mt-2 inline-block px-2 py-0.5 text-xs font-mono font-medium rounded bg-amber-50 text-amber-700 border border-amber-100">
+              NDC {book.ndcCode}
+            </span>
+          )}
+
           {book.memo && (
             <p className="mt-3 text-sm text-gray-500 line-clamp-2">{book.memo}</p>
           )}

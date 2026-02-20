@@ -91,6 +91,7 @@ export const BookList: React.FC = () => {
             <option value="createdAt">Date</option>
             <option value="title">Title</option>
             <option value="author">Author</option>
+            <option value="ndcCode">NDC</option>
           </select>
           {/* 昇順・降順トグルボタン */}
           <button

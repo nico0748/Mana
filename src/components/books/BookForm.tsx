@@ -17,6 +17,7 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
   const { initialData, onSubmit, onCancel } = props;
   const [loading, setLoading] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
     title: initialData?.title || "",
     author: initialData?.author || "",
@@ -25,6 +26,7 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
     category: initialData?.category || "",
     ndcCode: initialData?.ndcCode || "",
     status: initialData?.status || "owned",
+    price: initialData?.price ?? "",
     memo: initialData?.memo || "",
     coverUrl: initialData?.coverUrl || "",
   });
@@ -61,7 +63,7 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
 
   const handleTitleSearch = async () => {
     if (!formData.title) return;
-    setUploading(true); // Reuse uploading state for loading indicator
+    setUploading(true);
     try {
       const coverUrl = await searchBookByTitle(formData.title);
       if (coverUrl) {
@@ -86,7 +88,11 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await onSubmit(formData as any);
+      const submitData = {
+        ...formData,
+        price: formData.price !== "" ? Number(formData.price) : undefined,
+      };
+      await onSubmit(submitData as Omit<import('../../types').Book, 'id' | 'createdAt' | 'updatedAt'>);
     } catch (error) {
       console.error(error);
     } finally {
@@ -94,19 +100,14 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
     }
   };
 
-  const [uploading, setUploading] = useState(false);
-
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setUploading(true);
       try {
-        // We need to pass uploadImage from props or context, but for now let's assume it's passed or we use the hook here.
-        // Actually, BookForm is a presentation component mostly, but it has state.
-        // Let's modify props to include uploadImage.
         if (props.onUploadImage) {
-           const url = await props.onUploadImage(file);
-           setFormData(prev => ({ ...prev, coverUrl: url }));
+          const url = await props.onUploadImage(file);
+          setFormData(prev => ({ ...prev, coverUrl: url }));
         }
       } catch (error) {
         console.error("Failed to upload image", error);
@@ -117,29 +118,31 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
     }
   };
 
+  const selectClass = "bg-zinc-900 border border-zinc-700 text-zinc-100 rounded-md py-2 pl-3 pr-8 text-sm focus:border-yellow-400 focus:outline-none focus:ring-1 focus:ring-yellow-400 w-full";
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow">
+    <form onSubmit={handleSubmit} className="space-y-4 bg-zinc-900 p-6 rounded-lg border border-zinc-800">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700">Cover Image</label>
+          <label className="block text-sm font-medium text-zinc-300">カバー画像</label>
           <div className="mt-1 flex flex-col gap-2">
             <div className="flex items-start space-x-4">
               {formData.coverUrl && (
-                <img src={formData.coverUrl} alt="Cover" className="h-24 w-16 object-cover rounded border flex-shrink-0" />
+                <img src={formData.coverUrl} alt="Cover" className="h-24 w-16 object-cover rounded border border-zinc-700 flex-shrink-0" />
               )}
               <div className="flex-grow space-y-2">
                 <div>
-                  <label className="text-xs text-gray-500 block mb-1">Upload File</label>
+                  <label className="text-xs text-zinc-500 block mb-1">ファイルをアップロード</label>
                   <Input
                     type="file"
                     accept="image/*"
                     onChange={handleImageChange}
                     disabled={uploading}
                   />
-                  {uploading && <span className="text-sm text-gray-500">Uploading...</span>}
+                  {uploading && <span className="text-sm text-zinc-500">アップロード中...</span>}
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 block mb-1">Or Image URL</label>
+                  <label className="text-xs text-zinc-500 block mb-1">または画像URL</label>
                   <Input
                     name="coverUrl"
                     value={formData.coverUrl}
@@ -153,89 +156,107 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
         </div>
 
         <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700">Title</label>
+          <label className="block text-sm font-medium text-zinc-300">タイトル</label>
           <div className="flex gap-2">
             <Input
               name="title"
               value={formData.title}
               onChange={handleChange}
               required
-              placeholder="Book Title"
+              placeholder="タイトル"
             />
-            <Button type="button" variant="outline" size="icon" onClick={handleTitleSearch} title="Search Cover by Title" disabled={!formData.title || uploading}>
+            <Button type="button" variant="outline" size="icon" onClick={handleTitleSearch} title="タイトルでカバー検索" disabled={!formData.title || uploading}>
               <Search className="h-4 w-4" />
             </Button>
           </div>
         </div>
-        
+
         <div className="col-span-2 sm:col-span-1">
-          <label className="block text-sm font-medium text-gray-700">Author / Circle</label>
+          <label className="block text-sm font-medium text-zinc-300">著者 / サークル名</label>
           <Input
             name="author"
             value={formData.author}
             onChange={handleChange}
             required
-            placeholder="Author Name"
+            placeholder="著者名"
           />
         </div>
 
         <div className="col-span-2 sm:col-span-1">
-          <label className="block text-sm font-medium text-gray-700">ISBN</label>
+          <label className="block text-sm font-medium text-zinc-300">ISBN</label>
           <div className="flex gap-2">
             <Input
               name="isbn"
               value={formData.isbn}
               onChange={handleChange}
-              placeholder="ISBN (Optional)"
+              placeholder="ISBN（任意）"
             />
-            <Button type="button" variant="outline" size="icon" onClick={() => fetchBookData(formData.isbn)} title="Search by ISBN">
+            <Button type="button" variant="outline" size="icon" onClick={() => fetchBookData(formData.isbn)} title="ISBNで検索">
               <Search className="h-4 w-4" />
             </Button>
-            <Button type="button" variant="outline" size="icon" onClick={() => setShowScanner(true)} title="Scan Barcode">
+            <Button type="button" variant="outline" size="icon" onClick={() => setShowScanner(true)} title="バーコードスキャン">
               <Scan className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">Type</label>
+          <label className="block text-sm font-medium text-zinc-300">種別</label>
           <select
             name="type"
             value={formData.type}
             onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+            className={selectClass}
           >
-            <option value="commercial">Commercial</option>
-            <option value="doujin">Doujinshi</option>
+            <option value="commercial">商業</option>
+            <option value="doujin">同人誌</option>
           </select>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">Status</label>
+          <label className="block text-sm font-medium text-zinc-300">ステータス</label>
           <select
             name="status"
             value={formData.status}
             onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
+            className={selectClass}
           >
-            <option value="owned">Owned</option>
-            <option value="lending">Lending</option>
-            <option value="wishlist">Wishlist</option>
+            <option value="owned">所持</option>
+            <option value="lending">貸出中</option>
+            <option value="borrowed">借りた</option>
+            <option value="wishlist">ほしい</option>
           </select>
         </div>
 
-        <div className="col-span-2 sm:col-span-1">
-          <label className="block text-sm font-medium text-gray-700">Category</label>
+        <div>
+          <label className="block text-sm font-medium text-zinc-300">
+            価格
+            {formData.status === 'borrowed' && (
+              <span className="ml-2 text-xs text-blue-400">（借りて浮いた金額）</span>
+            )}
+          </label>
           <Input
-            name="category"
-            value={formData.category}
+            name="price"
+            type="number"
+            min="0"
+            value={formData.price}
             onChange={handleChange}
-            placeholder="Category (e.g., Tech, Manga)"
+            placeholder="例: 1500"
           />
         </div>
 
         <div className="col-span-2 sm:col-span-1">
-          <label className="block text-sm font-medium text-gray-700">NDC（日本十進分類法）</label>
+          <label className="block text-sm font-medium text-zinc-300">カテゴリ</label>
+          <Input
+            name="category"
+            value={formData.category}
+            onChange={handleChange}
+            placeholder="カテゴリ（例: Tech, Manga）"
+          />
+        </div>
+
+        <div className="col-span-2 sm:col-span-1">
+          <label className="block text-sm font-medium text-zinc-300">NDC（日本十進分類法）</label>
           <Input
             name="ndcCode"
             value={formData.ndcCode}
@@ -274,24 +295,24 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
         </div>
 
         <div className="col-span-2">
-          <label className="block text-sm font-medium text-gray-700">Memo</label>
+          <label className="block text-sm font-medium text-zinc-300">メモ</label>
           <textarea
             name="memo"
             value={formData.memo}
             onChange={handleChange}
             rows={3}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-            placeholder="Notes..."
+            className="w-full bg-zinc-900 border border-zinc-700 text-zinc-100 rounded-md p-3 text-sm placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
+            placeholder="メモ..."
           />
         </div>
       </div>
 
       <div className="flex justify-end space-x-3 pt-4">
         <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
-          Cancel
+          キャンセル
         </Button>
         <Button type="submit" isLoading={loading}>
-          Save Book
+          保存
         </Button>
       </div>
 

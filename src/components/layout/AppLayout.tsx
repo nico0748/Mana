@@ -1,31 +1,31 @@
-import React, { useState } from 'react';
-import { Sidebar } from './Sidebar';
+import React from 'react';
+import { BottomNav } from './BottomNav';
+import { useLocation } from 'react-router-dom';
+
+const pageTitles: Record<string, string> = {
+  '/': '本棚',
+  '/shopping': '買い物リスト',
+  '/shopping/nav': 'ナビモード',
+  '/register': 'レジ',
+  '/tools': 'ツール',
+};
 
 export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
+  const title = pageTitles[location.pathname] ?? 'Mana Library';
 
   return (
-    <div className="min-h-screen bg-gray-50/50">
-      <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(o => !o)} />
-
-      {/* モバイル用バックドロップ */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-20 bg-black/40 sm:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      <div className="pl-16 sm:pl-64 transition-all duration-300">
-        {/* ページヘッダー */}
-        <header className="sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-gray-200 px-4 sm:px-8 h-14 flex items-center">
-          <h1 className="text-lg font-bold text-gray-900">Mana Library</h1>
-        </header>
-
-        <main className="max-w-7xl mx-auto p-4 sm:p-8 animate-in fade-in duration-500">
-          {children}
-        </main>
-      </div>
+    <div className="min-h-dvh bg-zinc-950 text-zinc-100">
+      <header className="sticky top-0 z-30 bg-zinc-900/95 backdrop-blur border-b border-zinc-800 px-4 h-14 flex items-center pt-[env(safe-area-inset-top)]">
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-6 bg-yellow-400 rounded-full" />
+          <h1 className="text-base font-bold tracking-tight">{title}</h1>
+        </div>
+      </header>
+      <main className="pb-[calc(4rem+env(safe-area-inset-bottom))] min-h-[calc(100dvh-3.5rem)]">
+        {children}
+      </main>
+      <BottomNav />
     </div>
   );
 };

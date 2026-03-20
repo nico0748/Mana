@@ -16,7 +16,7 @@ const fetchNdcByIsbn = async (isbn: string): Promise<string | null> => {
     // レスポンス内はHTMLエスケープされているのでデコード
     const decoded = xml.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
     // NDC10 クラスURL からコードを抽出: http://id.ndl.go.jp/class/ndc10/{CODE}
-    const match = decoded.match(/http:\/\/id\.ndl\.go\.jp\/class\/ndc10\/([^"\/\s<]+)/);
+    const match = decoded.match(/http:\/\/id\.ndl\.go\.jp\/class\/ndc10\/([^"\/\s<]+)/); // eslint-disable-line no-useless-escape
     if (match) {
       // 全角ピリオド（．）を半角に正規化
       return match[1].replace(/．/g, '.');

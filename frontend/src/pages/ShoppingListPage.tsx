@@ -24,8 +24,8 @@ const statusLabel: Record<Circle['status'], string> = {
 
 const statusClass: Record<Circle['status'], string> = {
   pending: 'bg-zinc-800 text-zinc-300 border-zinc-700',
-  bought: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
-  soldout: 'bg-red-900/30 text-red-400 border-red-900',
+  bought: 'bg-green-400/10 text-green-400 border-green-400/25',
+  soldout: 'bg-rose-400/10 text-rose-400 border-rose-400/25',
   skipped: 'bg-zinc-800/50 text-zinc-500 border-zinc-700',
 };
 
@@ -127,7 +127,7 @@ const CircleCard: React.FC<CircleCardProps> = ({ circle, items, onDelete, onStat
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -8 }}
         className={`bg-zinc-900 rounded-2xl border overflow-hidden shadow-sm transition-all duration-200 ${
-          circle.status === 'bought'  ? 'border-emerald-500/30 shadow-emerald-950/40' :
+          circle.status === 'bought'  ? 'border-green-400/30 shadow-green-950/40' :
           circle.status === 'soldout' ? 'border-red-900/60' :
           'border-zinc-800'
         }`}
@@ -183,7 +183,7 @@ const CircleCard: React.FC<CircleCardProps> = ({ circle, items, onDelete, onStat
                 <div key={item.id} className="flex items-center justify-between gap-2 text-sm">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className={`px-1.5 py-0.5 text-xs rounded font-medium flex-shrink-0 ${
-                      item.type === 'shinkan' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-zinc-800 text-zinc-400'
+                      item.type === 'shinkan' ? 'bg-blue-400/10 text-blue-400' : 'bg-zinc-800 text-zinc-400'
                     }`}>
                       {item.type === 'shinkan' ? '新刊' : '既刊'}
                     </span>
@@ -197,8 +197,8 @@ const CircleCard: React.FC<CircleCardProps> = ({ circle, items, onDelete, onStat
                         title={addedItemIds.has(item.id) ? '蔵書に追加済み' : '蔵書に追加'}
                         className={`p-1 transition-colors ${
                           addedItemIds.has(item.id)
-                            ? 'text-emerald-500 cursor-default'
-                            : 'text-zinc-500 hover:text-emerald-400'
+                            ? 'text-green-400 cursor-default'
+                            : 'text-zinc-500 hover:text-zinc-300'
                         }`}
                       >
                         {addedItemIds.has(item.id)
@@ -218,12 +218,12 @@ const CircleCard: React.FC<CircleCardProps> = ({ circle, items, onDelete, onStat
             )}
             {items.length > 0 && (
               <div className="flex justify-end pt-1 border-t border-zinc-800">
-                <span className="text-sm font-semibold text-emerald-500">小計: ¥{subtotal.toLocaleString()}</span>
+                <span className="text-sm font-semibold text-green-400">小計: ¥{subtotal.toLocaleString()}</span>
               </div>
             )}
             <button
               onClick={() => onAddItem(circle.id)}
-              className="w-full mt-1 py-2.5 text-sm text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/5 rounded-xl border border-dashed border-zinc-700 hover:border-emerald-500/40 transition-all duration-200 flex items-center justify-center gap-1.5 active:scale-[0.99]"
+              className="w-full mt-1 py-2.5 text-sm text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 rounded-xl border border-dashed border-zinc-700 hover:border-zinc-600 transition-all duration-200 flex items-center justify-center gap-1.5 active:scale-[0.99]"
             >
               <Plus className="w-3.5 h-3.5" /> アイテムを追加
             </button>
@@ -291,8 +291,8 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ onAdd, onClose }) => {
             <label className="block text-sm text-zinc-400 mb-1">作者名</label>
             <Input name="author" value={form.author} onChange={handleChange} placeholder="作者名" />
             {matchingBooks.length > 0 && (
-              <div className="mt-1.5 px-3 py-2 bg-emerald-500/5 border border-emerald-500/20 rounded-lg">
-                <p className="text-xs text-emerald-400 font-medium mb-1">
+              <div className="mt-1.5 px-3 py-2 bg-blue-400/5 border border-blue-400/20 rounded-lg">
+                <p className="text-xs text-blue-400 font-medium mb-1">
                   この作者の本を {matchingBooks.length} 冊所持しています
                 </p>
                 <ul className="space-y-0.5">
@@ -372,7 +372,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ circleId, onAdd, onClose })
               name="type"
               value={form.type}
               onChange={handleChange}
-              className="bg-zinc-900 border border-zinc-700 text-zinc-100 rounded-md py-2 pl-3 pr-8 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 w-full"
+              className="bg-zinc-900 border border-zinc-700 text-zinc-100 rounded-md py-2 pl-3 pr-8 text-sm focus:border-zinc-400 focus:outline-none focus:ring-1 focus:ring-white/10 w-full"
             >
               <option value="shinkan">新刊</option>
               <option value="kikan">既刊</option>
@@ -602,7 +602,7 @@ const EventCard: React.FC<EventCardProps> = ({
             {hasNavigable ? (
               <Link
                 to={`/shopping/nav?eventId=${event.id}`}
-                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors"
+                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"
               >
                 <Navigation className="w-3.5 h-3.5" />
                 ナビ
@@ -645,7 +645,7 @@ const EventCard: React.FC<EventCardProps> = ({
             </span>
             {spentTotal > 0 && (
               <span>
-                購入済 <span className="font-semibold text-emerald-500">¥{spentTotal.toLocaleString()}</span>
+                購入済 <span className="font-semibold text-green-400">¥{spentTotal.toLocaleString()}</span>
               </span>
             )}
           </div>
@@ -660,7 +660,7 @@ const EventCard: React.FC<EventCardProps> = ({
           <div className="mt-2">
             <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
               <div
-                className={`h-full rounded-full transition-all duration-500 ${overBudget ? 'bg-red-500' : 'bg-emerald-500'}`}
+                className={`h-full rounded-full transition-all duration-500 ${overBudget ? 'bg-red-500' : 'bg-green-400'}`}
                 style={{ width: `${budgetPct}%` }}
               />
             </div>
@@ -698,7 +698,7 @@ const EventCard: React.FC<EventCardProps> = ({
           )}
           <button
             onClick={onAddCircle}
-            className="w-full py-2 text-sm text-zinc-500 hover:text-emerald-500 hover:bg-zinc-800 rounded-lg border border-dashed border-zinc-700 hover:border-emerald-500/50 transition-all flex items-center justify-center gap-1"
+            className="w-full py-2 text-sm text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-lg border border-dashed border-zinc-700 hover:border-zinc-600 transition-all flex items-center justify-center gap-1"
           >
             <Plus className="w-3.5 h-3.5" /> サークルを追加
           </button>

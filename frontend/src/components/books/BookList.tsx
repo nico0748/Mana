@@ -176,9 +176,9 @@ export const BookList: React.FC = () => {
         key={group.key}
         onClick={() => selectCategory(type, group.key)}
         className={clsx(
-          'w-full flex items-center pr-2 py-1.5 rounded-md text-xs transition-colors',
+          'w-full flex items-center pr-2 py-1.5 rounded-md text-xs transition-colors duration-150',
           categoryIsActive(type, group.key)
-            ? 'bg-emerald-500/10 text-emerald-400 border-l-2 border-emerald-500 pl-[22px]'
+            ? 'bg-zinc-800 text-zinc-100 border-l-2 border-zinc-400 pl-[22px]'
             : 'pl-6 text-zinc-500 hover:bg-zinc-800/50 hover:text-zinc-300'
         )}
       >
@@ -199,8 +199,8 @@ export const BookList: React.FC = () => {
         className={clsx(
           'w-full flex items-center gap-2 px-2 py-2 rounded-lg text-sm font-medium transition-colors',
           typeIsActive('commercial')
-            ? 'bg-emerald-500/10 text-emerald-400'
-            : 'text-zinc-300 hover:bg-zinc-800/60 hover:text-zinc-100'
+            ? 'bg-zinc-800 text-zinc-100'
+            : 'text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200'
         )}
       >
         <BookOpen className="w-3.5 h-3.5 flex-shrink-0" />
@@ -217,8 +217,8 @@ export const BookList: React.FC = () => {
         className={clsx(
           'w-full flex items-center gap-2 px-2 py-2 rounded-lg text-sm font-medium transition-colors mt-1',
           typeIsActive('doujin')
-            ? 'bg-emerald-500/10 text-emerald-400'
-            : 'text-zinc-300 hover:bg-zinc-800/60 hover:text-zinc-100'
+            ? 'bg-zinc-800 text-zinc-100'
+            : 'text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200'
         )}
       >
         <BookMarked className="w-3.5 h-3.5 flex-shrink-0" />
@@ -335,7 +335,7 @@ export const BookList: React.FC = () => {
                       'flex-1 relative flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-all duration-200',
                       i === 0 ? '' : 'border-l border-zinc-800',
                       isActive
-                        ? 'bg-emerald-500/10 text-emerald-400'
+                        ? 'bg-zinc-800 text-zinc-100'
                         : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50'
                     )}
                   >
@@ -343,14 +343,14 @@ export const BookList: React.FC = () => {
                     {label}
                     <span className={clsx(
                       'text-xs tabular-nums px-1.5 py-0.5 rounded-full font-semibold transition-colors',
-                      isActive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-zinc-800 text-zinc-600'
+                      isActive ? 'bg-zinc-600 text-zinc-200' : 'bg-zinc-800 text-zinc-600'
                     )}>
                       {count}
                     </span>
                     {isActive && (
                       <motion.div
                         layoutId="typeSwitcher"
-                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-500 rounded-full"
+                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-zinc-400 rounded-full"
                         transition={{ type: 'spring', stiffness: 400, damping: 35 }}
                       />
                     )}
@@ -371,7 +371,7 @@ export const BookList: React.FC = () => {
                   <div className="flex items-center gap-1.5 text-xs text-zinc-500 px-1">
                     <button
                       onClick={() => setSelectedCategory(null)}
-                      className="hover:text-emerald-400 transition-colors"
+                      className="hover:text-zinc-300 transition-colors"
                     >
                       {selectedType === 'commercial' ? '商業' : '同人誌'}
                     </button>
@@ -399,7 +399,7 @@ export const BookList: React.FC = () => {
               <select
                 value={sortField}
                 onChange={(e) => setSortField(e.target.value as SortField)}
-                className="bg-zinc-900 border border-zinc-700 text-zinc-200 rounded-xl py-2 pl-3 pr-8 text-sm hover:border-zinc-500 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                className="bg-zinc-900 border border-zinc-700 text-zinc-200 rounded-xl py-2 pl-3 pr-8 text-sm hover:border-zinc-500 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-white/10 transition-all"
               >
                 <option value="createdAt">日付</option>
                 <option value="title">タイトル</option>
@@ -408,7 +408,7 @@ export const BookList: React.FC = () => {
               </select>
               <button
                 onClick={() => setSortDirection(d => d === 'asc' ? 'desc' : 'asc')}
-                className="flex items-center justify-center w-10 h-10 rounded-xl border border-zinc-700 bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-emerald-400 hover:border-zinc-500 transition-all flex-shrink-0 active:scale-95"
+                className="flex items-center justify-center w-10 h-10 rounded-xl border border-zinc-700 bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 hover:border-zinc-500 transition-all flex-shrink-0 active:scale-95"
                 title={sortDirection === 'asc' ? '昇順' : '降順'}
               >
                 {sortDirection === 'asc'
@@ -443,7 +443,7 @@ export const BookList: React.FC = () => {
                 {searchTerm ? "検索結果が見つかりませんでした" : "まだ本がありません"}
               </p>
               {!searchTerm && (
-                <button onClick={() => setIsAdding(true)} className="text-xs text-emerald-500 hover:text-emerald-400 transition-colors">
+                <button onClick={() => setIsAdding(true)} className="text-xs text-zinc-400 hover:text-zinc-300 transition-colors">
                   最初の1冊を追加する →
                 </button>
               )}
@@ -457,13 +457,13 @@ export const BookList: React.FC = () => {
                     onClick={() => setSelectedCategory(group.key)}
                     className="w-full flex items-center gap-3 mb-3 group"
                   >
-                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest group-hover:text-emerald-400 transition-colors duration-200">
+                    <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest group-hover:text-zinc-200 transition-colors duration-200">
                       {group.label}
                     </span>
-                    <span className="text-[10px] font-semibold text-zinc-600 bg-zinc-800 px-1.5 py-0.5 rounded-full tabular-nums group-hover:bg-emerald-500/10 group-hover:text-emerald-500 transition-colors duration-200">
+                    <span className="text-[10px] font-semibold text-zinc-600 bg-zinc-800 px-1.5 py-0.5 rounded-full tabular-nums group-hover:bg-zinc-700 group-hover:text-zinc-300 transition-colors duration-200">
                       {group.books.length}
                     </span>
-                    <div className="flex-1 h-px bg-zinc-800 group-hover:bg-emerald-500/20 transition-colors duration-200" />
+                    <div className="flex-1 h-px bg-zinc-800 group-hover:bg-zinc-700/50 transition-colors duration-200" />
                   </button>
                   <div className="space-y-3">
                     {group.books.map(book => (

@@ -34,7 +34,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           // Base — Material Design button foundation
           "relative overflow-hidden inline-flex items-center justify-center whitespace-nowrap rounded-full text-sm font-medium",
           "transition-all duration-200 ease-out",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 focus-visible:ring-offset-1 focus-visible:ring-offset-zinc-950",
           "disabled:pointer-events-none disabled:opacity-50",
           "active:scale-[0.97]",
           // Variants

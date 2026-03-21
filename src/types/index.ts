@@ -17,8 +17,18 @@ export interface Book {
 export type BookStatus = Book['status'];
 export type BookType = Book['type'];
 
+export interface DoujinEvent {
+  id: string;
+  name: string;
+  date?: string;   // ISO date string e.g. "2024-12-30"
+  budget?: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
 export interface Circle {
   id: string;
+  eventId?: string;
   name: string;
   author: string;
   hall: string;
@@ -27,6 +37,18 @@ export interface Circle {
   order: number;
   status: 'pending' | 'bought' | 'soldout' | 'skipped';
   menuImageUrl?: string;
+  mapX?: number;
+  mapY?: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface VenueMap {
+  id: string;
+  eventId?: string;
+  hall: string;
+  imageDataUrl: string;
+  generatedSvg?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -51,3 +73,14 @@ export interface Distribution {
   createdAt: number;
   updatedAt: number;
 }
+
+export type {
+  Point, Rect, HallArea, BlockNaming,
+  Hall, Block, Space, HallConnection, VenueLayout,
+} from './venueMap';
+
+export type {
+  MapNodeType, MapEdgeType,
+  MapNode, MapEdge, VenueGraph,
+  PathSegment, PathResult,
+} from './pathfinding';

@@ -17,6 +17,14 @@ const pageVariants = {
   exit: { opacity: 0, y: -8, transition: { duration: 0.15 } },
 };
 
+/**
+ * Render application routes with coordinated page transition animations.
+ *
+ * Each route's element is wrapped in a motion container using `pageVariants` and the whole
+ * route tree is wrapped in `AnimatePresence` with `mode="wait"` to sequence exit/enter animations.
+ *
+ * @returns A React element containing the routed pages with animated transitions; the routes are keyed by `location.pathname` so route elements remount when the path changes.
+ */
 function AnimatedRoutes() {
   const location = useLocation();
   return (
@@ -32,6 +40,11 @@ function AnimatedRoutes() {
   );
 }
 
+/**
+ * Root application component that conditionally displays onboarding and renders the routed pages inside the main layout.
+ *
+ * @returns The app's root React element containing the Router, the optional Onboarding flow, and the main AppLayout with routed content.
+ */
 function App() {
   const [showOnboarding, setShowOnboarding] = useState(
     () => !localStorage.getItem(ONBOARDING_KEY)

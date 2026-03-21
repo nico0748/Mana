@@ -2,6 +2,17 @@ import type { Book, Circle, CircleItem, Distribution, DoujinEvent, VenueMap } fr
 
 const BASE = '/api';
 
+/**
+ * Send an HTTP request to the API base and return the parsed JSON response.
+ *
+ * Sends a request to `${BASE}${path}` with a default `Content-Type: application/json`
+ * header merged with `options`. If the response status is 204, returns `undefined`.
+ *
+ * @param path - Path appended to the API base (e.g., `/books`)
+ * @param options - Additional fetch options to merge with defaults
+ * @returns The parsed JSON response as type `T`, or `undefined` when the response status is 204
+ * @throws Error when the response has a non-OK status; error message includes the HTTP status and response text
+ */
 async function req<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     headers: { 'Content-Type': 'application/json' },

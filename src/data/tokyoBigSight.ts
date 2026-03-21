@@ -45,14 +45,14 @@ const KATAKANA = [
 // ─────────────────────────────────────────────
 
 /**
- * ブロック配列を生成する
- * @param hallId - 所属ホールID
- * @param names - ブロック名の配列
- * @param naming - 命名体系
- * @param spaceCount - 各ブロックのスペース数
- * @param startY - ブロック配置の開始Y位置 (0-100)
- * @param endY - ブロック配置の終了Y位置 (0-100)
- * @param orientation - 島の向き
+ * Create an array of block definitions positioned along a vertical range within a hall.
+ *
+ * @param naming - Naming scheme used for each block
+ * @param spaceCount - Number of spaces assigned to each generated block
+ * @param startY - Start position on the Y axis (0–100) where the first block is placed
+ * @param endY - End position on the Y axis (0–100) where the last block is placed
+ * @param orientation - Block orientation, either `horizontal` or `vertical`
+ * @returns An array of `Block` objects with computed `id`, `hallId`, `name`, `naming`, `spaceCount`, `position` (x fixed at 50, y interpolated between `startY` and `endY`), `orientation`, and `isWall: false`; returns an empty array when `names` is empty
  */
 function generateBlocks(
   hallId: string,
@@ -84,7 +84,18 @@ function generateBlocks(
 }
 
 /**
- * 壁サークルブロックを生成する
+ * Create circular "wall" blocks positioned along a specified hall edge.
+ *
+ * Each returned block has an `id` of `${hallId}_${name}`, a `position` with coordinates
+ * relative to the hall bounds, an `orientation` (vertical for left/right, horizontal for top/bottom),
+ * and `isWall` set to `true`.
+ *
+ * @param hallId - Identifier of the hall these blocks belong to
+ * @param names - Ordered list of block names placed along the specified side
+ * @param naming - Naming scheme metadata applied to each block
+ * @param spaceCount - Number of spaces assigned to each generated block
+ * @param side - Edge of the hall where blocks are placed: `left`/`right` position `x` near the sides, `top`/`bottom` position `y` near the sides
+ * @returns An array of `Block` objects placed along the given side with computed relative positions and wall orientation
  */
 function generateWallBlocks(
   hallId: string,
@@ -217,14 +228,11 @@ const baseConnections: HallConnection[] = [
 // ─────────────────────────────────────────────
 
 /**
- * C105 のブロック配置（マップ画像1枚目から読み取り）
+ * Builds the venue layout for Comic Market 105, including hall definitions, block assignments, and inter-hall connections.
  *
- * 東1: A-H (アルファベット大文字)
- * 東2: K-Y (アルファベット大文字)
- * 東3: ア-シ (カタカナ)
- * 東4: ラ-ワ + 一部カタカナ (カタカナ)
- * 東7: a-m (アルファベット小文字) + ひらがな
- * 西ホール群: ひらがな
+ * The layout assigns block name series to specific halls (East-1: A–H, East-2: K–Y, East-3: Katakana ア–シ, East-4: Katakana ラ–ワ, East-7: a–m, West halls: Hiragana) and includes empty entries for halls that have no blocks defined.
+ *
+ * @returns The constructed VenueLayout for event code "C105".
  */
 function buildC105Layout(): VenueLayout {
   const hallMap = new Map(hallDefinitions.map(h => [h.id, h]));
@@ -287,14 +295,15 @@ function buildC105Layout(): VenueLayout {
 // ─────────────────────────────────────────────
 
 /**
- * C106 のブロック配置（マップ画像2枚目から読み取り）
+ * Build the venue layout for Comic Market 106 (C106).
  *
- * 東4: ヨ,ユ,ヤ,モ,メ,ム,ミ,マ,ホ,ヘ,フ,ヒ (カタカナ降順)
- * 東5: ハ,ノ,ネ,ニ,ナ,ト,テ,ツ,タ,ソ (カタカナ)
- * 東6: ス,シ,サ,コ,ケ,ク,キ,カ,オ,エ,ウ,イ,ア (カタカナ降順)
- * 東7: A-M (アルファベット大文字)
- * 南1-2: サークルスペース
- * 西: ひらがなブロック
+ * Configures blocks for event-specific halls (east4–east7, south1–south2, west1–west2) with the following naming:
+ * - east4/east5/east6: katakana sequences
+ * - east7, south1, south2: uppercase alphabet sequences
+ * - west1, west2: hiragana sequences
+ *
+ * @returns The constructed VenueLayout for C106, including halls with their blocks and shared connections.
+ * @throws Error if a configured hall ID is not present in the hall definitions.
  */
 function buildC106Layout(): VenueLayout {
   const hallMap = new Map(hallDefinitions.map(h => [h.id, h]));
@@ -366,19 +375,32 @@ export const venueLayouts: Record<string, () => VenueLayout> = {
   c106: buildC106Layout,
 };
 
-/** デフォルトのレイアウトを取得 */
+/**
+ * Retrieve the venue layout for a given event code.
+ *
+ * @param eventCode - Event code (e.g., 'C105' or 'c106'); lookup is case-insensitive.
+ * @returns The `VenueLayout` for the specified event code, or `null` if no layout is available.
+ */
 export function getVenueLayout(eventCode: string): VenueLayout | null {
   const key = eventCode.toLowerCase();
   const builder = venueLayouts[key];
   return builder ? builder() : null;
 }
 
-/** ホール基本定義を取得 */
+/**
+ * Get the array of base hall definitions used by the layout builders.
+ *
+ * @returns The array of hall definitions (each entry contains hall metadata, omitting `blocks`)
+ */
 export function getHallDefinitions() {
   return hallDefinitions;
 }
 
-/** サポートされるイベント一覧 */
+/**
+ * Lists supported venue events with their codes and display names.
+ *
+ * @returns An array of objects where each object has `code` (the event code) and `name` (the event display name)
+ */
 export function getSupportedEvents() {
   return Object.keys(venueLayouts).map(key => {
     const layout = venueLayouts[key]();
@@ -387,11 +409,12 @@ export function getSupportedEvents() {
 }
 
 /**
- * スペースアドレスからホールとブロックを検索するユーティリティ
- * @param layout - 会場レイアウト
- * @param hallLabel - ホールラベル (例: "東1")
- * @param blockName - ブロック名 (例: "A", "あ", "ア")
- * @returns マッチしたホールとブロック、またはnull
+ * Finds a hall and its block in a venue layout by hall label and block name.
+ *
+ * @param layout - The venue layout to search
+ * @param hallLabel - Hall label to match (e.g., "東1")
+ * @param blockName - Block name to match (e.g., "A", "あ", "ア")
+ * @returns The matched `{ hall, block }` object, or `null` if no match is found
  */
 export function findBlockByAddress(
   layout: VenueLayout,

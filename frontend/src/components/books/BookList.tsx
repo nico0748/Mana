@@ -30,6 +30,12 @@ const NDC_LABELS: Record<string, string> = {
   '9': '文学',
 };
 
+/**
+ * Extracts the NDC group key from a book's NDC code.
+ *
+ * @param book - The book whose `ndcCode` will be inspected
+ * @returns The first trimmed character of `book.ndcCode` if it is a digit `'0'`–`'9'`, otherwise an empty string
+ */
 function getNdcGroup(book: Book): string {
   if (!book.ndcCode) return '';
   const first = book.ndcCode.trim().charAt(0);
@@ -42,6 +48,14 @@ interface CategoryGroup {
   books: Book[];
 }
 
+/**
+ * Group books by their NDC first-digit category and produce labeled category groups.
+ *
+ * Groups are ordered so that groups with a numeric NDC key are sorted ascending by key and the uncategorized group (empty key) appears last. Each group includes the original books for that key and a human-readable label: for a non-empty key the label is "`{key} {NDC_LABELS[key] ?? '不明'}`", and for the empty key the label is "未分類".
+ *
+ * @param books - Array of books to group by NDC first-digit category
+ * @returns An array of category groups with `key`, `label`, and `books` properties
+ */
 function buildCommercialGroups(books: Book[]): CategoryGroup[] {
   const map = new Map<string, Book[]>();
   for (const book of books) {
@@ -63,6 +77,17 @@ function buildCommercialGroups(books: Book[]): CategoryGroup[] {
     }));
 }
 
+/**
+ * Groups doujin books by author and returns category groups ordered by descending group size.
+ *
+ * Groups use the trimmed author name as the key; if the trimmed name is empty the key `'不明'` is used.
+ *
+ * @param books - Array of books to group (each group's author field is used for grouping)
+ * @returns An array of CategoryGroup objects sorted by descending number of books. Each group has:
+ * - `key`: the author name or `'不明'`
+ * - `label`: the same author name used as the display label
+ * - `books`: the list of books belonging to that author
+ */
 function buildDoujinGroups(books: Book[]): CategoryGroup[] {
   const map = new Map<string, Book[]>();
   for (const book of books) {

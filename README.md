@@ -1,111 +1,197 @@
-# mana-library
+# KuraMori（くらもり）
 
-書籍管理Webアプリケーションのメインパッケージ。React + TypeScript + Vite で構築し、バックエンドに Firebase を使用する。
+蔵書管理 + 同人イベント買い物リスト + 会場マップを一体化した PWA。
+React + TypeScript + Vite（フロントエンド）、Express + Prisma + PostgreSQL（バックエンド）で構成し、Docker Compose で一括起動できる。
 
 ## ディレクトリ構成
 
 ```
 mana-library/
-├── src/                  # ソースコード
-│   ├── main.tsx          # Reactアプリのエントリーポイント
-│   ├── App.tsx           # ルートコンポーネント（ルーティング定義）
-│   ├── index.css         # グローバルスタイル（Tailwind CSSインポート）
-│   ├── vite-env.d.ts     # Vite環境変数の型定義
-│   ├── assets/           # 画像・メディアアセット
-│   ├── types/            # TypeScript型定義
-│   ├── lib/              # ユーティリティ・外部ライブラリ設定
-│   ├── context/          # React Contextプロバイダー
-│   ├── hooks/            # カスタムReactフック
-│   ├── pages/            # ページコンポーネント
-│   └── components/       # 再利用可能なコンポーネント
-│       ├── ui/           # 汎用UIコンポーネント
-│       ├── layout/       # レイアウトコンポーネント
-│       └── books/        # 書籍関連コンポーネント
-├── public/               # 静的アセット（vite.svg）
-├── index.html            # HTMLエントリーポイント
-├── package.json          # 依存関係・スクリプト
-├── vite.config.ts        # Viteビルド設定
-├── tsconfig.json         # TypeScript設定（ルート）
-├── tsconfig.app.json     # TypeScript設定（アプリ向け）
-├── tsconfig.node.json    # TypeScript設定（Node.js向け）
-├── eslint.config.js      # ESLintコード品質設定
-├── firestore.rules       # Firestoreセキュリティルール
-├── storage.rules         # Firebase Storageセキュリティルール
-├── .env                  # Firebase接続情報（環境変数）
-└── Implemetation.md      # 実装計画・詳細メモ
+├── frontend/                   # React アプリ（Vite ビルド → Nginx 配信）
+│   ├── src/
+│   │   ├── lib/api.ts          # REST API クライアント（全エンドポイント）
+│   │   ├── hooks/              # useBooks, useSync, useVenueRoute
+│   │   ├── pages/              # 本棚 / 買い物リスト / MAP / ナビ / ツール
+│   │   └── components/         # UI・レイアウト・書籍コンポーネント
+│   ├── nginx.conf              # Nginx 設定（SPA フォールバック + /api プロキシ）
+│   └── Dockerfile              # multi-stage build（Node → Nginx）
+├── backend/                    # Express API サーバー
+│   ├── src/
+│   │   ├── index.ts            # アプリエントリー（全ルーター登録）
+│   │   ├── prisma.ts           # PrismaClient シングルトン
+│   │   └── routes/             # books / circles / events / venueMaps 等
+│   ├── prisma/
+│   │   └── schema.prisma       # DB スキーマ定義・マイグレーション管理
+│   └── Dockerfile              # multi-stage build（Node ビルド → 実行）
+├── docker-compose.yml          # 3 サービス定義（frontend / backend / db）
+└── .env.example                # 環境変数テンプレート
 ```
 
 ## 主要ファイルの説明
 
-### エントリーポイント
-
 | ファイル | 説明 |
-|----------|------|
-| `index.html` | Viteが読み込むHTMLテンプレート。`src/main.tsx`をモジュールとして参照する |
-| `src/main.tsx` | ReactのDOM描画エントリーポイント。`<React.StrictMode>`と`<App>`をマウントする |
-| `src/App.tsx` | ルーティング定義。`AuthProvider`でラップし、`/login`と`/`（保護ルート）を設定する |
-| `src/index.css` | Tailwind CSSのインポート（`@import "tailwindcss"`）のみを記述したグローバルスタイル |
+|---|---|
+| `frontend/src/lib/api.ts` | バックエンド REST API への全リクエストをラップする型付きクライアント |
+| `frontend/nginx.conf` | `/api/*` をバックエンドへ転送し、それ以外は `index.html` を返す SPA 設定 |
+| `backend/src/index.ts` | Express アプリ本体。`/api/books`, `/api/circles` 等を登録 |
+| `backend/prisma/schema.prisma` | テーブル定義のソース。変更後は `prisma migrate dev` でマイグレーション生成 |
+| `docker-compose.yml` | 3 サービスの起動順・環境変数・ボリュームをまとめて管理 |
 
-### 設定ファイル
-
-| ファイル | 説明 |
-|----------|------|
-| `package.json` | npmの依存関係（React, Firebase, Tailwind等）とスクリプト（dev/build/lint/preview）を定義 |
-| `vite.config.ts` | ReactプラグインとTailwind CSSプラグインを設定するViteビルド設定 |
-| `tsconfig.json` | TypeScript設定のルートファイル。`tsconfig.app.json`と`tsconfig.node.json`を参照 |
-| `tsconfig.app.json` | アプリ向けTypeScript設定。ターゲットES2022、strictモード有効、パスエイリアス設定 |
-| `eslint.config.js` | ESLint設定。TypeScriptとReact Hooks、React Refreshのルールを適用 |
-
-### セキュリティルール
-
-| ファイル | 説明 |
-|----------|------|
-| `firestore.rules` | Firestoreのアクセス制御。ユーザーは自分のドキュメントと書籍データのみ読み書き可能 |
-| `storage.rules` | Firebase Storageのアクセス制御。書影はログイン済みユーザーが読め、自分のフォルダのみ書き込み可能 |
-
-### 環境設定
-
-| ファイル | 説明 |
-|----------|------|
-| `.env` | Firebase SDKの接続情報（apiKey, authDomain, projectId等）を環境変数として定義 |
-
-## 開発コマンド
-
-```bash
-npm run dev       # 開発サーバー起動（Vite HMR付き）
-npm run build     # 本番ビルド（TypeScriptコンパイル + Vite最適化）
-npm run lint      # ESLintによるコード品質チェック
-npm run preview   # 本番ビルドのプレビュー
-```
-
-## データモデル（Firestore）
-
-### `users` コレクション
-```
-users/{uid}
-  - uid: string
-  - email: string
-  - createdAt: timestamp
-```
-
-### `books` コレクション
-```
-books/{bookId}
-  - uid: string          # 書籍の所有者UID
-  - title: string        # タイトル
-  - author: string       # 著者
-  - isbn: string         # ISBN（任意）
-  - type: 'commercial' | 'doujin'  # 商業本 or 同人誌
-  - category: string     # カテゴリ（任意）
-  - status: 'owned' | 'lending' | 'wishlist'  # 所有状態
-  - memo: string         # メモ（任意）
-  - coverUrl: string     # 書影URL（任意）
-  - createdAt: timestamp # 登録日時
-```
-
-## 外部API
+## 外部 API
 
 | API | 用途 |
-|-----|------|
-| [OpenBD](https://openbd.jp/) | ISBNから日本語書籍情報を取得（主要） |
-| [Google Books API](https://developers.google.com/books) | ISBNフォールバック・タイトルから書影を取得 |
+|---|---|
+| [OpenBD](https://openbd.jp/) | ISBN から日本語書籍情報を取得（主要） |
+| [Google Books API](https://developers.google.com/books) | ISBN フォールバック・タイトルから書影を取得 |
+
+---
+
+## Docker
+
+### システム構成
+
+```
+ブラウザ
+  │  :80
+  ▼
+┌──────────────────────────────────────────────┐
+│              Docker Compose ネットワーク      │
+│                                              │
+│  ┌─────────────┐   /api/*    ┌────────────┐  │
+│  │  frontend   │ ──proxy──▶ │  backend   │  │
+│  │  Nginx:80   │            │ Express    │  │
+│  └─────────────┘            │ :3000      │  │
+│                             └─────┬──────┘  │
+│                                   │ Prisma  │
+│                                   ▼         │
+│                          ┌────────────────┐ │
+│                          │      db        │ │
+│                          │ PostgreSQL     │ │
+│                          │ :5432          │ │
+│                          └────────────────┘ │
+└──────────────────────────────────────────────┘
+```
+
+- **frontend（Nginx）** … React アプリの静的ファイルを配信。`/api/*` へのリクエストはバックエンドへ転送するリバースプロキシとして機能する。ブラウザからは全て同一オリジン（`:80`）に見えるため CORS が発生しない。
+- **backend（Express）** … REST API サーバー。Prisma 経由で PostgreSQL を操作する。
+- **db（PostgreSQL）** … データの永続化先。`postgres_data` ボリュームにマウントしているためコンテナを削除してもデータは残る。
+
+### 前提条件
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) または Docker Engine + Docker Compose Plugin がインストールされていること
+
+```bash
+docker --version          # Docker version 24.x 以上
+docker compose version    # Docker Compose version v2.x 以上
+```
+
+### 環境変数の設定
+
+```bash
+cp .env.example .env
+# 必要に応じて .env を編集（デフォルトのままでも動作する）
+```
+
+`.env.example` の内容：
+
+```
+DATABASE_URL=postgresql://mana:mana_password@db:5432/mana_library
+PORT=3000
+```
+
+> **注意**: `.env` はリポジトリにコミットしないこと。`.gitignore` に追加しておくこと。
+
+### 起動・停止
+
+```bash
+# 全サービスをビルドして起動（初回・Dockerfile 変更後は --build を付ける）
+docker compose up -d --build
+
+# ブラウザで http://localhost:80 にアクセス
+
+# ログをリアルタイムで確認
+docker compose logs -f
+
+# 特定サービスのログのみ確認
+docker compose logs -f backend
+
+# 停止（コンテナ削除・データは保持）
+docker compose down
+
+# 停止 + DB ボリュームも削除（データが全て消える）
+docker compose down -v
+```
+
+### 各サービスの状態確認
+
+```bash
+# 起動中のコンテナ一覧
+docker compose ps
+
+# backend コンテナに入って操作
+docker compose exec backend sh
+
+# DB に直接接続
+docker compose exec db psql -U mana -d mana_library
+```
+
+### DB マイグレーション
+
+`backend/prisma/schema.prisma` を変更した場合の手順：
+
+```bash
+# 1. ローカルでマイグレーションファイルを生成（開発時）
+cd backend
+npx prisma migrate dev --name <変更内容の名前>
+
+# 2. 本番（コンテナ起動時）は自動で migrate deploy が実行される
+#    backend/Dockerfile の CMD 参照：
+#    sh -c "npx prisma migrate deploy && node dist/index.js"
+```
+
+### multi-stage build の仕組み
+
+```
+frontend/Dockerfile               backend/Dockerfile
+─────────────────────             ──────────────────────────
+Stage 1: builder (node:22)        Stage 1: builder (node:22)
+  npm ci                            npm ci
+  npm run build → dist/             npx prisma generate
+                                    npm run build → dist/
+Stage 2: nginx:alpine
+  COPY dist/ → /usr/share/nginx/  Stage 2: node:22-alpine
+  COPY nginx.conf                   COPY dist/ node_modules/ prisma/
+  EXPOSE 80                         EXPOSE 3000
+                                    CMD migrate deploy && node dist/
+```
+
+ビルド専用の `node_modules`（数百 MB）は最終イメージに含まれないため、イメージサイズを大幅に削減できる。
+
+### 開発時のローカル起動（Docker を使わない場合）
+
+```bash
+# DB のみ Docker で起動
+docker compose up -d db
+
+# バックエンドをローカル起動
+cd backend
+cp ../.env.example .env          # DATABASE_URL の @db を @localhost に書き換える
+npm install
+npx prisma migrate dev
+npm run dev                      # http://localhost:3000
+
+# フロントエンドをローカル起動（別ターミナル）
+cd frontend
+npm install
+npm run dev                      # http://localhost:5173
+                                 # vite.config.ts の proxy で /api → localhost:3000 に転送
+```
+
+### トラブルシューティング
+
+| 症状 | 原因と対処 |
+|---|---|
+| `backend` が起動直後に落ちる | DB の healthcheck が通るまで待機しているため、初回は少し時間がかかる。`docker compose logs backend` でエラー内容を確認 |
+| `relation "Book" does not exist` | マイグレーションが未実行。`docker compose restart backend` で再実行される |
+| ポート 80 が使用中 | `docker-compose.yml` の `ports: "80:80"` を `"8080:80"` 等に変更 |
+| イメージのキャッシュが古い | `docker compose up -d --build --no-cache` で完全再ビルド |

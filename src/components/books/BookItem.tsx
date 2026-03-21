@@ -14,7 +14,7 @@ export const BookItem: React.FC<BookItemProps> = ({ book, onSelect, onEdit, onDe
   return (
     <motion.div
       layoutId={`book-${book.id}`}
-      className="bg-zinc-900 p-4 rounded-xl border border-zinc-800 hover:border-zinc-700 hover:shadow-lg hover:shadow-yellow-400/5 transition-all cursor-pointer relative"
+      className="bg-zinc-900 p-4 rounded-xl border border-zinc-800 hover:border-zinc-700 hover:shadow-lg hover:shadow-emerald-500/5 transition-all cursor-pointer relative"
       onClick={() => onSelect(book)}
     >
       {/* アクションボタン — カード右上に絶対配置 */}
@@ -24,7 +24,7 @@ export const BookItem: React.FC<BookItemProps> = ({ book, onSelect, onEdit, onDe
       >
         <button
           onClick={() => onEdit(book)}
-          className="p-2 text-zinc-500 hover:text-yellow-400 hover:bg-zinc-800 rounded-full transition-colors"
+          className="p-2 text-zinc-500 hover:text-emerald-500 hover:bg-zinc-800 rounded-full transition-colors"
           title="Edit"
         >
           <Pencil className="h-4 w-4" />
@@ -67,14 +67,14 @@ export const BookItem: React.FC<BookItemProps> = ({ book, onSelect, onEdit, onDe
           <div className="mt-3 flex flex-wrap gap-2">
             <span className={`px-2.5 py-0.5 text-xs font-medium rounded-full border ${
               book.type === 'commercial'
-                ? 'bg-yellow-400/10 text-yellow-400 border-yellow-400/20'
+                ? 'bg-lime-500/10 text-lime-500 border-lime-500/20'
                 : 'bg-zinc-700 text-zinc-300 border-zinc-600'
             }`}>
               {book.type === 'commercial' ? '商業' : '同人'}
             </span>
             <span className={`px-2.5 py-0.5 text-xs font-medium rounded-full border ${
-              book.status === 'owned'    ? 'bg-green-400/10 text-green-400 border-green-400/20' :
-              book.status === 'lending'  ? 'bg-yellow-400/10 text-yellow-400 border-yellow-400/20' :
+              book.status === 'owned'    ? 'bg-yellow-400/10 text-yellow-400 border-yellow-400/20' :
+              book.status === 'lending'  ? 'bg-orange-400/10 text-orange-400 border-orange-400/20' :
               book.status === 'borrowed' ? 'bg-blue-400/10 text-blue-400 border-blue-400/20'
                                          : 'bg-zinc-700 text-zinc-400 border-zinc-600'
             }`}>

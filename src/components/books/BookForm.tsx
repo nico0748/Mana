@@ -118,7 +118,7 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
     }
   };
 
-  const selectClass = "bg-zinc-900 border border-zinc-700 text-zinc-100 rounded-md py-2 pl-3 pr-8 text-sm focus:border-yellow-400 focus:outline-none focus:ring-1 focus:ring-yellow-400 w-full";
+  const selectClass = "bg-zinc-900 border border-zinc-700 text-zinc-100 rounded-md py-2 pl-3 pr-8 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 w-full";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 bg-zinc-900 p-6 rounded-lg border border-zinc-800">
@@ -301,7 +301,7 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
             value={formData.memo}
             onChange={handleChange}
             rows={3}
-            className="w-full bg-zinc-900 border border-zinc-700 text-zinc-100 rounded-md p-3 text-sm placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
+            className="w-full bg-zinc-900 border border-zinc-700 text-zinc-100 rounded-md p-3 text-sm placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
             placeholder="メモ..."
           />
         </div>

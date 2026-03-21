@@ -10,7 +10,7 @@ interface BookDetailModalProps {
   book: Book;
   isOpen: boolean;
   onClose: () => void;
-  onUpdate: (id: string, data: Partial<Book>) => Promise<void>;
+  onUpdate: (id: string, data: Partial<Book>) => Promise<unknown>;
   onDelete: (id: string) => Promise<void>;
   onUploadImage: (file: File) => Promise<string>;
 }

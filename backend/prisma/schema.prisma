@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Book {
+  id        String   @id @default(uuid())
+  title     String
+  author    String
+  isbn      String?
+  type      String
+  category  String?
+  ndcCode   String?
+  status    String
+  price     Int?
+  memo      String?
+  coverUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DoujinEvent {
+  id        String    @id @default(uuid())
+  name      String
+  date      String?
+  budget    Int?
+  circles   Circle[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Circle {
+  id           String       @id @default(uuid())
+  event        DoujinEvent? @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId      String?
+  name         String
+  author       String
+  hall         String
+  block        String
+  number       String
+  order        Int
+  status       String
+  menuImageUrl String?
+  mapX         Float?
+  mapY         Float?
+  items        CircleItem[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+}
+
+model CircleItem {
+  id       String @id @default(uuid())
+  circle   Circle @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  circleId String
+  title    String
+  type     String
+  price    Int
+  quantity Int
+  coverUrl String?
+}
+
+model VenueMap {
+  id           String   @id @default(uuid())
+  eventId      String?
+  hall         String
+  imageDataUrl String
+  generatedSvg String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Distribution {
+  id        String   @id @default(uuid())
+  title     String
+  price     Int
+  stock     Int
+  sold      Int
+  coverUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

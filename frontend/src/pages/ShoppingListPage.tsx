@@ -126,11 +126,11 @@ const CircleCard: React.FC<CircleCardProps> = ({ circle, items, onDelete, onStat
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -8 }}
-        className={`bg-zinc-950 rounded-xl border ${
-          circle.status === 'bought' ? 'border-emerald-500/30' :
-          circle.status === 'soldout' ? 'border-red-900' :
+        className={`bg-zinc-900 rounded-2xl border overflow-hidden shadow-sm transition-all duration-200 ${
+          circle.status === 'bought'  ? 'border-emerald-500/30 shadow-emerald-950/40' :
+          circle.status === 'soldout' ? 'border-red-900/60' :
           'border-zinc-800'
-        } overflow-hidden`}
+        }`}
       >
         <div className="p-4">
           <div className="flex items-start justify-between gap-2">
@@ -144,13 +144,13 @@ const CircleCard: React.FC<CircleCardProps> = ({ circle, items, onDelete, onStat
             <div className="flex items-center gap-1 flex-shrink-0">
               <button
                 onClick={() => setExpanded(e => !e)}
-                className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-lg transition-colors"
+                className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-full transition-all duration-150 active:scale-90"
               >
                 {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </button>
               <button
                 onClick={() => onDelete(circle.id)}
-                className="p-2 text-zinc-600 hover:text-red-400 hover:bg-zinc-800 rounded-lg transition-colors"
+                className="p-2 text-zinc-600 hover:text-red-400 hover:bg-zinc-800 rounded-full transition-all duration-150 active:scale-90"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -162,10 +162,10 @@ const CircleCard: React.FC<CircleCardProps> = ({ circle, items, onDelete, onStat
               <button
                 key={s}
                 onClick={() => onStatusChange(circle.id, s)}
-                className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-all ${
+                className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-all duration-150 active:scale-95 ${
                   circle.status === s
                     ? statusClass[s]
-                    : 'bg-transparent text-zinc-600 border-zinc-800 hover:border-zinc-700 hover:text-zinc-400'
+                    : 'bg-transparent text-zinc-600 border-zinc-800 hover:border-zinc-600 hover:text-zinc-400'
                 }`}
               >
                 {statusLabel[s]}
@@ -223,7 +223,7 @@ const CircleCard: React.FC<CircleCardProps> = ({ circle, items, onDelete, onStat
             )}
             <button
               onClick={() => onAddItem(circle.id)}
-              className="w-full mt-1 py-2 text-sm text-zinc-500 hover:text-emerald-500 hover:bg-zinc-800 rounded-lg border border-dashed border-zinc-700 hover:border-emerald-500/50 transition-all flex items-center justify-center gap-1"
+              className="w-full mt-1 py-2.5 text-sm text-zinc-500 hover:text-emerald-400 hover:bg-emerald-500/5 rounded-xl border border-dashed border-zinc-700 hover:border-emerald-500/40 transition-all duration-200 flex items-center justify-center gap-1.5 active:scale-[0.99]"
             >
               <Plus className="w-3.5 h-3.5" /> アイテムを追加
             </button>

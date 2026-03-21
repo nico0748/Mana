@@ -17,6 +17,9 @@ dist-ssr
 # Vite cache
 frontend/.vite/
 
+# 本番環境変数（絶対にコミットしない）
+.env.prod
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

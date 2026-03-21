@@ -234,14 +234,14 @@ const MapPage: React.FC = () => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
-    await circlesApi.update(selectedCircleId, { mapX: x, mapY: y, updatedAt: Date.now() });
+    await circlesApi.update(selectedCircleId, { mapX: x, mapY: y });
     queryClient.invalidateQueries({ queryKey: ['circles'] });
     setSelectedCircleId(null);
   }, [editMode, selectedCircleId, mapMode]);
 
   const handleRemovePin = async (circleId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    await circlesApi.update(circleId, { mapX: undefined, mapY: undefined, updatedAt: Date.now() });
+    await circlesApi.update(circleId, { mapX: null, mapY: null });
     queryClient.invalidateQueries({ queryKey: ['circles'] });
   };
 

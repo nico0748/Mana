@@ -13,11 +13,11 @@ const HEADER_MAP: Record<string, keyof CircleRow> = {
   'ステータス': 'status', 'status': 'status',
 };
 
-const VALID_STATUSES = new Set<string>(['pending', 'bought', 'soldout', 'skipped']);
+const VALID_STATUSES = new Set<string>(['pending', 'bought', 'soldout']);
 
 const TEMPLATE_HEADERS = ['サークル名', '作者名', 'ホール', 'ブロック', 'スペース番号', 'ステータス'];
 const TEMPLATE_EXAMPLE = ['例：TYPE-MOON', '武内崇', '東1', 'A', '01a', 'pending'];
-const STATUS_NOTE = ['※ステータスは pending / bought / soldout / skipped のいずれか。省略すると pending になります。'];
+const STATUS_NOTE = ['※ステータスは pending / bought / soldout のいずれか。省略すると pending になります。'];
 
 // ---- Parser ----
 export function parseCirclesFile(buffer: ArrayBuffer): CircleRow[] {

@@ -70,6 +70,15 @@ const NavModePage: React.FC = () => {
     }
   };
 
+  const handleSkip = () => {
+    // ステータスは変更せず（pending 維持）、次のサークルへ進む
+    if (currentIndex + 1 >= total) {
+      setDone(true);
+    } else {
+      setCurrentIndex(i => i + 1);
+    }
+  };
+
   if (done || total === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
@@ -205,13 +214,22 @@ const NavModePage: React.FC = () => {
         <Button className="w-full h-14 text-lg font-bold" onClick={() => handleAction('bought')}>
           買った！
         </Button>
-        <Button
-          variant="outline"
-          className="w-full h-12 text-red-400 border-red-900 hover:bg-red-950 hover:border-red-800"
-          onClick={() => handleAction('soldout')}
-        >
-          完売...
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            className="flex-1 h-12 text-red-400 border-red-900 hover:bg-red-950 hover:border-red-800"
+            onClick={() => handleAction('soldout')}
+          >
+            完売...
+          </Button>
+          <Button
+            variant="outline"
+            className="flex-1 h-12 text-zinc-500 border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600"
+            onClick={handleSkip}
+          >
+            スキップ
+          </Button>
+        </div>
       </div>
     </div>
   );

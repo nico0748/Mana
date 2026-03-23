@@ -109,7 +109,7 @@ interface CircleCardProps {
   onDeleteItem: (itemId: string) => void;
 }
 
-const CircleCard: React.FC<CircleCardProps> = ({ circle, items, onDelete, onStatusChange, onAddItem, onDeleteItem }) => {
+const CircleCard: React.FC<CircleCardProps> = ({ circle, items, circleIndex, totalCircles, onDelete, onStatusChange, onReorder, onAddItem, onDeleteItem }) => {
   const [expanded, setExpanded] = useState(true);
   const [addToLibraryItem, setAddToLibraryItem] = useState<CircleItem | null>(null);
   const [addedItemIds, setAddedItemIds] = useState<Set<string>>(new Set());

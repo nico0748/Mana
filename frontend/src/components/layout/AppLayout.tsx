@@ -33,10 +33,8 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
         <div className="px-4 h-14 flex items-center justify-between">
 
           {/* Logo */}
-          <div className="flex items-center gap-2.5">
-            <div className="flex items-center justify-center w-8 h-8 bg-emerald-500 rounded-xl shadow-md shadow-emerald-900/40">
-              <BookOpen className="w-4 h-4 text-zinc-950" />
-            </div>
+          <div className="flex items-center gap-2">
+            <img src="/doujin-pp.png" alt="同人++" className="w-8 h-8 rounded-xl" />
             <div className="flex items-baseline gap-1.5">
               <span className="text-lg text-zinc-100" style={{ fontFamily: '"Reggae One", system-ui', fontWeight: 400 }}>同人++</span>
               <span className="text-[10px] font-semibold text-zinc-600 tracking-widest hidden sm:block">同人活動サポートアプリケーション</span>

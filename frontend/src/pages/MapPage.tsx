@@ -56,20 +56,20 @@ const MapPage: React.FC = () => {
   const [newHallName, setNewHallName] = useState('');
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapOuterRef = useRef<HTMLDivElement>(null);
+  const roRef = useRef<ResizeObserver | null>(null);
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
 
-  // Track outer map area size for aspect-ratio coordinate fix
-  useEffect(() => {
-    const el = mapOuterRef.current;
+  // Track outer map area size for aspect-ratio coordinate fix (callback ref)
+  const mapOuterRef = useCallback((el: HTMLDivElement | null) => {
+    if (roRef.current) { roRef.current.disconnect(); roRef.current = null; }
     if (!el) return;
     const ro = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect;
       setOuterSize({ w: width, h: height });
     });
     ro.observe(el);
-    return () => ro.disconnect();
+    roRef.current = ro;
   }, []);
 
   const { data: events } = useQuery({ queryKey: ['events'], queryFn: eventsApi.list });

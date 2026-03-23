@@ -102,7 +102,7 @@ interface PendingMutation {
 class OfflineDB extends Dexie {
   pending!: Dexie.Table<PendingMutation, number>;
   constructor() {
-    super('mana-offline');
+    super('doujin-pp-offline');
     this.version(1).stores({ pending: '++id, enqueuedAt' });
   }
 }

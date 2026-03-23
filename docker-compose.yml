@@ -14,7 +14,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     environment:
-      DATABASE_URL: postgresql://mana:mana_password@db:5432/mana_library
+      DATABASE_URL: postgresql://doujin:doujin_password@db:5432/doujin_pp
       PORT: "3000"
     depends_on:
       db:
@@ -24,15 +24,15 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: mana_library
-      POSTGRES_USER: mana
-      POSTGRES_PASSWORD: mana_password
+      POSTGRES_DB: doujin_pp
+      POSTGRES_USER: doujin
+      POSTGRES_PASSWORD: doujin_password
     ports:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U mana -d mana_library"]
+      test: ["CMD-SHELL", "pg_isready -U doujin -d doujin_pp"]
       interval: 5s
       timeout: 5s
       retries: 10

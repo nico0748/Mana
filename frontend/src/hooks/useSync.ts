@@ -1,6 +1,6 @@
 import { syncApi } from '../lib/api';
 
-const filename = () => `mana-library-${new Date().toISOString().split('T')[0]}.json`;
+const filename = () => `doujin-pp-${new Date().toISOString().split('T')[0]}.json`;
 
 const checkShareSupported = (): boolean => {
   if (typeof navigator === 'undefined' || !navigator.share || !navigator.canShare) return false;
@@ -21,7 +21,7 @@ export const useSync = () => {
 
     if (isShareSupported) {
       try {
-        await navigator.share({ title: 'Mana Library', text: 'My book collection data', files: [file] });
+        await navigator.share({ title: '同人++', text: 'doujin++ backup data', files: [file] });
         return;
       } catch (err) {
         if (err instanceof DOMException && err.name === 'AbortError') return;

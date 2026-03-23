@@ -1,6 +1,6 @@
-Mana Library Implementation Plan
+同人++ Implementation Plan
 Goal Description
-Develop a personal book management web application "Mana Library" using React, TypeScript, Vite, and Firebase. The app will allow a single user (the owner) to manage their book collection, including commercial books and doujinshi.
+Develop a personal book management web application "同人++" using React, TypeScript, Vite, and Firebase. The app will allow a single user (the owner) to manage their book collection, including commercial books and doujinshi.
 
 User Review Required
 IMPORTANT

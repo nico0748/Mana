@@ -439,7 +439,9 @@ const MapPage: React.FC = () => {
                       className="relative group"
                       onClick={e => {
                         e.stopPropagation();
-                        if (!editMode) {
+                        if (editMode) {
+                          setSelectedCircleId(id => id === circle.id ? null : circle.id);
+                        } else {
                           setActivePinId(id => id === circle.id ? null : circle.id);
                         }
                       }}
@@ -455,7 +457,9 @@ const MapPage: React.FC = () => {
                         'rounded-full border shadow-lg transition-all opacity-85',
                         circle.id === highlightId
                           ? 'w-4 h-4 bg-emerald-500 border-emerald-200 ring-2 ring-emerald-500/50'
-                          : 'w-2.5 h-2.5',
+                          : editMode && selectedCircleId === circle.id
+                            ? 'w-4 h-4 ring-2 ring-white/80'
+                            : 'w-2.5 h-2.5',
                         statusColor[circle.status] ?? 'bg-zinc-600 border-zinc-500'
                       )} />
 
@@ -570,7 +574,7 @@ const MapPage: React.FC = () => {
             履歴 ({doneCircles.length})
           </button>
           <div className="ml-auto">
-            {!showHistory && currentMap && (
+            {currentMap && (
               <button
                 onClick={() => { setEditMode(e => !e); setSelectedCircleId(null); }}
                 className={clsx(
@@ -586,7 +590,35 @@ const MapPage: React.FC = () => {
         </div>
 
         <div className="overflow-y-auto" style={{ maxHeight: '9rem' }}>
-          {!showHistory ? (
+          {editMode ? (
+            hallCircles.length === 0 ? (
+              <div className="text-center py-4 text-xs text-zinc-600">このホールにサークルなし</div>
+            ) : (
+              <div className="divide-y divide-zinc-800/50">
+                {hallCircles.map(circle => (
+                  <div
+                    key={circle.id}
+                    onClick={() => setSelectedCircleId(id => id === circle.id ? null : circle.id)}
+                    className={clsx(
+                      'flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-zinc-800 transition-colors',
+                      selectedCircleId === circle.id ? 'bg-emerald-500/10 border-l-2 border-emerald-500' : ''
+                    )}
+                  >
+                    <div className={clsx(
+                      'w-2.5 h-2.5 rounded-full flex-shrink-0 border',
+                      statusColor[circle.status] ?? 'bg-zinc-600 border-zinc-500'
+                    )} />
+                    <span className="font-mono text-xs text-zinc-500 flex-shrink-0">{circle.block}-{circle.number}</span>
+                    <span className="flex-1 truncate text-zinc-300">{circle.name}</span>
+                    <MapPin className={clsx(
+                      'w-3 h-3 flex-shrink-0',
+                      circle.mapX != null ? 'text-emerald-500' : 'text-zinc-700'
+                    )} />
+                  </div>
+                ))}
+              </div>
+            )
+          ) : !showHistory ? (
             pendingCircles.length === 0 ? (
               <div className="text-center py-4 text-xs text-zinc-600">このホールの未購入サークルなし</div>
             ) : (
@@ -594,11 +626,8 @@ const MapPage: React.FC = () => {
                 {pendingCircles.map(circle => (
                   <div
                     key={circle.id}
-                    onClick={() => editMode && setSelectedCircleId(id => id === circle.id ? null : circle.id)}
                     className={clsx(
                       'flex items-center gap-2 px-3 py-2 text-sm transition-colors',
-                      editMode ? 'cursor-pointer hover:bg-zinc-800' : '',
-                      editMode && selectedCircleId === circle.id ? 'bg-emerald-500/10 border-l-2 border-emerald-500' : '',
                       circle.id === highlightId ? 'bg-emerald-500/5' : ''
                     )}
                   >
@@ -612,7 +641,7 @@ const MapPage: React.FC = () => {
                       {circle.name}
                     </span>
                     {circle.mapX != null && (
-                      <MapPin className="w-3 h-3 text-zinc-500 flex-shrink-0" />
+                      <MapPin className="w-3 h-3 text-emerald-500 flex-shrink-0" />
                     )}
                   </div>
                 ))}

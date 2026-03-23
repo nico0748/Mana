@@ -38,8 +38,8 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
               <BookOpen className="w-4 h-4 text-zinc-950" />
             </div>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-lg font-bold tracking-tight text-zinc-100">KuraMori</span>
-              <span className="text-[10px] font-semibold text-zinc-600 tracking-widest hidden sm:block">くらもり</span>
+              <span className="text-lg text-zinc-100" style={{ fontFamily: '"Reggae One", system-ui', fontWeight: 400 }}>同人++</span>
+              <span className="text-[10px] font-semibold text-zinc-600 tracking-widest hidden sm:block">同人活動サポートアプリケーション</span>
             </div>
           </div>
 

@@ -27,6 +27,14 @@ const pageVariants = {
   exit: { opacity: 0, y: -8, transition: { duration: 0.15 } },
 };
 
+/**
+ * Renders the application's route tree and coordinates page enter/exit animations.
+ *
+ * Uses the current location to ensure route changes remount pages and to drive
+ * AnimatePresence-based transitions for each routed page.
+ *
+ * @returns A React element containing the app routes wrapped with animated page containers.
+ */
 function AnimatedRoutes() {
   const location = useLocation();
   return (
@@ -42,6 +50,15 @@ function AnimatedRoutes() {
   );
 }
 
+/**
+ * Root application component that provides routing, React Query configuration, and conditional onboarding.
+ *
+ * Initializes onboarding visibility from localStorage using `ONBOARDING_KEY`. While onboarding is shown,
+ * renders the `Onboarding` component; when onboarding completes it writes `'1'` to `localStorage` under
+ * `ONBOARDING_KEY` and hides the onboarding UI.
+ *
+ * @returns The top-level JSX element containing the `QueryClientProvider`, `Router`, application layout, and routes.
+ */
 function App() {
   const [showOnboarding, setShowOnboarding] = useState(
     () => !localStorage.getItem(ONBOARDING_KEY)

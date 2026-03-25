@@ -5,6 +5,14 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url,
 ).href;
 
+/**
+ * Renders a specific page of a PDF File to a PNG data URL and returns it with the document's page count.
+ *
+ * @param file - The PDF File to read and render.
+ * @param pageNumber - 1-based index of the page to render (defaults to 1).
+ * @param scale - Rendering scale factor applied to the page viewport (defaults to 2).
+ * @returns An object containing `dataUrl`, a PNG data URL of the rendered page, and `totalPages`, the number of pages in the PDF.
+ */
 export async function renderPdfPageToDataUrl(
   file: File,
   pageNumber: number = 1,

@@ -7,6 +7,12 @@ import { db } from '../lib/db';
 
 export const EVENT_KEY = 'kuramori_event_code';
 
+/**
+ * Map a circle to its venue graph node id.
+ *
+ * @param circle - Circle object; its `hall`, `block`, and `number` are used to build the node id
+ * @returns The node id corresponding to the circle's `hall`/`block`/`number`, or `null` if required fields are missing or conversion fails
+ */
 export function circleToNodeId(circle: Circle): string | null {
   if (!circle.hall || !circle.block) return null;
   try {
@@ -16,6 +22,12 @@ export function circleToNodeId(circle: Circle): string | null {
   }
 }
 
+/**
+ * Return the venue graph corresponding to the provided event code.
+ *
+ * @param eventCode - The event identifier used to look up the venue layout
+ * @returns The `VenueGraph` built from the event's layout, or `null` if `eventCode` is falsy or no layout exists
+ */
 export function useVenueGraph(eventCode: string): VenueGraph | null {
   return useMemo(() => {
     if (!eventCode) return null;
@@ -30,6 +42,15 @@ export interface OptimalRouteResult {
   totalCost: number;
 }
 
+/**
+ * Compute an optimal visiting order for the given circles on a venue graph.
+ *
+ * Maps input circles to graph nodes, treats the first mapped node as the start and the remaining mapped nodes as targets, and computes an ordered grouping of circles by the resulting route along with the aggregated travel cost.
+ *
+ * @param graph - The venue graph used to compute routes between nodes.
+ * @param circles - Circles to include in the route; circles that cannot be mapped to graph nodes are ignored.
+ * @returns An object containing `orderedCircleGroups` (circles grouped in route order) and `totalCost` (sum of segment costs), or `null` if no circles were mapped or the input list is empty.
+ */
 export function computeOptimalRoute(
   graph: VenueGraph,
   circles: Circle[],
@@ -67,8 +88,13 @@ export function computeOptimalRoute(
 }
 
 /**
- * 最適ルートを計算してDBのorder値を更新する。
- * @returns 並び替えられたサークル数（グラフに乗れなかったものは末尾に追加）
+ * Reorders circles to follow an optimal path on the venue graph and persists the new ordering.
+ *
+ * Updates each circle's `order` and `updatedAt` in the database. Circles that cannot be mapped
+ * to nodes in the graph are appended after the graph-based order.
+ *
+ * @returns The count of circles placed according to the graph-based ordering; circles appended
+ *          because they were not present on the graph are not counted.
  */
 export async function applyOptimalRoute(
   graph: VenueGraph,

@@ -7,6 +7,12 @@ interface BarcodeScannerProps {
   onCancel: () => void;
 }
 
+/**
+ * Return a user-facing Japanese message that explains why camera access is unavailable.
+ *
+ * @param error - The error produced when attempting to access the camera (for example a `DOMException`), or `null`/`undefined` if no specific error is available.
+ * @returns A Japanese message describing the camera access problem for display to the user.
+ */
 function getCameraErrorMessage(error: unknown): string {
   if (!window.isSecureContext) {
     return 'カメラ機能は HTTPS 接続でのみ利用できます。アドレスバーが https:// で始まっているか確認してください。';

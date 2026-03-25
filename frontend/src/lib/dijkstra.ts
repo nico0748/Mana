@@ -11,7 +11,14 @@ import type { Hall, HallConnection, Point } from '../types/venueMap';
 // ─────────────────────────────────────────────
 
 /**
- * ホール・ブロック定義と接続情報からグラフを構築する
+ * Build a venue graph from hall definitions and inter-hall connections.
+ *
+ * Produces a graph composed of nodes (entrances, spaces, aisle points) and weighted edges (walkways, aisles, hall connections),
+ * and an adjacency list mapping each node id to its neighboring node ids and edge weights.
+ *
+ * @param halls - Array of hall definitions (including blocks, bounds, labels) used to generate entrance, space, and aisle nodes
+ * @param connections - Array of hall connection records (including source/destination ids, positions, and weight) used to create inter-hall edges
+ * @returns The constructed venue graph with `nodes`, `edges`, and `adjacencyList`
  */
 export function buildVenueGraph(
   halls: Hall[],
@@ -168,7 +175,11 @@ export function buildVenueGraph(
 // ─────────────────────────────────────────────
 
 /**
- * 2点間の最短経路を探索する（標準ダイクストラ）
+ * Compute the shortest path between two nodes in the venue graph using Dijkstra's algorithm.
+ *
+ * Returns `null` when either node ID is not present in the graph or when the destination is unreachable.
+ *
+ * @returns A `PathResult` containing the ordered `path` of node IDs, the numeric `totalCost`, and an array of `segments` (each with `from`, `to`, `cost`, and `instruction`), or `null` if no path exists.
  */
 export function findShortestPath(
   graph: VenueGraph,
@@ -260,13 +271,17 @@ export function findShortestPath(
 // ─────────────────────────────────────────────
 
 /**
- * 複数サークルの巡回順を最適化する
- * Nearest Neighbor法を使用して、おおよその最短巡回順を算出する
+ * Approximates a visiting order for multiple targets using the Nearest Neighbor heuristic.
  *
- * @param graph - 会場グラフ
- * @param startNodeId - 開始ノードID
- * @param targetNodeIds - 訪問対象のノードID一覧
- * @returns 最適化された巡回経路（各区間の PathResult の配列）
+ * Finds, from `startNodeId`, a greedy sequence of next targets by repeatedly choosing the reachable
+ * unvisited target with the lowest shortest-path cost and collecting each inter-target shortest path.
+ * If `targetNodeIds` is empty the function returns an empty array. If some targets become unreachable,
+ * the search stops and the routes found so far are returned.
+ *
+ * @param graph - The venue graph to route on
+ * @param startNodeId - Node ID where the tour starts
+ * @param targetNodeIds - List of node IDs to visit
+ * @returns An array of `PathResult` objects; each element is the shortest-path result for one leg of the tour in visitation order
  */
 export function findOptimalRoute(
   graph: VenueGraph,
@@ -312,24 +327,23 @@ export function findOptimalRoute(
 // ─────────────────────────────────────────────
 
 /**
- * サークルスペースのアドレスからノードIDへ変換する
+ * Create the node ID for a block within a hall.
  *
- * @param hallId - ホールID (例: "east1")
- * @param blockName - ブロック名 (例: "A", "あ")
- * @returns ノードID
+ * @param hallId - Hall identifier (e.g., "east1")
+ * @param blockName - Block label within the hall (e.g., "A", "あ")
+ * @returns The node ID in the form `{hallId}_{blockName}`
  */
 export function blockToNodeId(hallId: string, blockName: string): string {
   return `${hallId}_${blockName}`;
 }
 
 /**
- * サークルスペースの完全アドレスからノードIDを生成
- * ブロック単位のノードIDにマッピングする（現在はブロック単位の粒度）
+ * Convert a space address to the corresponding block-level node ID.
  *
- * @param hallLabel - ホールラベル (例: "東1")
- * @param blockName - ブロック名 (例: "A")
- * @param _number - スペース番号 (例: "01a") — 現在は未使用（ブロック単位）
- * @returns ノードID
+ * @param hallLabel - Hall label (e.g., "東1"); used to derive the hall ID
+ * @param blockName - Block name within the hall (e.g., "A")
+ * @param _number - Space number (e.g., "01a"); currently unused because mapping is at block granularity
+ * @returns The node ID for the block (formatted as `${hallId}_${blockName}`)
  */
 export function spaceToNodeId(hallLabel: string, blockName: string, _number?: string): string {
   const hallId = hallLabelToId(hallLabel);
@@ -337,7 +351,12 @@ export function spaceToNodeId(hallLabel: string, blockName: string, _number?: st
 }
 
 /**
- * ホールラベル（日本語表記）からホールIDに変換
+ * Convert a Japanese hall label into a canonical hall identifier.
+ *
+ * Matches labels of the form `東N`, `西N`, or `南N` and returns `eastN`, `westN`, or `southN` respectively.
+ *
+ * @param label - Japanese hall label (e.g., `東1`, `西2`, `南3`)
+ * @returns The canonical hall id (e.g., `east1`). If the label does not match the expected pattern, returns `label.toLowerCase()`.
  */
 export function hallLabelToId(label: string): string {
   const areaMap: Record<string, string> = {
@@ -352,7 +371,10 @@ export function hallLabelToId(label: string): string {
 }
 
 /**
- * ホールIDからホールラベル（日本語表記）に変換
+ * Convert a hall ID into its Japanese label.
+ *
+ * @param hallId - Hall identifier, typically in the form `eastN`, `westN`, or `southN`
+ * @returns The Japanese label (e.g., `東N`, `西N`, `南N`) when the input matches the expected pattern; otherwise returns the original `hallId`
  */
 export function hallIdToLabel(hallId: string): string {
   const areaMap: Record<string, string> = {
@@ -370,12 +392,24 @@ export function hallIdToLabel(hallId: string): string {
 // 内部ヘルパー
 // ─────────────────────────────────────────────
 
-/** ユークリッド距離 */
+/**
+ * Compute the Euclidean distance between two 2D points.
+ *
+ * @param a - The first point with `x` and `y` coordinates
+ * @param b - The second point with `x` and `y` coordinates
+ * @returns The straight-line distance between `a` and `b`
+ */
 function euclideanDistance(a: Point, b: Point): number {
   return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
 }
 
-/** ブロック座標をホール bounds に基づいて絶対座標に変換 */
+/**
+ * Convert a position expressed as percentages inside bounds to absolute coordinates.
+ *
+ * @param relativePos - Position with `x` and `y` as percentages (0–100) relative to `bounds`
+ * @param bounds - Rectangle defining origin (`x`,`y`) and size (`width`,`height`) for conversion
+ * @returns Absolute `Point` with `x` and `y` in the same coordinate space as `bounds`
+ */
 function toAbsolutePosition(
   relativePos: Point,
   bounds: { x: number; y: number; width: number; height: number },
@@ -386,7 +420,15 @@ function toAbsolutePosition(
   };
 }
 
-/** ホール内の通路ノードを生成 */
+/**
+ * Generate three aisle nodes (center, front, back) for a given hall.
+ *
+ * Each node is an `aisle`-type MapNode positioned horizontally at the hall's center
+ * and vertically at 50% (center), 20% (front), and 80% (back) of the hall bounds.
+ *
+ * @param hall - Hall object whose bounds and label are used to compute node positions and labels
+ * @returns An array of three MapNode objects with ids `${hall.id}_aisle_center`, `${hall.id}_aisle_front`, and `${hall.id}_aisle_back`
+ */
 function generateAisleNodes(hall: Hall): MapNode[] {
   const nodes: MapNode[] = [];
 
@@ -432,14 +474,32 @@ function generateAisleNodes(hall: Hall): MapNode[] {
   return nodes;
 }
 
-/** グラフ上の2ノード間のエッジコストを取得 */
+/**
+ * Get the weight of the direct edge from one node to another in the venue graph.
+ *
+ * @param graph - The venue graph containing nodes and an adjacency list
+ * @param from - Source node ID
+ * @param to - Destination node ID
+ * @returns The edge weight from `from` to `to` if an edge exists, `0` otherwise
+ */
 function findEdgeCost(graph: VenueGraph, from: string, to: string): number {
   const neighbors = graph.adjacencyList.get(from) ?? [];
   const edge = neighbors.find(n => n.nodeId === to);
   return edge?.weight ?? 0;
 }
 
-/** 案内テキストを生成 */
+/**
+ * Generate a human-readable navigation instruction between two map nodes.
+ *
+ * The returned instruction uses node `label` when available, otherwise falls back to `id`.
+ * - If the nodes belong to different halls, returns "`{from} → {to}（ホール間移動）`".
+ * - If the destination node's type is `'aisle'` within the same hall, returns "`{to}を経由`".
+ * - Otherwise returns "`{from} → {to}`".
+ *
+ * @param from - The origin map node
+ * @param to - The destination map node
+ * @returns The navigation instruction string
+ */
 function generateInstruction(from: MapNode, to: MapNode): string {
   if (from.hallId !== to.hallId) {
     return `${from.label ?? from.id} → ${to.label ?? to.id}（ホール間移動）`;

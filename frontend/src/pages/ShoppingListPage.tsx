@@ -141,6 +141,16 @@ const CircleCard: React.FC<CircleCardProps> = ({ circle, items, circleIndex, tot
               </div>
               <h3 className="font-bold text-zinc-100 text-base leading-tight">{circle.name}</h3>
               <p className="text-sm text-zinc-400">{circle.author}</p>
+              {circle.xUrl && (
+                <a
+                  href={circle.xUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-sky-400 hover:text-sky-300 truncate block mt-0.5"
+                >
+                  {circle.xUrl}
+                </a>
+              )}
             </div>
             <div className="flex items-center gap-1 flex-shrink-0">
               <button
@@ -279,14 +289,15 @@ interface AddCircleModalProps {
 }
 
 const AddCircleModal: React.FC<AddCircleModalProps> = ({ onAdd, onClose }) => {
-  const [form, setForm] = useState({ name: '', author: '', hall: '', block: '', number: '' });
+  const [form, setForm] = useState({ name: '', author: '', hall: '', block: '', number: '', xUrl: '' });
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name) return;
-    onAdd(form);
+    const { xUrl, ...rest } = form;
+    onAdd({ ...rest, ...(xUrl ? { xUrl } : {}) });
     onClose();
   };
 
@@ -346,6 +357,10 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ onAdd, onClose }) => {
               <label className="block text-sm text-zinc-400 mb-1">番号</label>
               <Input name="number" value={form.number} onChange={handleChange} placeholder="01a" />
             </div>
+          </div>
+          <div>
+            <label className="block text-sm text-zinc-400 mb-1">X (Twitter)</label>
+            <Input name="xUrl" value={form.xUrl} onChange={handleChange} placeholder="https://x.com/example" />
           </div>
           <div className="flex gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">キャンセル</Button>

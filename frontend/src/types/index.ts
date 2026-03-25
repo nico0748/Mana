@@ -36,6 +36,7 @@ export interface Circle {
   number: string;
   order: number;
   status: 'pending' | 'bought' | 'soldout';
+  xUrl?: string;
   menuImageUrl?: string;
   mapX?: number;
   mapY?: number;

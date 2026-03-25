@@ -30,7 +30,7 @@ const NavModePage: React.FC = () => {
 
   const circles: Circle[] = allCircles
     .filter(c =>
-      (c.status === 'pending' || c.status === 'skipped') &&
+      c.status === 'pending' &&
       (!eventId || c.eventId === eventId)
     )
     .sort((a, b) => a.order - b.order);
@@ -63,6 +63,15 @@ const NavModePage: React.FC = () => {
     const circle = circles[currentIndex];
     if (!circle) return;
     await updateMutation.mutateAsync({ id: circle.id, data: { status, updatedAt: Date.now() } });
+    if (currentIndex + 1 >= total) {
+      setDone(true);
+    } else {
+      setCurrentIndex(i => i + 1);
+    }
+  };
+
+  const handleSkip = () => {
+    // ステータスは変更せず（pending 維持）、次のサークルへ進む
     if (currentIndex + 1 >= total) {
       setDone(true);
     } else {
@@ -170,10 +179,10 @@ const NavModePage: React.FC = () => {
                 {items.map(item => (
                   <div key={item.id} className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
-                      <span className={`px-1.5 py-0.5 text-xs rounded font-medium ${
-                        item.type === 'shinkan' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-zinc-800 text-zinc-400'
+                      <span className={`px-1.5 py-0.5 text-xs rounded font-medium flex-shrink-0 ${
+                        item.type === 'shinkan' ? 'bg-blue-400/10 text-blue-400' : 'bg-zinc-800 text-zinc-400'
                       }`}>
-                        {item.type === 'shinkan' ? '新刊' : '既刊'}
+                        {item.type === 'shinkan' ? '新刊' : item.type === 'kikan' ? '既刊' : item.type}
                       </span>
                       <span className="text-zinc-300">{item.title}</span>
                     </div>
@@ -205,20 +214,22 @@ const NavModePage: React.FC = () => {
         <Button className="w-full h-14 text-lg font-bold" onClick={() => handleAction('bought')}>
           買った！
         </Button>
-        <Button
-          variant="outline"
-          className="w-full h-12 text-red-400 border-red-900 hover:bg-red-950 hover:border-red-800"
-          onClick={() => handleAction('soldout')}
-        >
-          完売...
-        </Button>
-        <Button
-          variant="ghost"
-          className="w-full h-12 text-zinc-500 hover:text-zinc-300"
-          onClick={() => handleAction('skipped')}
-        >
-          スキップ
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            className="flex-1 h-12 text-red-400 border-red-900 hover:bg-red-950 hover:border-red-800"
+            onClick={() => handleAction('soldout')}
+          >
+            完売...
+          </Button>
+          <Button
+            variant="outline"
+            className="flex-1 h-12 text-zinc-500 border-zinc-700 hover:bg-zinc-800 hover:border-zinc-600"
+            onClick={handleSkip}
+          >
+            スキップ
+          </Button>
+        </div>
       </div>
     </div>
   );

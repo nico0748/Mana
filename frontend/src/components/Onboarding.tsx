@@ -3,12 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { BookOpen, ShoppingBag, Navigation, ChevronRight, Lock } from 'lucide-react';
 import { Button } from './ui/Button';
 
-export const ONBOARDING_KEY = 'mana-onboarded';
+export const ONBOARDING_KEY = 'doujin-pp-onboarded';
 
 const slides = [
   {
     icon: <BookOpen className="w-14 h-14 text-emerald-500" />,
-    title: 'Mana Library へようこそ',
+    title: '同人++ へようこそ',
     description:
       '同人活動のライフサイクルをひとつのアプリで完結。コミケの準備から蔵書管理まで、まるごとサポートします。',
   },

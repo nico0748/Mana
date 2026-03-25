@@ -10,7 +10,7 @@ interface BookDetailModalProps {
   book: Book;
   isOpen: boolean;
   onClose: () => void;
-  onUpdate: (id: string, data: Partial<Book>) => Promise<void>;
+  onUpdate: (id: string, data: Partial<Book>) => Promise<unknown>;
   onDelete: (id: string) => Promise<void>;
   onUploadImage: (file: File) => Promise<string>;
 }
@@ -95,15 +95,15 @@ export const BookDetailModal: React.FC<BookDetailModalProps> = ({
               <div className="mt-4 flex gap-2 flex-wrap">
                 <span className={`px-2.5 py-1 text-sm rounded-full border ${
                   book.type === 'commercial'
-                    ? 'bg-lime-500/10 text-lime-500 border-lime-500/20'
-                    : 'bg-zinc-700 text-zinc-300 border-zinc-600'
+                    ? 'bg-blue-400/10 text-blue-400 border-blue-400/25'
+                    : 'bg-rose-400/10 text-rose-400 border-rose-400/25'
                 }`}>
                   {book.type === 'commercial' ? '商業' : '同人'}
                 </span>
                 <span className={`px-2.5 py-1 text-sm rounded-full border ${
-                  book.status === 'owned'    ? 'bg-yellow-400/10 text-yellow-400 border-yellow-400/20' :
-                  book.status === 'lending'  ? 'bg-orange-400/10 text-orange-400 border-orange-400/20' :
-                  book.status === 'borrowed' ? 'bg-blue-400/10 text-blue-400 border-blue-400/20'
+                  book.status === 'owned'    ? 'bg-green-400/10 text-green-400 border-green-400/25' :
+                  book.status === 'lending'  ? 'bg-yellow-400/10 text-yellow-400 border-yellow-400/25' :
+                  book.status === 'borrowed' ? 'bg-blue-400/10 text-blue-400 border-blue-400/25'
                                              : 'bg-zinc-700 text-zinc-400 border-zinc-600'
                 }`}>
                   {book.status === 'owned' ? '所持' : book.status === 'lending' ? '貸出中' : book.status === 'borrowed' ? '借りた' : 'ほしい'}

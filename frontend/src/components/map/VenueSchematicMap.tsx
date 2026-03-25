@@ -13,7 +13,6 @@ const STATUS_FILL: Record<Circle['status'], string> = {
   pending: '#a1a1aa',
   bought: '#facc15',
   soldout: '#ef4444',
-  skipped: '#52525b',
 };
 
 export const VenueSchematicMap: React.FC<VenueSchematicMapProps> = ({

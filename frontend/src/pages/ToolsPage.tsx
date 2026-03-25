@@ -5,8 +5,8 @@ const ToolsPage: React.FC = () => {
     <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
       {/* App info */}
       <section className="text-center text-zinc-600 text-xs space-y-1 pt-4">
-        <p className="font-semibold text-zinc-500">Mana Library</p>
-        <p>蔵書管理アプリ</p>
+        <p className="font-semibold text-zinc-500">同人++</p>
+        <p>同人活動管理アプリ</p>
         <p className="text-zinc-700">データはすべてこのデバイスに保存されます</p>
       </section>
     </div>

@@ -44,6 +44,7 @@ model Circle {
   number       String
   order        Int
   status       String
+  xUrl         String?
   menuImageUrl String?
   mapX         Float?
   mapY         Float?

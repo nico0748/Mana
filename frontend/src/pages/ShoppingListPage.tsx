@@ -1,10 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  Plus, Trash2, Navigation, ChevronDown, ChevronUp,
-  BookPlus, Check, Calendar, Pencil, FileSpreadsheet, FileDown, PanelLeft,
+  Plus, Trash2, Navigation, ChevronDown, ChevronUp, ChevronsUp,
+  BookPlus, Check, Calendar, Pencil, FileSpreadsheet, FileDown, PanelLeft, ExternalLink,
 } from 'lucide-react';
 import type { Circle, CircleItem, DoujinEvent } from '../types';
 import { Button } from '../components/ui/Button';
@@ -19,14 +19,12 @@ const statusLabel: Record<Circle['status'], string> = {
   pending: '未購入',
   bought: '購入済',
   soldout: '完売',
-  skipped: 'スキップ',
 };
 
 const statusClass: Record<Circle['status'], string> = {
   pending: 'bg-zinc-800 text-zinc-300 border-zinc-700',
-  bought: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
-  soldout: 'bg-red-900/30 text-red-400 border-red-900',
-  skipped: 'bg-zinc-800/50 text-zinc-500 border-zinc-700',
+  bought: 'bg-green-400/10 text-green-400 border-green-400/25',
+  soldout: 'bg-rose-400/10 text-rose-400 border-rose-400/25',
 };
 
 const formatDate = (dateStr: string) => {
@@ -102,13 +100,17 @@ const AddToLibraryModal: React.FC<AddToLibraryModalProps> = ({ item, circle, onC
 interface CircleCardProps {
   circle: Circle;
   items: CircleItem[];
+  circleIndex?: number;
+  totalCircles?: number;
+  onEdit: (circle: Circle) => void;
   onDelete: (id: string) => void;
   onStatusChange: (id: string, status: Circle['status']) => void;
+  onReorder?: (id: string, dir: 'top' | 'up' | 'down') => void;
   onAddItem: (circleId: string) => void;
   onDeleteItem: (itemId: string) => void;
 }
 
-const CircleCard: React.FC<CircleCardProps> = ({ circle, items, onDelete, onStatusChange, onAddItem, onDeleteItem }) => {
+const CircleCard: React.FC<CircleCardProps> = ({ circle, items, circleIndex, totalCircles, onEdit, onDelete, onStatusChange, onReorder, onAddItem, onDeleteItem }) => {
   const [expanded, setExpanded] = useState(true);
   const [addToLibraryItem, setAddToLibraryItem] = useState<CircleItem | null>(null);
   const [addedItemIds, setAddedItemIds] = useState<Set<string>>(new Set());
@@ -126,11 +128,11 @@ const CircleCard: React.FC<CircleCardProps> = ({ circle, items, onDelete, onStat
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -8 }}
-        className={`bg-zinc-950 rounded-xl border ${
-          circle.status === 'bought' ? 'border-emerald-500/30' :
-          circle.status === 'soldout' ? 'border-red-900' :
+        className={`bg-zinc-900 rounded-2xl border overflow-hidden shadow-sm transition-all duration-200 ${
+          circle.status === 'bought'  ? 'border-green-400/30 shadow-green-950/40' :
+          circle.status === 'soldout' ? 'border-red-900/60' :
           'border-zinc-800'
-        } overflow-hidden`}
+        }`}
       >
         <div className="p-4">
           <div className="flex items-start justify-between gap-2">
@@ -142,15 +144,33 @@ const CircleCard: React.FC<CircleCardProps> = ({ circle, items, onDelete, onStat
               <p className="text-sm text-zinc-400">{circle.author}</p>
             </div>
             <div className="flex items-center gap-1 flex-shrink-0">
+              {circle.xUrl && (
+                <a
+                  href={circle.xUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="X (Twitter) を開く"
+                  className="p-2 text-sky-500 hover:text-sky-300 hover:bg-zinc-800 rounded-full transition-all duration-150 active:scale-90"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              )}
+              <button
+                onClick={() => onEdit(circle)}
+                className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-full transition-all duration-150 active:scale-90"
+                title="編集"
+              >
+                <Pencil className="w-4 h-4" />
+              </button>
               <button
                 onClick={() => setExpanded(e => !e)}
-                className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-lg transition-colors"
+                className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-full transition-all duration-150 active:scale-90"
               >
                 {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </button>
               <button
                 onClick={() => onDelete(circle.id)}
-                className="p-2 text-zinc-600 hover:text-red-400 hover:bg-zinc-800 rounded-lg transition-colors"
+                className="p-2 text-zinc-600 hover:text-red-400 hover:bg-zinc-800 rounded-full transition-all duration-150 active:scale-90"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -158,14 +178,14 @@ const CircleCard: React.FC<CircleCardProps> = ({ circle, items, onDelete, onStat
           </div>
 
           <div className="mt-3 flex gap-2 flex-wrap">
-            {(['pending', 'bought', 'soldout', 'skipped'] as Circle['status'][]).map(s => (
+            {(['pending', 'bought', 'soldout'] as Circle['status'][]).map(s => (
               <button
                 key={s}
                 onClick={() => onStatusChange(circle.id, s)}
-                className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-all ${
+                className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-all duration-150 active:scale-95 ${
                   circle.status === s
                     ? statusClass[s]
-                    : 'bg-transparent text-zinc-600 border-zinc-800 hover:border-zinc-700 hover:text-zinc-400'
+                    : 'bg-transparent text-zinc-600 border-zinc-800 hover:border-zinc-600 hover:text-zinc-400'
                 }`}
               >
                 {statusLabel[s]}
@@ -183,9 +203,9 @@ const CircleCard: React.FC<CircleCardProps> = ({ circle, items, onDelete, onStat
                 <div key={item.id} className="flex items-center justify-between gap-2 text-sm">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className={`px-1.5 py-0.5 text-xs rounded font-medium flex-shrink-0 ${
-                      item.type === 'shinkan' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-zinc-800 text-zinc-400'
+                      item.type === 'shinkan' ? 'bg-blue-400/10 text-blue-400' : 'bg-zinc-800 text-zinc-400'
                     }`}>
-                      {item.type === 'shinkan' ? '新刊' : '既刊'}
+                      {item.type === 'shinkan' ? '新刊' : item.type === 'kikan' ? '既刊' : item.type}
                     </span>
                     <span className="text-zinc-300 truncate">{item.title}</span>
                   </div>
@@ -197,8 +217,8 @@ const CircleCard: React.FC<CircleCardProps> = ({ circle, items, onDelete, onStat
                         title={addedItemIds.has(item.id) ? '蔵書に追加済み' : '蔵書に追加'}
                         className={`p-1 transition-colors ${
                           addedItemIds.has(item.id)
-                            ? 'text-emerald-500 cursor-default'
-                            : 'text-zinc-500 hover:text-emerald-400'
+                            ? 'text-green-400 cursor-default'
+                            : 'text-zinc-500 hover:text-zinc-300'
                         }`}
                       >
                         {addedItemIds.has(item.id)
@@ -218,12 +238,38 @@ const CircleCard: React.FC<CircleCardProps> = ({ circle, items, onDelete, onStat
             )}
             {items.length > 0 && (
               <div className="flex justify-end pt-1 border-t border-zinc-800">
-                <span className="text-sm font-semibold text-emerald-500">小計: ¥{subtotal.toLocaleString()}</span>
+                <span className="text-sm font-semibold text-green-400">小計: ¥{subtotal.toLocaleString()}</span>
+              </div>
+            )}
+            {onReorder && (
+              <div className="flex items-center gap-0.5 pt-1 border-t border-zinc-800/50">
+                <span className="text-xs text-zinc-600 mr-1">並び替え</span>
+                <button
+                  type="button"
+                  onClick={() => onReorder(circle.id, 'top')}
+                  disabled={circleIndex === 0}
+                  title="最上位へ移動"
+                  className="p-1.5 text-zinc-500 hover:text-zinc-300 disabled:opacity-25 transition-colors rounded"
+                ><ChevronsUp className="w-3.5 h-3.5" /></button>
+                <button
+                  type="button"
+                  onClick={() => onReorder(circle.id, 'up')}
+                  disabled={circleIndex === 0}
+                  title="一つ上へ"
+                  className="p-1.5 text-zinc-500 hover:text-zinc-300 disabled:opacity-25 transition-colors rounded"
+                ><ChevronUp className="w-3.5 h-3.5" /></button>
+                <button
+                  type="button"
+                  onClick={() => onReorder(circle.id, 'down')}
+                  disabled={circleIndex >= totalCircles - 1}
+                  title="一つ下へ"
+                  className="p-1.5 text-zinc-500 hover:text-zinc-300 disabled:opacity-25 transition-colors rounded"
+                ><ChevronDown className="w-3.5 h-3.5" /></button>
               </div>
             )}
             <button
               onClick={() => onAddItem(circle.id)}
-              className="w-full mt-1 py-2 text-sm text-zinc-500 hover:text-emerald-500 hover:bg-zinc-800 rounded-lg border border-dashed border-zinc-700 hover:border-emerald-500/50 transition-all flex items-center justify-center gap-1"
+              className="w-full mt-1 py-2.5 text-sm text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 rounded-xl border border-dashed border-zinc-700 hover:border-zinc-600 transition-all duration-200 flex items-center justify-center gap-1.5 active:scale-[0.99]"
             >
               <Plus className="w-3.5 h-3.5" /> アイテムを追加
             </button>
@@ -252,14 +298,15 @@ interface AddCircleModalProps {
 }
 
 const AddCircleModal: React.FC<AddCircleModalProps> = ({ onAdd, onClose }) => {
-  const [form, setForm] = useState({ name: '', author: '', hall: '', block: '', number: '' });
+  const [form, setForm] = useState({ name: '', author: '', hall: '', block: '', number: '', xUrl: '' });
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name) return;
-    onAdd(form);
+    const { xUrl, ...rest } = form;
+    onAdd({ ...rest, ...(xUrl ? { xUrl } : {}) });
     onClose();
   };
 
@@ -291,8 +338,8 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ onAdd, onClose }) => {
             <label className="block text-sm text-zinc-400 mb-1">作者名</label>
             <Input name="author" value={form.author} onChange={handleChange} placeholder="作者名" />
             {matchingBooks.length > 0 && (
-              <div className="mt-1.5 px-3 py-2 bg-emerald-500/5 border border-emerald-500/20 rounded-lg">
-                <p className="text-xs text-emerald-400 font-medium mb-1">
+              <div className="mt-1.5 px-3 py-2 bg-blue-400/5 border border-blue-400/20 rounded-lg">
+                <p className="text-xs text-blue-400 font-medium mb-1">
                   この作者の本を {matchingBooks.length} 冊所持しています
                 </p>
                 <ul className="space-y-0.5">
@@ -320,9 +367,88 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ onAdd, onClose }) => {
               <Input name="number" value={form.number} onChange={handleChange} placeholder="01a" />
             </div>
           </div>
+          <div>
+            <label className="block text-sm text-zinc-400 mb-1">X (Twitter)</label>
+            <Input name="xUrl" value={form.xUrl} onChange={handleChange} placeholder="https://x.com/example" />
+          </div>
           <div className="flex gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">キャンセル</Button>
             <Button type="submit" className="flex-1">追加</Button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+};
+
+// ─── EditCircleModal ───────────────────────────────────────────────────────
+
+interface EditCircleModalProps {
+  circle: Circle;
+  onSave: (id: string, data: Partial<Omit<Circle, 'id' | 'createdAt' | 'updatedAt'>>) => void;
+  onClose: () => void;
+}
+
+const EditCircleModal: React.FC<EditCircleModalProps> = ({ circle, onSave, onClose }) => {
+  const [form, setForm] = useState({
+    name: circle.name,
+    author: circle.author,
+    hall: circle.hall,
+    block: circle.block,
+    number: circle.number,
+    xUrl: circle.xUrl ?? '',
+  });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name) return;
+    const { xUrl, ...rest } = form;
+    onSave(circle.id, { ...rest, xUrl: xUrl || undefined });
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 40 }}
+        className="relative w-full max-w-md bg-zinc-900 rounded-xl border border-zinc-800 p-6 z-10"
+      >
+        <h2 className="text-lg font-bold text-zinc-100 mb-4">サークルを編集</h2>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div>
+            <label className="block text-sm text-zinc-400 mb-1">サークル名 *</label>
+            <Input name="name" value={form.name} onChange={handleChange} placeholder="サークル名" required />
+          </div>
+          <div>
+            <label className="block text-sm text-zinc-400 mb-1">作者名</label>
+            <Input name="author" value={form.author} onChange={handleChange} placeholder="作者名" />
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className="block text-sm text-zinc-400 mb-1">ホール</label>
+              <Input name="hall" value={form.hall} onChange={handleChange} placeholder="東1" />
+            </div>
+            <div>
+              <label className="block text-sm text-zinc-400 mb-1">ブロック</label>
+              <Input name="block" value={form.block} onChange={handleChange} placeholder="A" />
+            </div>
+            <div>
+              <label className="block text-sm text-zinc-400 mb-1">番号</label>
+              <Input name="number" value={form.number} onChange={handleChange} placeholder="01a" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm text-zinc-400 mb-1">X (Twitter)</label>
+            <Input name="xUrl" value={form.xUrl} onChange={handleChange} placeholder="https://x.com/example" />
+          </div>
+          <div className="flex gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={onClose} className="flex-1">キャンセル</Button>
+            <Button type="submit" className="flex-1">保存</Button>
           </div>
         </form>
       </motion.div>
@@ -339,14 +465,13 @@ interface AddItemModalProps {
 }
 
 const AddItemModal: React.FC<AddItemModalProps> = ({ circleId, onAdd, onClose }) => {
-  const [form, setForm] = useState({ title: '', type: 'shinkan' as CircleItem['type'], price: 0, quantity: 1 });
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: name === 'price' || name === 'quantity' ? Number(value) : value }));
-  };
+  const [category, setCategory] = useState<'doujin' | 'other'>('doujin');
+  const [form, setForm] = useState({ title: '', type: 'shinkan', price: 500, quantity: 1 });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.title) return;
+    if (!form.title.trim()) return;
+    if (category === 'other' && !form.type.trim()) return;
     onAdd({ ...form, circleId });
     onClose();
   };
@@ -361,34 +486,92 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ circleId, onAdd, onClose })
         className="relative w-full max-w-md bg-zinc-900 rounded-xl border border-zinc-800 p-6 z-10"
       >
         <h2 className="text-lg font-bold text-zinc-100 mb-4">アイテムを追加</h2>
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm text-zinc-400 mb-1">タイトル *</label>
-            <Input name="title" value={form.title} onChange={handleChange} placeholder="本のタイトル" required />
+            <Input
+              value={form.title}
+              onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+              placeholder="タイトルを入力"
+              required
+            />
           </div>
           <div>
-            <label className="block text-sm text-zinc-400 mb-1">種別</label>
-            <select
-              name="type"
-              value={form.type}
-              onChange={handleChange}
-              className="bg-zinc-900 border border-zinc-700 text-zinc-100 rounded-md py-2 pl-3 pr-8 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 w-full"
-            >
-              <option value="shinkan">新刊</option>
-              <option value="kikan">既刊</option>
-            </select>
+            <label className="block text-sm text-zinc-400 mb-2">種別</label>
+            <div className="flex bg-zinc-800 rounded-lg p-0.5 gap-0.5 mb-2">
+              <button type="button"
+                onClick={() => { setCategory('doujin'); setForm(f => ({ ...f, type: 'shinkan' })); }}
+                className={`flex-1 py-1.5 text-sm rounded-md transition-colors ${category === 'doujin' ? 'bg-zinc-600 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}>
+                同人誌
+              </button>
+              <button type="button"
+                onClick={() => { setCategory('other'); setForm(f => ({ ...f, type: '' })); }}
+                className={`flex-1 py-1.5 text-sm rounded-md transition-colors ${category === 'other' ? 'bg-zinc-600 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}>
+                その他
+              </button>
+            </div>
+            {category === 'doujin' ? (
+              <div className="flex gap-2">
+                {[{ v: 'shinkan', l: '新刊' }, { v: 'kikan', l: '既刊' }].map(({ v, l }) => (
+                  <button key={v} type="button"
+                    onClick={() => setForm(f => ({ ...f, type: v }))}
+                    className={`flex-1 py-2 text-sm rounded-lg border transition-colors ${form.type === v ? 'border-zinc-400 bg-zinc-700 text-zinc-100' : 'border-zinc-700 text-zinc-500 hover:text-zinc-300'}`}>
+                    {l}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div>
+                <Input
+                  value={form.type}
+                  onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
+                  placeholder="タペストリー、アクリルスタンドなど"
+                />
+                <div className="flex gap-1.5 mt-2 flex-wrap">
+                  {['タペストリー', 'アクリルスタンド', '缶バッジ', 'クリアファイル', 'ブロマイド'].map(s => (
+                    <button key={s} type="button"
+                      onClick={() => setForm(f => ({ ...f, type: s }))}
+                      className="px-2 py-0.5 text-xs bg-zinc-800 text-zinc-400 rounded-full border border-zinc-700 hover:border-zinc-500 hover:text-zinc-200 transition-colors">
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm text-zinc-400 mb-1">価格（円）</label>
-              <Input name="price" type="number" min="0" value={form.price} onChange={handleChange} />
+              <div className="flex items-center gap-1">
+                <button type="button"
+                  onClick={() => setForm(f => ({ ...f, price: Math.max(0, f.price - 100) }))}
+                  className="w-8 h-9 flex items-center justify-center rounded-lg border border-zinc-700 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 transition-colors font-bold flex-shrink-0">
+                  −
+                </button>
+                <input
+                  type="number" step="100" min="0"
+                  value={form.price === 0 ? '' : form.price}
+                  placeholder="0"
+                  onChange={e => setForm(f => ({ ...f, price: e.target.value === '' ? 0 : Number(e.target.value) }))}
+                  className="w-full bg-zinc-800/50 border border-zinc-700 text-zinc-100 rounded-xl px-2 py-2 text-sm text-center focus:outline-none focus:border-zinc-400 focus:ring-2 focus:ring-white/10 min-w-0"
+                />
+                <button type="button"
+                  onClick={() => setForm(f => ({ ...f, price: f.price + 100 }))}
+                  className="w-8 h-9 flex items-center justify-center rounded-lg border border-zinc-700 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 transition-colors font-bold flex-shrink-0">
+                  +
+                </button>
+              </div>
             </div>
             <div>
               <label className="block text-sm text-zinc-400 mb-1">数量</label>
-              <Input name="quantity" type="number" min="1" value={form.quantity} onChange={handleChange} />
+              <Input
+                type="number" min="1"
+                value={form.quantity}
+                onChange={e => setForm(f => ({ ...f, quantity: Math.max(1, Number(e.target.value)) }))}
+              />
             </div>
           </div>
-          <div className="flex gap-2 pt-2">
+          <div className="flex gap-2 pt-1">
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">キャンセル</Button>
             <Button type="submit" className="flex-1">追加</Button>
           </div>
@@ -545,8 +728,10 @@ interface EventCardProps {
   circles: Circle[];
   circleItems: CircleItem[];
   onAddCircle: () => void;
+  onEditCircle: (circle: Circle) => void;
   onDeleteCircle: (id: string) => void;
   onStatusChange: (id: string, status: Circle['status']) => void;
+  onReorder: (id: string, dir: 'top' | 'up' | 'down') => void;
   onAddItem: (circleId: string) => void;
   onDeleteItem: (itemId: string) => void;
   onDeleteEvent: (id: string) => void;
@@ -555,7 +740,7 @@ interface EventCardProps {
 
 const EventCard: React.FC<EventCardProps> = ({
   event, circles, circleItems,
-  onAddCircle, onDeleteCircle, onStatusChange,
+  onAddCircle, onEditCircle, onDeleteCircle, onStatusChange, onReorder,
   onAddItem, onDeleteItem, onDeleteEvent, onEditEvent,
 }) => {
   const [expanded, setExpanded] = useState(true);
@@ -574,7 +759,7 @@ const EventCard: React.FC<EventCardProps> = ({
       return sum + items.reduce((s, i) => s + i.price * i.quantity, 0);
     }, 0);
 
-  const hasNavigable = circles.some(c => c.status === 'pending' || c.status === 'skipped');
+  const hasNavigable = circles.some(c => c.status === 'pending');
   const budgetPct = event.budget ? Math.min(100, (pendingTotal / event.budget) * 100) : 0;
   const overBudget = event.budget !== undefined && pendingTotal > event.budget;
 
@@ -602,7 +787,7 @@ const EventCard: React.FC<EventCardProps> = ({
             {hasNavigable ? (
               <Link
                 to={`/shopping/nav?eventId=${event.id}`}
-                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition-colors"
+                className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-blue-400 hover:bg-blue-400/10 rounded-lg transition-colors"
               >
                 <Navigation className="w-3.5 h-3.5" />
                 ナビ
@@ -645,7 +830,7 @@ const EventCard: React.FC<EventCardProps> = ({
             </span>
             {spentTotal > 0 && (
               <span>
-                購入済 <span className="font-semibold text-emerald-500">¥{spentTotal.toLocaleString()}</span>
+                購入済 <span className="font-semibold text-green-400">¥{spentTotal.toLocaleString()}</span>
               </span>
             )}
           </div>
@@ -660,7 +845,7 @@ const EventCard: React.FC<EventCardProps> = ({
           <div className="mt-2">
             <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
               <div
-                className={`h-full rounded-full transition-all duration-500 ${overBudget ? 'bg-red-500' : 'bg-emerald-500'}`}
+                className={`h-full rounded-full transition-all duration-500 ${overBudget ? 'bg-red-500' : 'bg-green-400'}`}
                 style={{ width: `${budgetPct}%` }}
               />
             </div>
@@ -688,8 +873,12 @@ const EventCard: React.FC<EventCardProps> = ({
                   key={circle.id}
                   circle={circle}
                   items={circleItems.filter(i => i.circleId === circle.id)}
+                  circleIndex={circles.indexOf(circle)}
+                  totalCircles={circles.length}
+                  onEdit={onEditCircle}
                   onDelete={onDeleteCircle}
                   onStatusChange={onStatusChange}
+                  onReorder={onReorder}
                   onAddItem={onAddItem}
                   onDeleteItem={onDeleteItem}
                 />
@@ -698,7 +887,7 @@ const EventCard: React.FC<EventCardProps> = ({
           )}
           <button
             onClick={onAddCircle}
-            className="w-full py-2 text-sm text-zinc-500 hover:text-emerald-500 hover:bg-zinc-800 rounded-lg border border-dashed border-zinc-700 hover:border-emerald-500/50 transition-all flex items-center justify-center gap-1"
+            className="w-full py-2 text-sm text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-lg border border-dashed border-zinc-700 hover:border-zinc-600 transition-all flex items-center justify-center gap-1"
           >
             <Plus className="w-3.5 h-3.5" /> サークルを追加
           </button>
@@ -719,6 +908,7 @@ const ShoppingListPage: React.FC = () => {
   const [showAddEvent, setShowAddEvent] = useState(false);
   const [editingEvent, setEditingEvent] = useState<DoujinEvent | null>(null);
   const [addCircleForEvent, setAddCircleForEvent] = useState<string | null>(null);
+  const [editingCircle, setEditingCircle] = useState<Circle | null>(null);
   const [addItemForCircle, setAddItemForCircle] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const csvImportRef = useRef<HTMLInputElement>(null);
@@ -758,6 +948,11 @@ const ShoppingListPage: React.FC = () => {
     queryClient.invalidateQueries({ queryKey: ['circles'] });
   };
 
+  const handleEditCircle = async (id: string, data: Partial<Omit<Circle, 'id' | 'createdAt' | 'updatedAt'>>) => {
+    await circlesApi.update(id, data);
+    queryClient.invalidateQueries({ queryKey: ['circles'] });
+  };
+
   const handleDeleteCircle = async (id: string) => {
     if (!confirm('このサークルを削除しますか？')) return;
     await circlesApi.delete(id);
@@ -766,7 +961,33 @@ const ShoppingListPage: React.FC = () => {
   };
 
   const handleStatusChange = async (id: string, status: Circle['status']) => {
-    await circlesApi.update(id, { status, updatedAt: Date.now() });
+    await circlesApi.update(id, { status });
+    queryClient.invalidateQueries({ queryKey: ['circles'] });
+  };
+
+  const handleReorder = async (circleId: string, direction: 'top' | 'up' | 'down', eventId: string) => {
+    const eventCircles = circlesList
+      .filter(c => c.eventId === eventId)
+      .sort((a, b) => a.order - b.order);
+    const idx = eventCircles.findIndex(c => c.id === circleId);
+    if (idx === -1) return;
+    if (direction === 'top' && idx > 0) {
+      await circlesApi.update(circleId, { order: eventCircles[0].order - 1 });
+    } else if (direction === 'up' && idx > 0) {
+      const prev = eventCircles[idx - 1];
+      const curr = eventCircles[idx];
+      await Promise.all([
+        circlesApi.update(curr.id, { order: prev.order }),
+        circlesApi.update(prev.id, { order: curr.order }),
+      ]);
+    } else if (direction === 'down' && idx < eventCircles.length - 1) {
+      const next = eventCircles[idx + 1];
+      const curr = eventCircles[idx];
+      await Promise.all([
+        circlesApi.update(curr.id, { order: next.order }),
+        circlesApi.update(next.id, { order: curr.order }),
+      ]);
+    }
     queryClient.invalidateQueries({ queryKey: ['circles'] });
   };
 
@@ -887,8 +1108,10 @@ const ShoppingListPage: React.FC = () => {
                 circles={circlesList.filter(c => c.eventId === event.id)}
                 circleItems={allItems}
                 onAddCircle={() => setAddCircleForEvent(event.id)}
+                onEditCircle={setEditingCircle}
                 onDeleteCircle={handleDeleteCircle}
                 onStatusChange={handleStatusChange}
+                onReorder={(id, dir) => handleReorder(id, dir, event.id)}
                 onAddItem={setAddItemForCircle}
                 onDeleteItem={handleDeleteItem}
                 onDeleteEvent={handleDeleteEvent}
@@ -908,6 +1131,7 @@ const ShoppingListPage: React.FC = () => {
                       key={circle.id}
                       circle={circle}
                       items={allItems.filter(i => i.circleId === circle.id)}
+                      onEdit={setEditingCircle}
                       onDelete={handleDeleteCircle}
                       onStatusChange={handleStatusChange}
                       onAddItem={setAddItemForCircle}
@@ -937,6 +1161,13 @@ const ShoppingListPage: React.FC = () => {
           <AddCircleModal
             onAdd={handleAddCircle}
             onClose={() => setAddCircleForEvent(null)}
+          />
+        )}
+        {editingCircle && (
+          <EditCircleModal
+            circle={editingCircle}
+            onSave={handleEditCircle}
+            onClose={() => setEditingCircle(null)}
           />
         )}
         {addItemForCircle && (

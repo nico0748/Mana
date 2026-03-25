@@ -22,7 +22,7 @@ router.post('/', async (req, res) => {
 });
 
 router.put('/:id', async (req, res) => {
-  const { id, createdAt, ...data } = req.body;
+  const { id, createdAt, updatedAt, ...data } = req.body;
   const event = await prisma.doujinEvent.update({
     where: { id: req.params.id },
     data,

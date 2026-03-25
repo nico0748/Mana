@@ -1,4 +1,4 @@
-# KuraMori（くらもり）
+# 同人++（doujin++）
 
 蔵書管理 + 同人イベント買い物リスト + 会場マップを一体化した PWA。
 React + TypeScript + Vite（フロントエンド）、Express + Prisma + PostgreSQL（バックエンド）で構成し、Docker Compose で一括起動できる。
@@ -6,7 +6,7 @@ React + TypeScript + Vite（フロントエンド）、Express + Prisma + Postgr
 ## ディレクトリ構成
 
 ```
-mana-library/
+doujin++/
 ├── frontend/                   # React アプリ（Vite ビルド → Nginx 配信）
 │   ├── src/
 │   │   ├── lib/api.ts          # REST API クライアント（全エンドポイント）
@@ -95,7 +95,7 @@ cp .env.example .env
 `.env.example` の内容：
 
 ```
-DATABASE_URL=postgresql://mana:mana_password@db:5432/mana_library
+DATABASE_URL=postgresql://doujin:doujin_password@db:5432/doujin_pp
 PORT=3000
 ```
 
@@ -132,7 +132,7 @@ docker compose ps
 docker compose exec backend sh
 
 # DB に直接接続
-docker compose exec db psql -U mana -d mana_library
+docker compose exec db psql -U doujin -d doujin_pp
 ```
 
 ### DB マイグレーション

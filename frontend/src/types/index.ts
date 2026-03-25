@@ -35,7 +35,8 @@ export interface Circle {
   block: string;
   number: string;
   order: number;
-  status: 'pending' | 'bought' | 'soldout' | 'skipped';
+  status: 'pending' | 'bought' | 'soldout';
+  xUrl?: string;
   menuImageUrl?: string;
   mapX?: number;
   mapY?: number;
@@ -57,7 +58,7 @@ export interface CircleItem {
   id: string;
   circleId: string;
   title: string;
-  type: 'shinkan' | 'kikan';
+  type: string;
   price: number;
   quantity: number;
   coverUrl?: string;

@@ -1,10 +1,13 @@
+# 本番用 Docker Compose
+# 使い方: docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+
 services:
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "80:80"
+      - "127.0.0.1:8080:80"  # ホストの Nginx 経由でのみアクセス（直接公開しない）
     depends_on:
       - backend
     restart: unless-stopped
@@ -14,8 +17,9 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     environment:
-      DATABASE_URL: postgresql://doujin:doujin_password@db:5432/doujin_pp
+      DATABASE_URL: ${DATABASE_URL}
       PORT: "3000"
+      CORS_ORIGIN: ${CORS_ORIGIN}
     depends_on:
       db:
         condition: service_healthy
@@ -24,15 +28,14 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: doujin_pp
-      POSTGRES_USER: doujin
-      POSTGRES_PASSWORD: doujin_password
-    ports:
-      - "5433:5432"
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    # ポートは外部に公開しない（Docker内部ネットワークのみ）
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U doujin -d doujin_pp"]
+      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
       interval: 5s
       timeout: 5s
       retries: 10

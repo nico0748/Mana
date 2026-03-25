@@ -34,7 +34,7 @@ router.post('/bulk', async (req, res) => {
 });
 
 router.put('/:id', async (req, res) => {
-  const { id, createdAt, ...data } = req.body;
+  const { id, createdAt, updatedAt, ...data } = req.body;
   const circle = await prisma.circle.update({
     where: { id: req.params.id },
     data,

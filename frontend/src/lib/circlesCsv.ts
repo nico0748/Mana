@@ -2,7 +2,7 @@ import * as XLSX from 'xlsx';
 import type { Circle } from '../types';
 
 // ---- Column header mapping (Japanese and English) ----
-type CircleRow = Pick<Circle, 'name' | 'author' | 'hall' | 'block' | 'number' | 'status'>;
+type CircleRow = Pick<Circle, 'name' | 'author' | 'hall' | 'block' | 'number' | 'status' | 'xUrl'>;
 
 const HEADER_MAP: Record<string, keyof CircleRow> = {
   'サークル名': 'name', 'circle': 'name', 'name': 'name',
@@ -11,13 +11,14 @@ const HEADER_MAP: Record<string, keyof CircleRow> = {
   'ブロック':   'block',  'block': 'block',
   'スペース番号': 'number', 'スペース': 'number', 'number': 'number', 'space': 'number',
   'ステータス': 'status', 'status': 'status',
+  'X(Twitter)': 'xUrl', 'x': 'xUrl', 'twitter': 'xUrl', 'xurl': 'xUrl',
 };
 
-const VALID_STATUSES = new Set<string>(['pending', 'bought', 'soldout', 'skipped']);
+const VALID_STATUSES = new Set<string>(['pending', 'bought', 'soldout']);
 
-const TEMPLATE_HEADERS = ['サークル名', '作者名', 'ホール', 'ブロック', 'スペース番号', 'ステータス'];
-const TEMPLATE_EXAMPLE = ['例：TYPE-MOON', '武内崇', '東1', 'A', '01a', 'pending'];
-const STATUS_NOTE = ['※ステータスは pending / bought / soldout / skipped のいずれか。省略すると pending になります。'];
+const TEMPLATE_HEADERS = ['サークル名', '作者名', 'ホール', 'ブロック', 'スペース番号', 'ステータス', 'X(Twitter)'];
+const TEMPLATE_EXAMPLE = ['例：TYPE-MOON', '武内崇', '東1', 'A', '01a', 'pending', 'https://x.com/example'];
+const STATUS_NOTE = ['※ステータスは pending / bought / soldout のいずれか。省略すると pending になります。'];
 
 // ---- Parser ----
 export function parseCirclesFile(buffer: ArrayBuffer): CircleRow[] {
@@ -52,6 +53,7 @@ export function parseCirclesFile(buffer: ArrayBuffer): CircleRow[] {
       block:  row.block ?? '',
       number: row.number ?? '',
       status: VALID_STATUSES.has(row.status ?? '') ? (row.status as Circle['status']) : 'pending',
+      xUrl:   row.xUrl || undefined,
     });
   }
 
@@ -70,7 +72,7 @@ export function downloadCirclesTemplate(): void {
 
   // Column widths
   ws['!cols'] = [
-    { wch: 24 }, { wch: 16 }, { wch: 16 }, { wch: 8 }, { wch: 12 }, { wch: 12 },
+    { wch: 24 }, { wch: 16 }, { wch: 16 }, { wch: 8 }, { wch: 12 }, { wch: 12 }, { wch: 32 },
   ];
 
   const wb = XLSX.utils.book_new();

@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Plus, Trash2, Navigation, ChevronDown, ChevronUp, ChevronsUp,
-  BookPlus, Check, Calendar, Pencil, FileSpreadsheet, FileDown, PanelLeft,
+  BookPlus, Check, Calendar, Pencil, FileSpreadsheet, FileDown, PanelLeft, ExternalLink,
 } from 'lucide-react';
 import type { Circle, CircleItem, DoujinEvent } from '../types';
 import { Button } from '../components/ui/Button';
@@ -142,18 +142,19 @@ const CircleCard: React.FC<CircleCardProps> = ({ circle, items, circleIndex, tot
               </div>
               <h3 className="font-bold text-zinc-100 text-base leading-tight">{circle.name}</h3>
               <p className="text-sm text-zinc-400">{circle.author}</p>
+            </div>
+            <div className="flex items-center gap-1 flex-shrink-0">
               {circle.xUrl && (
                 <a
                   href={circle.xUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-sky-400 hover:text-sky-300 truncate block mt-0.5"
+                  title="X (Twitter) を開く"
+                  className="p-2 text-sky-500 hover:text-sky-300 hover:bg-zinc-800 rounded-full transition-all duration-150 active:scale-90"
                 >
-                  {circle.xUrl}
+                  <ExternalLink className="w-4 h-4" />
                 </a>
               )}
-            </div>
-            <div className="flex items-center gap-1 flex-shrink-0">
               <button
                 onClick={() => onEdit(circle)}
                 className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-full transition-all duration-150 active:scale-90"

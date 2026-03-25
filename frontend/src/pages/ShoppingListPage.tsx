@@ -102,6 +102,7 @@ interface CircleCardProps {
   items: CircleItem[];
   circleIndex?: number;
   totalCircles?: number;
+  onEdit: (circle: Circle) => void;
   onDelete: (id: string) => void;
   onStatusChange: (id: string, status: Circle['status']) => void;
   onReorder?: (id: string, dir: 'top' | 'up' | 'down') => void;
@@ -109,7 +110,7 @@ interface CircleCardProps {
   onDeleteItem: (itemId: string) => void;
 }
 
-const CircleCard: React.FC<CircleCardProps> = ({ circle, items, circleIndex, totalCircles, onDelete, onStatusChange, onReorder, onAddItem, onDeleteItem }) => {
+const CircleCard: React.FC<CircleCardProps> = ({ circle, items, circleIndex, totalCircles, onEdit, onDelete, onStatusChange, onReorder, onAddItem, onDeleteItem }) => {
   const [expanded, setExpanded] = useState(true);
   const [addToLibraryItem, setAddToLibraryItem] = useState<CircleItem | null>(null);
   const [addedItemIds, setAddedItemIds] = useState<Set<string>>(new Set());
@@ -153,6 +154,13 @@ const CircleCard: React.FC<CircleCardProps> = ({ circle, items, circleIndex, tot
               )}
             </div>
             <div className="flex items-center gap-1 flex-shrink-0">
+              <button
+                onClick={() => onEdit(circle)}
+                className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-full transition-all duration-150 active:scale-90"
+                title="編集"
+              >
+                <Pencil className="w-4 h-4" />
+              </button>
               <button
                 onClick={() => setExpanded(e => !e)}
                 className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-full transition-all duration-150 active:scale-90"
@@ -365,6 +373,81 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ onAdd, onClose }) => {
           <div className="flex gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">キャンセル</Button>
             <Button type="submit" className="flex-1">追加</Button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+};
+
+// ─── EditCircleModal ───────────────────────────────────────────────────────
+
+interface EditCircleModalProps {
+  circle: Circle;
+  onSave: (id: string, data: Partial<Omit<Circle, 'id' | 'createdAt' | 'updatedAt'>>) => void;
+  onClose: () => void;
+}
+
+const EditCircleModal: React.FC<EditCircleModalProps> = ({ circle, onSave, onClose }) => {
+  const [form, setForm] = useState({
+    name: circle.name,
+    author: circle.author,
+    hall: circle.hall,
+    block: circle.block,
+    number: circle.number,
+    xUrl: circle.xUrl ?? '',
+  });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name) return;
+    const { xUrl, ...rest } = form;
+    onSave(circle.id, { ...rest, xUrl: xUrl || undefined });
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 40 }}
+        className="relative w-full max-w-md bg-zinc-900 rounded-xl border border-zinc-800 p-6 z-10"
+      >
+        <h2 className="text-lg font-bold text-zinc-100 mb-4">サークルを編集</h2>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div>
+            <label className="block text-sm text-zinc-400 mb-1">サークル名 *</label>
+            <Input name="name" value={form.name} onChange={handleChange} placeholder="サークル名" required />
+          </div>
+          <div>
+            <label className="block text-sm text-zinc-400 mb-1">作者名</label>
+            <Input name="author" value={form.author} onChange={handleChange} placeholder="作者名" />
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className="block text-sm text-zinc-400 mb-1">ホール</label>
+              <Input name="hall" value={form.hall} onChange={handleChange} placeholder="東1" />
+            </div>
+            <div>
+              <label className="block text-sm text-zinc-400 mb-1">ブロック</label>
+              <Input name="block" value={form.block} onChange={handleChange} placeholder="A" />
+            </div>
+            <div>
+              <label className="block text-sm text-zinc-400 mb-1">番号</label>
+              <Input name="number" value={form.number} onChange={handleChange} placeholder="01a" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm text-zinc-400 mb-1">X (Twitter)</label>
+            <Input name="xUrl" value={form.xUrl} onChange={handleChange} placeholder="https://x.com/example" />
+          </div>
+          <div className="flex gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={onClose} className="flex-1">キャンセル</Button>
+            <Button type="submit" className="flex-1">保存</Button>
           </div>
         </form>
       </motion.div>
@@ -644,6 +727,7 @@ interface EventCardProps {
   circles: Circle[];
   circleItems: CircleItem[];
   onAddCircle: () => void;
+  onEditCircle: (circle: Circle) => void;
   onDeleteCircle: (id: string) => void;
   onStatusChange: (id: string, status: Circle['status']) => void;
   onReorder: (id: string, dir: 'top' | 'up' | 'down') => void;
@@ -655,7 +739,7 @@ interface EventCardProps {
 
 const EventCard: React.FC<EventCardProps> = ({
   event, circles, circleItems,
-  onAddCircle, onDeleteCircle, onStatusChange, onReorder,
+  onAddCircle, onEditCircle, onDeleteCircle, onStatusChange, onReorder,
   onAddItem, onDeleteItem, onDeleteEvent, onEditEvent,
 }) => {
   const [expanded, setExpanded] = useState(true);
@@ -790,6 +874,7 @@ const EventCard: React.FC<EventCardProps> = ({
                   items={circleItems.filter(i => i.circleId === circle.id)}
                   circleIndex={circles.indexOf(circle)}
                   totalCircles={circles.length}
+                  onEdit={onEditCircle}
                   onDelete={onDeleteCircle}
                   onStatusChange={onStatusChange}
                   onReorder={onReorder}
@@ -822,6 +907,7 @@ const ShoppingListPage: React.FC = () => {
   const [showAddEvent, setShowAddEvent] = useState(false);
   const [editingEvent, setEditingEvent] = useState<DoujinEvent | null>(null);
   const [addCircleForEvent, setAddCircleForEvent] = useState<string | null>(null);
+  const [editingCircle, setEditingCircle] = useState<Circle | null>(null);
   const [addItemForCircle, setAddItemForCircle] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const csvImportRef = useRef<HTMLInputElement>(null);
@@ -858,6 +944,11 @@ const ShoppingListPage: React.FC = () => {
     if (!addCircleForEvent) return;
     const maxOrder = Math.max(0, ...(circles ?? []).map(c => c.order));
     await circlesApi.create({ ...data, eventId: addCircleForEvent, order: maxOrder + 1, status: 'pending' });
+    queryClient.invalidateQueries({ queryKey: ['circles'] });
+  };
+
+  const handleEditCircle = async (id: string, data: Partial<Omit<Circle, 'id' | 'createdAt' | 'updatedAt'>>) => {
+    await circlesApi.update(id, data);
     queryClient.invalidateQueries({ queryKey: ['circles'] });
   };
 
@@ -1016,6 +1107,7 @@ const ShoppingListPage: React.FC = () => {
                 circles={circlesList.filter(c => c.eventId === event.id)}
                 circleItems={allItems}
                 onAddCircle={() => setAddCircleForEvent(event.id)}
+                onEditCircle={setEditingCircle}
                 onDeleteCircle={handleDeleteCircle}
                 onStatusChange={handleStatusChange}
                 onReorder={(id, dir) => handleReorder(id, dir, event.id)}
@@ -1038,6 +1130,7 @@ const ShoppingListPage: React.FC = () => {
                       key={circle.id}
                       circle={circle}
                       items={allItems.filter(i => i.circleId === circle.id)}
+                      onEdit={setEditingCircle}
                       onDelete={handleDeleteCircle}
                       onStatusChange={handleStatusChange}
                       onAddItem={setAddItemForCircle}
@@ -1067,6 +1160,13 @@ const ShoppingListPage: React.FC = () => {
           <AddCircleModal
             onAdd={handleAddCircle}
             onClose={() => setAddCircleForEvent(null)}
+          />
+        )}
+        {editingCircle && (
+          <EditCircleModal
+            circle={editingCircle}
+            onSave={handleEditCircle}
+            onClose={() => setEditingCircle(null)}
           />
         )}
         {addItemForCircle && (

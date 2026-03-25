@@ -1,0 +1,100 @@
+{
+  "hash": "d3fe0ae4",
+  "configHash": "f3135c55",
+  "lockfileHash": "641043ea",
+  "browserHash": "8196d573",
+  "optimized": {
+    "react/jsx-dev-runtime": {
+      "src": "../../node_modules/react/jsx-dev-runtime.js",
+      "file": "react_jsx-dev-runtime.js",
+      "fileHash": "bf4fb824",
+      "needsInterop": true
+    },
+    "react": {
+      "src": "../../node_modules/react/index.js",
+      "file": "react.js",
+      "fileHash": "f19cd5cb",
+      "needsInterop": true
+    },
+    "react-dom/client": {
+      "src": "../../node_modules/react-dom/client.js",
+      "file": "react-dom_client.js",
+      "fileHash": "97ba82df",
+      "needsInterop": true
+    },
+    "react-router-dom": {
+      "src": "../../node_modules/react-router-dom/dist/index.mjs",
+      "file": "react-router-dom.js",
+      "fileHash": "f7ab91ff",
+      "needsInterop": false
+    },
+    "framer-motion": {
+      "src": "../../node_modules/framer-motion/dist/es/index.mjs",
+      "file": "framer-motion.js",
+      "fileHash": "7a650bbf",
+      "needsInterop": false
+    },
+    "@tanstack/react-query": {
+      "src": "../../node_modules/@tanstack/react-query/build/modern/index.js",
+      "file": "@tanstack_react-query.js",
+      "fileHash": "37bea96c",
+      "needsInterop": false
+    },
+    "lucide-react": {
+      "src": "../../node_modules/lucide-react/dist/esm/lucide-react.js",
+      "file": "lucide-react.js",
+      "fileHash": "ea7eac8c",
+      "needsInterop": false
+    },
+    "clsx": {
+      "src": "../../node_modules/clsx/dist/clsx.mjs",
+      "file": "clsx.js",
+      "fileHash": "68e07217",
+      "needsInterop": false
+    },
+    "imagetracerjs": {
+      "src": "../../node_modules/imagetracerjs/imagetracer_v1.2.6.js",
+      "file": "imagetracerjs.js",
+      "fileHash": "41b8b1fd",
+      "needsInterop": true
+    },
+    "pdfjs-dist": {
+      "src": "../../node_modules/pdfjs-dist/build/pdf.mjs",
+      "file": "pdfjs-dist.js",
+      "fileHash": "624923e2",
+      "needsInterop": false
+    },
+    "tailwind-merge": {
+      "src": "../../node_modules/tailwind-merge/dist/bundle-mjs.mjs",
+      "file": "tailwind-merge.js",
+      "fileHash": "86db89b1",
+      "needsInterop": false
+    },
+    "xlsx": {
+      "src": "../../node_modules/xlsx/xlsx.mjs",
+      "file": "xlsx.js",
+      "fileHash": "5e45b770",
+      "needsInterop": false
+    },
+    "react-zxing": {
+      "src": "../../node_modules/react-zxing/lib/esm/index.js",
+      "file": "react-zxing.js",
+      "fileHash": "507bc4ba",
+      "needsInterop": false
+    }
+  },
+  "chunks": {
+    "chunk-SI7CUZOI": {
+      "file": "chunk-SI7CUZOI.js"
+    },
+    "chunk-WX2ZP2IT": {
+      "file": "chunk-WX2ZP2IT.js"
+    },
+    "chunk-XRSIZU4N": {
+      "file": "chunk-XRSIZU4N.js"
+    },
+    "chunk-4MBMRILA": {
+      "file": "chunk-4MBMRILA.js"
+    }
+  }
+}

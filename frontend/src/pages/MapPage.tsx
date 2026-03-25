@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import {
   Upload, MapPin, Edit2, Check, X, History,
   Trash2, ChevronLeft, ChevronRight, Plus,
+  RotateCcw, RotateCw, Crop,
 } from 'lucide-react';
 import { eventsApi, circlesApi, venueMapsApi } from '../lib/api';
 import { renderPdfPageToDataUrl } from '../lib/pdfUtils';
@@ -12,7 +13,7 @@ import type { Circle } from '../types';
 import { clsx } from 'clsx';
 
 const statusColor: Record<string, string> = {
-  pending: 'bg-zinc-300 border-zinc-200',
+  pending: 'bg-yellow-400 border-yellow-200',
   bought: 'bg-emerald-500 border-emerald-300',
   soldout: 'bg-red-500 border-red-400',
 };
@@ -35,6 +36,12 @@ const MapPage: React.FC = () => {
   const [activePinId, setActivePinId] = useState<string | null>(null);
   const [imgNaturalSize, setImgNaturalSize] = useState<{ w: number; h: number } | null>(null);
   const [outerSize, setOuterSize] = useState<{ w: number; h: number } | null>(null);
+
+  // Crop mode
+  const [cropMode, setCropMode] = useState(false);
+  const [cropStart, setCropStart] = useState<{ x: number; y: number } | null>(null);
+  const [cropRect, setCropRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const [processing, setProcessing] = useState(false);
 
   // Event selection for map management
   const [selectedEventId, setSelectedEventId] = useState<string | null>(
@@ -103,6 +110,8 @@ const MapPage: React.FC = () => {
     setPdfTotalPages(0);
     setEditMode(false);
     setSelectedCircleId(null);
+    setCropMode(false);
+    setCropRect(null);
   }, [selectedEventId]);
 
   useEffect(() => {
@@ -115,6 +124,8 @@ const MapPage: React.FC = () => {
     setPdfFile(null);
     setPdfPage(1);
     setPdfTotalPages(0);
+    setCropMode(false);
+    setCropRect(null);
   }, [selectedHall]);
 
   const hallCircles = eventCircles.filter(c => c.hall === selectedHall);
@@ -151,6 +162,115 @@ const MapPage: React.FC = () => {
   const handleImgLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
     setImgNaturalSize({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight });
   }, []);
+
+  // Callback ref for the fallback img.
+  // onLoad does NOT re-fire when the browser serves a cached data URL.
+  // This ref runs on every mount and immediately reads naturalWidth/Height if already complete,
+  // which covers the cache-hit case that onLoad misses.
+  const imgCallbackRef = useCallback((el: HTMLImageElement | null) => {
+    if (!el) return;
+    if (el.complete && el.naturalWidth > 0) {
+      setImgNaturalSize({ w: el.naturalWidth, h: el.naturalHeight });
+    }
+    // onLoad covers the not-yet-decoded case
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentMap?.id]); // re-evaluate when map changes (same timing as the reset useEffect)
+
+  const handleRotate = async (dir: 'cw' | 'ccw') => {
+    if (!currentMap || processing) return;
+    setProcessing(true);
+    try {
+      const img = new Image();
+      img.src = currentMap.imageDataUrl;
+      await new Promise<void>(resolve => { img.onload = () => resolve(); });
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalHeight;
+      canvas.height = img.naturalWidth;
+      const ctx = canvas.getContext('2d')!;
+      if (dir === 'cw') {
+        ctx.translate(canvas.width, 0);
+        ctx.rotate(Math.PI / 2);
+      } else {
+        ctx.translate(0, canvas.height);
+        ctx.rotate(-Math.PI / 2);
+      }
+      ctx.drawImage(img, 0, 0);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+      // Clear pin positions — coordinate axes swap after rotation
+      const pinned = hallCircles.filter(c => c.mapX != null);
+      await Promise.all(pinned.map(c => circlesApi.update(c.id, { mapX: null, mapY: null })));
+      await saveMapDataUrl(selectedHall, dataUrl);
+      setImgNaturalSize(null);
+      queryClient.invalidateQueries({ queryKey: ['circles'] });
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleCropPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!cropMode) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setCropStart({ x, y });
+    setCropRect(null);
+  };
+
+  const handleCropPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!cropMode || !cropStart) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setCropRect({ x: cropStart.x, y: cropStart.y, w: x - cropStart.x, h: y - cropStart.y });
+  };
+
+  const handleCropPointerUp = () => {
+    if (!cropMode) return;
+    setCropStart(null);
+  };
+
+  const handleApplyCrop = async () => {
+    if (!currentMap || !cropRect || processing) return;
+    const nx = Math.min(cropRect.x, cropRect.x + cropRect.w);
+    const ny = Math.min(cropRect.y, cropRect.y + cropRect.h);
+    const nw = Math.abs(cropRect.w);
+    const nh = Math.abs(cropRect.h);
+    if (nw < 1 || nh < 1) return;
+    setProcessing(true);
+    try {
+      const img = new Image();
+      img.src = currentMap.imageDataUrl;
+      await new Promise<void>(resolve => { img.onload = () => resolve(); });
+      const sx = (nx / 100) * img.naturalWidth;
+      const sy = (ny / 100) * img.naturalHeight;
+      const sw = (nw / 100) * img.naturalWidth;
+      const sh = (nh / 100) * img.naturalHeight;
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(sw);
+      canvas.height = Math.round(sh);
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+      // Remap pin coordinates to new crop area; remove pins outside the crop
+      await Promise.all(hallCircles.map(c => {
+        if (c.mapX == null || c.mapY == null) return Promise.resolve();
+        const newX = (c.mapX - nx) / nw * 100;
+        const newY = (c.mapY - ny) / nh * 100;
+        if (newX < 0 || newX > 100 || newY < 0 || newY > 100) {
+          return circlesApi.update(c.id, { mapX: null, mapY: null });
+        }
+        return circlesApi.update(c.id, { mapX: newX, mapY: newY });
+      }));
+      await saveMapDataUrl(selectedHall, dataUrl);
+      setImgNaturalSize(null);
+      queryClient.invalidateQueries({ queryKey: ['circles'] });
+      setCropMode(false);
+      setCropRect(null);
+    } finally {
+      setProcessing(false);
+    }
+  };
 
   const saveMapDataUrl = async (hall: string, imageDataUrl: string) => {
     const existing = (venueMaps ?? []).find(
@@ -211,14 +331,14 @@ const MapPage: React.FC = () => {
   // getBoundingClientRect() accounts for CSS transforms, so zoom is handled correctly
   const handleMapClick = useCallback(async (e: React.MouseEvent<HTMLDivElement>) => {
     setActivePinId(null);
-    if (!editMode || !selectedCircleId) return;
+    if (cropMode || !editMode || !selectedCircleId) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
     await circlesApi.update(selectedCircleId, { mapX: x, mapY: y });
     queryClient.invalidateQueries({ queryKey: ['circles'] });
     setSelectedCircleId(null);
-  }, [editMode, selectedCircleId]);
+  }, [editMode, selectedCircleId, cropMode]);
 
   const handleRemovePin = async (circleId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -370,13 +490,44 @@ const MapPage: React.FC = () => {
                 </div>
               )}
               {currentMap && (
-                <button
-                  onClick={handleDeleteMap}
-                  className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-red-400 hover:text-red-300 bg-zinc-800 hover:bg-red-950 rounded-md transition-colors"
-                  title="マップ削除"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
+                <>
+                  <button
+                    onClick={() => handleRotate('ccw')}
+                    disabled={processing}
+                    title="左90°回転"
+                    className="p-1.5 text-zinc-400 hover:text-zinc-100 bg-zinc-800 hover:bg-zinc-700 rounded-md transition-colors disabled:opacity-40"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => handleRotate('cw')}
+                    disabled={processing}
+                    title="右90°回転"
+                    className="p-1.5 text-zinc-400 hover:text-zinc-100 bg-zinc-800 hover:bg-zinc-700 rounded-md transition-colors disabled:opacity-40"
+                  >
+                    <RotateCw className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => { setCropMode(m => !m); setCropRect(null); setEditMode(false); setSelectedCircleId(null); }}
+                    disabled={processing}
+                    title="切り抜き"
+                    className={clsx(
+                      'p-1.5 rounded-md transition-colors disabled:opacity-40',
+                      cropMode
+                        ? 'text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20'
+                        : 'text-zinc-400 hover:text-zinc-100 bg-zinc-800 hover:bg-zinc-700'
+                    )}
+                  >
+                    <Crop className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={handleDeleteMap}
+                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-red-400 hover:text-red-300 bg-zinc-800 hover:bg-red-950 rounded-md transition-colors"
+                    title="マップ削除"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </>
               )}
             </div>
           )}
@@ -386,9 +537,10 @@ const MapPage: React.FC = () => {
       {/* ── Map area ────────────────────────────────────────────────────────── */}
       <div className="flex-1 relative overflow-hidden bg-zinc-950 min-h-0">
         {currentMap ? (
-          <div ref={mapOuterRef} className="w-full h-full bg-zinc-950 overflow-hidden relative">
+          <div ref={mapOuterRef} className={clsx('w-full h-full bg-zinc-950 overflow-hidden relative', (editMode && selectedCircleId) || cropMode ? 'cursor-crosshair' : '')}>
             {/* Fallback image shown before imageBox is computed (object-contain, no letterbox correction) */}
             <img
+              ref={imgCallbackRef}
               src={currentMap.imageDataUrl}
               alt={`${selectedHall}マップ`}
               className={clsx(
@@ -405,7 +557,7 @@ const MapPage: React.FC = () => {
                 ref={mapContainerRef}
                 className={clsx(
                   'absolute select-none',
-                  editMode && selectedCircleId ? 'cursor-crosshair' : ''
+                  (editMode && selectedCircleId) || cropMode ? 'cursor-crosshair' : ''
                 )}
                 style={{
                   left: `${imageBox.cx}px`,
@@ -416,6 +568,9 @@ const MapPage: React.FC = () => {
                   transformOrigin: 'center center',
                 }}
                 onClick={handleMapClick}
+                onPointerDown={handleCropPointerDown}
+                onPointerMove={handleCropPointerMove}
+                onPointerUp={handleCropPointerUp}
               >
                 <img
                   src={currentMap.imageDataUrl}
@@ -465,14 +620,43 @@ const MapPage: React.FC = () => {
 
                       {/* Popup: hover on desktop, tap on mobile */}
                       <div className={clsx(
-                        'absolute bottom-5 left-1/2 -translate-x-1/2 z-20 pointer-events-none transition-opacity duration-150',
+                        'absolute bottom-6 left-1/2 -translate-x-1/2 z-20 transition-opacity duration-150',
                         activePinId === circle.id
-                          ? 'opacity-100'
-                          : 'opacity-0 group-hover:opacity-100'
+                          ? 'opacity-100 pointer-events-auto'
+                          : 'opacity-0 group-hover:opacity-100 pointer-events-none'
                       )}>
-                        <div className="bg-zinc-800 text-zinc-100 text-xs rounded-md px-2 py-1.5 whitespace-nowrap shadow-lg border border-zinc-700 text-left">
-                          <div className="font-bold font-mono">{circle.block}-{circle.number}</div>
-                          <div className="text-zinc-300">{circle.name}</div>
+                        <div
+                          className="bg-zinc-800 text-zinc-100 text-xs rounded-lg shadow-xl border border-zinc-700 text-left min-w-[148px]"
+                          onClick={e => e.stopPropagation()}
+                        >
+                          <div className="px-2.5 py-2 border-b border-zinc-700/60">
+                            <div className="font-mono text-zinc-500 text-[10px]">{circle.block}-{circle.number}</div>
+                            <div className="text-zinc-200 font-medium truncate max-w-[160px]">{circle.name}</div>
+                          </div>
+                          <div className="flex gap-1 p-1.5">
+                            {([
+                              { s: 'pending',  label: '未購入', active: 'bg-zinc-600 text-zinc-200'        },
+                              { s: 'bought',   label: '購入済', active: 'bg-emerald-500/20 text-emerald-400' },
+                              { s: 'soldout',  label: '完売',   active: 'bg-red-500/20 text-red-400'        },
+                            ] as const).map(({ s, label, active }) => (
+                              <button
+                                key={s}
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  await circlesApi.update(circle.id, { status: s, updatedAt: Date.now() });
+                                  queryClient.invalidateQueries({ queryKey: ['circles'] });
+                                }}
+                                className={clsx(
+                                  'flex-1 py-1 rounded text-[10px] font-medium transition-colors',
+                                  circle.status === s
+                                    ? active
+                                    : 'text-zinc-600 hover:text-zinc-300 hover:bg-zinc-700'
+                                )}
+                              >
+                                {label}
+                              </button>
+                            ))}
+                          </div>
                         </div>
                         <div className="w-2 h-2 bg-zinc-800 border-b border-r border-zinc-700 rotate-45 mx-auto -mt-1" />
                       </div>
@@ -498,6 +682,54 @@ const MapPage: React.FC = () => {
                         : '下のリストからサークルを選択'}
                     </div>
                   </div>
+                )}
+
+                {/* Crop overlay */}
+                {cropMode && (
+                  <>
+                    <div className="absolute inset-0 bg-black/50 pointer-events-none" />
+                    {cropRect && (() => {
+                      const nx = Math.min(cropRect.x, cropRect.x + cropRect.w);
+                      const ny = Math.min(cropRect.y, cropRect.y + cropRect.h);
+                      const nw = Math.abs(cropRect.w);
+                      const nh = Math.abs(cropRect.h);
+                      return (
+                        <div
+                          className="absolute border-2 border-white pointer-events-none"
+                          style={{ left: `${nx}%`, top: `${ny}%`, width: `${nw}%`, height: `${nh}%` }}
+                        >
+                          <div className="absolute inset-0 bg-white/10" />
+                        </div>
+                      );
+                    })()}
+                    {cropRect && !cropStart && (
+                      <div
+                        className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20"
+                        onPointerDown={e => e.stopPropagation()}
+                      >
+                        <button
+                          onClick={handleApplyCrop}
+                          disabled={processing}
+                          className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-lg transition-colors disabled:opacity-50"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          切り抜き適用
+                        </button>
+                        <button
+                          onClick={() => { setCropMode(false); setCropRect(null); }}
+                          className="flex items-center gap-1 px-3 py-1.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-200 text-xs font-medium rounded-lg shadow-lg transition-colors"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                          キャンセル
+                        </button>
+                      </div>
+                    )}
+                    <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
+                      <div className="bg-zinc-800 border border-zinc-600 text-zinc-100 text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
+                        {cropStart ? 'ドラッグして切り抜き範囲を選択' : cropRect ? '範囲を確認して適用' : 'ドラッグして切り抜き範囲を選択'}
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
             )}

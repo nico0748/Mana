@@ -5,7 +5,7 @@ import { buildVenueGraph, findOptimalRoute, spaceToNodeId } from '../lib/dijkstr
 import { getVenueLayout } from '../data/tokyoBigSight';
 import { circlesApi } from '../lib/api';
 
-export const EVENT_KEY = 'kuramori_event_code';
+export const EVENT_KEY = 'doujin_pp_event_code';
 
 export function circleToNodeId(circle: Circle): string | null {
   if (!circle.hall || !circle.block) return null;

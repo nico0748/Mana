@@ -1,6 +1,6 @@
 #!/bin/bash
 # ============================================================
-# KuraMori 本番デプロイスクリプト
+# 同人++ 本番デプロイスクリプト
 # 使い方: bash deploy.sh
 # 前提: .env.prod が存在すること
 # ============================================================
@@ -11,7 +11,7 @@ COMPOSE_FILE="docker-compose.prod.yml"
 ENV_FILE=".env.prod"
 APP_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-echo "🚀 KuraMori デプロイ開始..."
+echo "🚀 同人++ デプロイ開始..."
 cd "$APP_DIR"
 
 # .env.prod の存在確認

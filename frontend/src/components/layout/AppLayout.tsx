@@ -34,9 +34,9 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
 
           {/* Logo */}
           <div className="flex items-center gap-2">
-            <img src="/doujin-pp.png" alt="同人++" className="w-8 h-8 rounded-xl" />
+            <img src="/doujin-pp.png" alt="同人++" className="w-16 h-16 rounded-xl" />
             <div className="flex items-baseline gap-1.5">
-              <span className="text-lg text-zinc-100" style={{ fontFamily: '"Reggae One", system-ui', fontWeight: 400 }}>同人++</span>
+              <span className="text-2xl text-zinc-100" style={{ fontFamily: '"Reggae One", system-ui', fontWeight: 400 }}>同人++</span>
               <span className="text-[10px] font-semibold text-zinc-600 tracking-widest hidden sm:block">同人活動サポートアプリケーション</span>
             </div>
           </div>

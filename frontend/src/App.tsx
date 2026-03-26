@@ -9,6 +9,8 @@ import NavModePage from "./pages/NavModePage";
 import ToolsPage from "./pages/ToolsPage";
 import MapPage from "./pages/MapPage";
 import Onboarding, { ONBOARDING_KEY } from "./components/Onboarding";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { LoginPage } from "./pages/LoginPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -42,10 +44,21 @@ function AnimatedRoutes() {
   );
 }
 
-function App() {
+function AppInner() {
+  const { user, loading } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(
     () => !localStorage.getItem(ONBOARDING_KEY)
   );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <div className="w-6 h-6 rounded-full border-2 border-zinc-700 border-t-zinc-300 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) return <LoginPage />;
 
   const handleOnboardingComplete = () => {
     localStorage.setItem(ONBOARDING_KEY, '1');
@@ -53,13 +66,21 @@ function App() {
   };
 
   return (
+    <Router>
+      {showOnboarding && <Onboarding onComplete={handleOnboardingComplete} />}
+      <AppLayout>
+        <AnimatedRoutes />
+      </AppLayout>
+    </Router>
+  );
+}
+
+function App() {
+  return (
     <QueryClientProvider client={queryClient}>
-      <Router>
-        {showOnboarding && <Onboarding onComplete={handleOnboardingComplete} />}
-        <AppLayout>
-          <AnimatedRoutes />
-        </AppLayout>
-      </Router>
+      <AuthProvider>
+        <AppInner />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

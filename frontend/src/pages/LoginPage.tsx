@@ -42,8 +42,16 @@ export const LoginPage: React.FC = () => {
       <div className="w-full max-w-sm">
         {/* Logo / Title */}
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-zinc-100">同人++</h1>
-          <p className="text-sm text-zinc-500 mt-1">
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <img src="/doujin-pp.png" alt="同人++" className="w-14 h-14 rounded-xl shadow-lg" />
+            <span
+              className="text-4xl text-zinc-100"
+              style={{ fontFamily: '"Reggae One", system-ui', fontWeight: 400 }}
+            >
+              同人++
+            </span>
+          </div>
+          <p className="text-sm text-zinc-500">
             {mode === 'login' ? 'ログインして続ける' : 'アカウントを作成'}
           </p>
         </div>

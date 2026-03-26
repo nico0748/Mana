@@ -1,10 +1,15 @@
 import type { Book, Circle, CircleItem, Distribution, DoujinEvent, VenueMap } from '../types';
+import { auth } from './firebase';
 
 const BASE = '/api';
 
 async function req<T>(path: string, options?: RequestInit): Promise<T> {
+  const token = await auth.currentUser?.getIdToken();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
   const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     ...options,
   });
   if (!res.ok) {

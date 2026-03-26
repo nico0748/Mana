@@ -6,6 +6,13 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        VITE_FIREBASE_API_KEY: ${VITE_FIREBASE_API_KEY}
+        VITE_FIREBASE_AUTH_DOMAIN: ${VITE_FIREBASE_AUTH_DOMAIN}
+        VITE_FIREBASE_PROJECT_ID: ${VITE_FIREBASE_PROJECT_ID}
+        VITE_FIREBASE_STORAGE_BUCKET: ${VITE_FIREBASE_STORAGE_BUCKET}
+        VITE_FIREBASE_MESSAGING_SENDER_ID: ${VITE_FIREBASE_MESSAGING_SENDER_ID}
+        VITE_FIREBASE_APP_ID: ${VITE_FIREBASE_APP_ID}
     ports:
       - "127.0.0.1:8080:80"  # ホストの Nginx 経由でのみアクセス（直接公開しない）
     depends_on:
@@ -20,6 +27,7 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       PORT: "3000"
       CORS_ORIGIN: ${CORS_ORIGIN}
+      FIREBASE_SERVICE_ACCOUNT_B64: ${FIREBASE_SERVICE_ACCOUNT_B64}
     depends_on:
       db:
         condition: service_healthy

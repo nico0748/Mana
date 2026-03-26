@@ -9,6 +9,7 @@ datasource db {
 
 model Book {
   id        String   @id @default(uuid())
+  userId    String?
   title     String
   author    String
   isbn      String?
@@ -25,6 +26,7 @@ model Book {
 
 model DoujinEvent {
   id        String    @id @default(uuid())
+  userId    String?
   name      String
   date      String?
   budget    Int?
@@ -35,6 +37,7 @@ model DoujinEvent {
 
 model Circle {
   id           String       @id @default(uuid())
+  userId       String?
   event        DoujinEvent? @relation(fields: [eventId], references: [id], onDelete: Cascade)
   eventId      String?
   name         String
@@ -66,6 +69,7 @@ model CircleItem {
 
 model VenueMap {
   id           String   @id @default(uuid())
+  userId       String?
   eventId      String?
   hall         String
   imageDataUrl String
@@ -76,6 +80,7 @@ model VenueMap {
 
 model Distribution {
   id        String   @id @default(uuid())
+  userId    String?
   title     String
   price     Int
   stock     Int

@@ -23,6 +23,11 @@ frontend/.vite/
 setup.md
 docs/manual.md
 
+# Firebase サービスアカウントキー（絶対にコミットしない）
+*service-account*.json
+*serviceAccount*.json
+firebase-adminsdk*.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

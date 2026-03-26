@@ -15,6 +15,7 @@ const statusConfig: Record<Book['status'], { label: string; className: string }>
   owned:    { label: '所持',   className: 'bg-green-400/10 text-green-400 border-green-400/25'  }, // Google Green
   lending:  { label: '貸出中', className: 'bg-yellow-400/10 text-yellow-400 border-yellow-400/25' }, // Google Yellow
   borrowed: { label: '借りた', className: 'bg-blue-400/10 text-blue-400 border-blue-400/25'    }, // Google Blue
+  wishlist: { label: '欲しい', className: 'bg-zinc-800 text-zinc-500 border-zinc-700'           },
   wanted:   { label: 'ほしい', className: 'bg-zinc-800 text-zinc-500 border-zinc-700'           },
 };
 

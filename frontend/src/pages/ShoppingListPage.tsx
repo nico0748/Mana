@@ -210,7 +210,7 @@ const CircleCard: React.FC<CircleCardProps> = ({ circle, items, circleIndex, tot
                     <span className="text-zinc-300 truncate">{item.title}</span>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className="text-zinc-400">¥{item.price.toLocaleString()} × {item.quantity}</span>
+                    <span className="text-zinc-400">¥{(item.price ?? 0).toLocaleString()} × {item.quantity}</span>
                     {circle.status === 'bought' && (
                       <button
                         onClick={() => !addedItemIds.has(item.id) && setAddToLibraryItem(item)}
@@ -661,7 +661,7 @@ const EditEventModal: React.FC<EditEventModalProps> = ({ event, onSave, onClose 
   const [form, setForm] = useState({
     name: event.name,
     date: event.date ?? '',
-    budget: event.budget !== undefined ? String(event.budget) : '',
+    budget: event.budget != null ? String(event.budget) : '',
   });
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -761,7 +761,7 @@ const EventCard: React.FC<EventCardProps> = ({
 
   const hasNavigable = circles.some(c => c.status === 'pending');
   const budgetPct = event.budget ? Math.min(100, (pendingTotal / event.budget) * 100) : 0;
-  const overBudget = event.budget !== undefined && pendingTotal > event.budget;
+  const overBudget = event.budget != null && pendingTotal > event.budget;
 
   return (
     <motion.div
@@ -834,14 +834,14 @@ const EventCard: React.FC<EventCardProps> = ({
               </span>
             )}
           </div>
-          {event.budget !== undefined && (
+          {event.budget != null && (
             <span className="text-xs text-zinc-600 flex-shrink-0">
               予算 ¥{event.budget.toLocaleString()}
             </span>
           )}
         </div>
 
-        {event.budget !== undefined && (
+        {event.budget != null && (
           <div className="mt-2">
             <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
               <div

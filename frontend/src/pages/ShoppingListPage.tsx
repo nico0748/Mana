@@ -261,7 +261,7 @@ const CircleCard: React.FC<CircleCardProps> = ({ circle, items, circleIndex, tot
                 <button
                   type="button"
                   onClick={() => onReorder(circle.id, 'down')}
-                  disabled={circleIndex >= totalCircles - 1}
+                  disabled={(circleIndex ?? 0) >= (totalCircles ?? 1) - 1}
                   title="一つ下へ"
                   className="p-1.5 text-zinc-500 hover:text-zinc-300 disabled:opacity-25 transition-colors rounded"
                 ><ChevronDown className="w-3.5 h-3.5" /></button>

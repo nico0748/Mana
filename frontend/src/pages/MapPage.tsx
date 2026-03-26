@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { eventsApi, circlesApi, venueMapsApi } from '../lib/api';
 import { renderPdfPageToDataUrl } from '../lib/pdfUtils';
-import type { Circle } from '../types';
+import type { } from '../types';
 import { clsx } from 'clsx';
 
 const statusColor: Record<string, string> = {
@@ -198,7 +198,7 @@ const MapPage: React.FC = () => {
       const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
       // Clear pin positions — coordinate axes swap after rotation
       const pinned = hallCircles.filter(c => c.mapX != null);
-      await Promise.all(pinned.map(c => circlesApi.update(c.id, { mapX: null, mapY: null })));
+      await Promise.all(pinned.map(c => circlesApi.update(c.id, { mapX: undefined, mapY: undefined })));
       await saveMapDataUrl(selectedHall, dataUrl);
       setImgNaturalSize(null);
       queryClient.invalidateQueries({ queryKey: ['circles'] });
@@ -258,7 +258,7 @@ const MapPage: React.FC = () => {
         const newX = (c.mapX - nx) / nw * 100;
         const newY = (c.mapY - ny) / nh * 100;
         if (newX < 0 || newX > 100 || newY < 0 || newY > 100) {
-          return circlesApi.update(c.id, { mapX: null, mapY: null });
+          return circlesApi.update(c.id, { mapX: undefined, mapY: undefined });
         }
         return circlesApi.update(c.id, { mapX: newX, mapY: newY });
       }));
@@ -342,7 +342,7 @@ const MapPage: React.FC = () => {
 
   const handleRemovePin = async (circleId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    await circlesApi.update(circleId, { mapX: null, mapY: null });
+    await circlesApi.update(circleId, { mapX: undefined, mapY: undefined });
     queryClient.invalidateQueries({ queryKey: ['circles'] });
   };
 

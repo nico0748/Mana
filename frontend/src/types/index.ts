@@ -6,7 +6,7 @@ export interface Book {
   type: 'commercial' | 'doujin';
   category?: string;
   ndcCode?: string;
-  status: 'owned' | 'lending' | 'borrowed' | 'wishlist';
+  status: 'owned' | 'lending' | 'borrowed' | 'wishlist' | 'wanted';
   price?: number;
   memo?: string;
   coverUrl?: string;

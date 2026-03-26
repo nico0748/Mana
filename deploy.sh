@@ -30,7 +30,7 @@ echo "🔨 Docker イメージをビルド..."
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" build --no-cache
 
 echo "♻️  コンテナを再起動..."
-docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d
+docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --force-recreate
 
 # 古いイメージを削除
 echo "🧹 未使用イメージを削除..."

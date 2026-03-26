@@ -21,7 +21,7 @@ frontend/.vite/
 # 本番環境変数・ローカル作業メモ（絶対にコミットしない）
 .env.prod
 setup.md
-manual.md
+docs/manual.md
 
 # Editor directories and files
 .vscode/*

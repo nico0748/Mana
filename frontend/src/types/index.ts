@@ -62,6 +62,7 @@ export interface CircleItem {
   price: number;
   quantity: number;
   coverUrl?: string;
+  status: 'pending' | 'bought' | 'soldout';
 }
 
 export interface Distribution {

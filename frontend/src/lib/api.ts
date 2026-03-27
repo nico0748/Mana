@@ -55,8 +55,10 @@ export const circlesApi = {
 // ── CircleItems ────────────────────────────────────────────────────────────
 export const circleItemsApi = {
   list: () => req<CircleItem[]>('/circle-items'),
-  create: (data: Omit<CircleItem, 'id'>) =>
+  create: (data: Omit<CircleItem, 'id' | 'status'>) =>
     req<CircleItem>('/circle-items', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: Pick<CircleItem, 'status'>) =>
+    req<CircleItem>(`/circle-items/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id: string) => req<void>(`/circle-items/${id}`, { method: 'DELETE' }),
 };
 

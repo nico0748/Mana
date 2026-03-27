@@ -65,6 +65,7 @@ model CircleItem {
   price    Int
   quantity Int
   coverUrl String?
+  status   String @default("pending")
 }
 
 model VenueMap {

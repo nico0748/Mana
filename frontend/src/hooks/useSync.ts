@@ -26,7 +26,6 @@ const BOOK_CSV_COLUMNS = [
   { key: 'memo',     label: 'メモ'       },
 ] as const;
 
-type CsvKey = typeof BOOK_CSV_COLUMNS[number]['key'];
 
 function booksToRows(books: Book[]): Record<string, string | number | undefined>[] {
   return books.map(b =>
@@ -37,10 +36,6 @@ function booksToRows(books: Book[]): Record<string, string | number | undefined>
 }
 
 function rowsToBookPayloads(rows: Record<string, any>[]): Omit<Book, 'id' | 'createdAt' | 'updatedAt'>[] {
-  const labelToKey = Object.fromEntries(
-    BOOK_CSV_COLUMNS.map(({ key, label }) => [label, key])
-  ) as Record<string, CsvKey>;
-
   return rows
     .filter(row => row['タイトル'])
     .map(row => {

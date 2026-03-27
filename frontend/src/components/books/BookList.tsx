@@ -89,8 +89,11 @@ export const BookList: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const { exportBooksJson, exportBooksCsv, exportBooksExcel, importBooks } = useSync();
-  const importFileRef = useRef<HTMLInputElement>(null);
+  const importJsonRef = useRef<HTMLInputElement>(null);
+  const importCsvRef = useRef<HTMLInputElement>(null);
+  const importExcelRef = useRef<HTMLInputElement>(null);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [importMenuOpen, setImportMenuOpen] = useState(false);
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -102,7 +105,7 @@ export const BookList: React.FC = () => {
       console.error(err);
       alert('インポートに失敗しました。');
     } finally {
-      if (importFileRef.current) importFileRef.current.value = '';
+      e.target.value = '';
     }
   };
 
@@ -241,17 +244,17 @@ export const BookList: React.FC = () => {
         <p className="text-xs text-zinc-600">本棚データのエクスポート・インポート</p>
       </div>
 
-      {/* エクスポートドロップダウン */}
+      {/* エキスポートドロップダウン */}
       <div className="relative">
         <Button
-          onClick={() => setExportMenuOpen(v => !v)}
+          onClick={() => { setExportMenuOpen(v => !v); setImportMenuOpen(false); }}
           variant="outline"
           size="sm"
-          className="w-full flex items-center justify-center gap-2"
+          className="w-full relative flex items-center justify-center gap-2"
         >
           <Download className="w-3.5 h-3.5" />
           エキスポート
-          <ChevronDown className="w-3.5 h-3.5 ml-auto" />
+          <ChevronDown className="w-3.5 h-3.5 absolute right-3" />
         </Button>
         {exportMenuOpen && (
           <>
@@ -283,22 +286,50 @@ export const BookList: React.FC = () => {
         )}
       </div>
 
-      <Button
-        onClick={() => importFileRef.current?.click()}
-        variant="outline"
-        size="sm"
-        className="w-full flex items-center justify-center gap-2"
-      >
-        <Upload className="w-3.5 h-3.5" />
-        インポート
-      </Button>
-      <input
-        ref={importFileRef}
-        type="file"
-        accept="application/json,.json,.csv,.xlsx,.xls"
-        onChange={handleImport}
-        className="hidden"
-      />
+      {/* インポートドロップダウン */}
+      <div className="relative">
+        <Button
+          onClick={() => { setImportMenuOpen(v => !v); setExportMenuOpen(false); }}
+          variant="outline"
+          size="sm"
+          className="w-full relative flex items-center justify-center gap-2"
+        >
+          <Upload className="w-3.5 h-3.5" />
+          インポート
+          <ChevronDown className="w-3.5 h-3.5 absolute right-3" />
+        </Button>
+        {importMenuOpen && (
+          <>
+            <div className="fixed inset-0 z-10" onClick={() => setImportMenuOpen(false)} />
+            <div className="absolute bottom-full left-0 right-0 mb-1 z-20 bg-zinc-800 border border-zinc-700 rounded-lg overflow-hidden shadow-xl">
+              <button
+                onClick={() => { importJsonRef.current?.click(); setImportMenuOpen(false); }}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors"
+              >
+                <FileJson className="w-3.5 h-3.5 text-zinc-400" />
+                JSON 形式
+              </button>
+              <button
+                onClick={() => { importCsvRef.current?.click(); setImportMenuOpen(false); }}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-zinc-400" />
+                CSV 形式
+              </button>
+              <button
+                onClick={() => { importExcelRef.current?.click(); setImportMenuOpen(false); }}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-green-500" />
+                Excel 形式
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+      <input ref={importJsonRef} type="file" accept="application/json,.json" onChange={handleImport} className="hidden" />
+      <input ref={importCsvRef} type="file" accept=".csv" onChange={handleImport} className="hidden" />
+      <input ref={importExcelRef} type="file" accept=".xlsx,.xls" onChange={handleImport} className="hidden" />
       <p className="text-xs text-zinc-700 text-center pt-1">既存データに上書きマージされます</p>
     </div>
   );

@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   Plus, Trash2, Navigation, ChevronDown, ChevronUp, ChevronsUp,
   BookPlus, Check, Calendar, Pencil, FileSpreadsheet, FileDown, PanelLeft, ExternalLink,
-  Download, FileJson,
+  Download, Upload, FileJson,
 } from 'lucide-react';
 import type { Circle, CircleItem, DoujinEvent } from '../types';
 import { Button } from '../components/ui/Button';
@@ -1126,7 +1126,7 @@ const ShoppingListPage: React.FC = () => {
           size="sm"
           className="w-full relative flex items-center justify-center gap-2"
         >
-          <Download className="w-3.5 h-3.5" />
+          <Upload className="w-3.5 h-3.5" />
           エキスポート
           <ChevronDown className="w-3.5 h-3.5 absolute right-3" />
         </Button>
@@ -1168,7 +1168,7 @@ const ShoppingListPage: React.FC = () => {
           size="sm"
           className="w-full relative flex items-center justify-center gap-2"
         >
-          <Download className="w-3.5 h-3.5 rotate-180" />
+          <Download className="w-3.5 h-3.5" />
           インポート
           <ChevronDown className="w-3.5 h-3.5 absolute right-3" />
         </Button>

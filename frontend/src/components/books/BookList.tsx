@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo } from "react";
 import { useBooks, type SortField, type SortDirection } from "../../hooks/useBooks";
-import { useSync, isShareSupported } from "../../hooks/useSync";
+import { useSync } from "../../hooks/useSync";
 import { type Book } from "../../types";
 import { BookItem } from "./BookItem";
 import { BookForm } from "./BookForm";
@@ -8,8 +8,8 @@ import { BookDetailModal } from "./BookDetailModal";
 import { PageSidebar } from "../layout/PageSidebar";
 import { Button } from "../ui/Button";
 import {
-  Plus, ArrowUpAZ, ArrowDownAZ, Share2, Download, Upload, PanelLeft,
-  BookOpen, BookMarked,
+  Plus, ArrowUpAZ, ArrowDownAZ, Download, Upload, PanelLeft,
+  BookOpen, BookMarked, ChevronDown, FileJson, FileSpreadsheet,
 } from "lucide-react";
 import { Input } from "../ui/Input";
 import { AnimatePresence, motion } from "framer-motion";
@@ -88,8 +88,9 @@ export const BookList: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const { exportBooks, importBooks } = useSync();
+  const { exportBooksJson, exportBooksCsv, exportBooksExcel, importBooks } = useSync();
   const importFileRef = useRef<HTMLInputElement>(null);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -239,15 +240,49 @@ export const BookList: React.FC = () => {
         <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-0.5">データ同期</p>
         <p className="text-xs text-zinc-600">本棚データのエクスポート・インポート</p>
       </div>
-      <Button
-        onClick={exportBooks}
-        variant="outline"
-        size="sm"
-        className="w-full flex items-center justify-center gap-2"
-      >
-        {isShareSupported ? <Share2 className="w-3.5 h-3.5" /> : <Download className="w-3.5 h-3.5" />}
-        {isShareSupported ? 'データをシェア' : 'ダウンロード'}
-      </Button>
+
+      {/* エクスポートドロップダウン */}
+      <div className="relative">
+        <Button
+          onClick={() => setExportMenuOpen(v => !v)}
+          variant="outline"
+          size="sm"
+          className="w-full flex items-center justify-center gap-2"
+        >
+          <Download className="w-3.5 h-3.5" />
+          エキスポート
+          <ChevronDown className="w-3.5 h-3.5 ml-auto" />
+        </Button>
+        {exportMenuOpen && (
+          <>
+            <div className="fixed inset-0 z-10" onClick={() => setExportMenuOpen(false)} />
+            <div className="absolute bottom-full left-0 right-0 mb-1 z-20 bg-zinc-800 border border-zinc-700 rounded-lg overflow-hidden shadow-xl">
+              <button
+                onClick={() => { exportBooksJson(); setExportMenuOpen(false); }}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors"
+              >
+                <FileJson className="w-3.5 h-3.5 text-zinc-400" />
+                JSON 形式
+              </button>
+              <button
+                onClick={() => { exportBooksCsv(); setExportMenuOpen(false); }}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-zinc-400" />
+                CSV 形式
+              </button>
+              <button
+                onClick={() => { exportBooksExcel(); setExportMenuOpen(false); }}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-green-500" />
+                Excel 形式
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+
       <Button
         onClick={() => importFileRef.current?.click()}
         variant="outline"
@@ -260,7 +295,7 @@ export const BookList: React.FC = () => {
       <input
         ref={importFileRef}
         type="file"
-        accept="application/json,.json"
+        accept="application/json,.json,.csv,.xlsx,.xls"
         onChange={handleImport}
         className="hidden"
       />

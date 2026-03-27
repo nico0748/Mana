@@ -34,3 +34,43 @@
 @media (prefers-reduced-motion: reduce) {
   .md-ripple { animation: none; }
 }
+
+/* ── Light theme overrides ───────────────────────────────── */
+[data-theme="light"] {
+  --bg-base: #f4f4f5;
+  --bg-card: #ffffff;
+  --border: #d4d4d8;
+  --text-primary: #18181b;
+  --text-secondary: #71717a;
+  --text-muted: #a1a1aa;
+
+  background-color: var(--bg-base) !important;
+  color: var(--text-primary);
+
+  /* App background */
+  & .bg-zinc-950 { background-color: var(--bg-base) !important; }
+  & .bg-zinc-900 { background-color: var(--bg-card) !important; }
+  & .bg-zinc-800 { background-color: #e4e4e7 !important; }
+  & .bg-zinc-700 { background-color: #d4d4d8 !important; }
+  & .border-zinc-800 { border-color: var(--border) !important; }
+  & .border-zinc-700 { border-color: #d4d4d8 !important; }
+  & .text-zinc-100 { color: var(--text-primary) !important; }
+  & .text-zinc-200 { color: #27272a !important; }
+  & .text-zinc-300 { color: #3f3f46 !important; }
+  & .text-zinc-400 { color: var(--text-secondary) !important; }
+  & .text-zinc-500 { color: var(--text-muted) !important; }
+  & .text-zinc-600 { color: #b4b4bc !important; }
+  & .text-zinc-700 { color: #c9c9d0 !important; }
+
+  /* Scrollbar */
+  &::-webkit-scrollbar-thumb { background: #d4d4d8; }
+}
+
+/* ── Reduce motion ───────────────────────────────────────── */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}

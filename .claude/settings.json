@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(git config --global *)",
+      "Bash(brew install *)",
+      "Bash(npm install -g *)",
+      "Bash(yarn global *)",
+      "Bash(chmod 777 *)",
+      "Bash(rm -rf /*)",
+      "Bash(rm -rf ~*)",
+      "Bash(gh repo delete *)",
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
+      "Bash(git reset --hard HEAD~*)",
+      "Bash(sudo rm *)",
+      "Bash(sudo chmod *)",
+      "Bash(> /etc/*)",
+      "Bash(curl * | bash)",
+      "Bash(curl * | sh)",
+      "Bash(wget * | bash)",
+      "Bash(wget * | sh)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/scripts/deny-check.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

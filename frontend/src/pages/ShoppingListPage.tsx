@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   Plus, Trash2, Navigation, ChevronDown, ChevronUp, ChevronsUp,
   BookPlus, Check, Calendar, Pencil, FileSpreadsheet, FileDown, PanelLeft, ExternalLink,
-  Upload, Download, FileJson,
+  Download, FileJson,
 } from 'lucide-react';
 import type { Circle, CircleItem, DoujinEvent } from '../types';
 import { Button } from '../components/ui/Button';
@@ -222,11 +222,6 @@ const CircleCard: React.FC<CircleCardProps> = ({
             ) : (
               items.map(item => {
                 const status = item.status ?? 'pending';
-                const nextStatus: Record<CircleItem['status'], CircleItem['status']> = {
-                  pending: 'bought',
-                  bought: 'soldout',
-                  soldout: 'pending',
-                };
                 return (
                   <div key={item.id} className="space-y-1.5">
                     <div className="flex items-center justify-between gap-2 text-sm">
@@ -509,7 +504,7 @@ const EditCircleModal: React.FC<EditCircleModalProps> = ({ circle, onSave, onClo
 
 interface AddItemModalProps {
   circleId: string;
-  onAdd: (data: Omit<CircleItem, 'id'>) => void;
+  onAdd: (data: Omit<CircleItem, 'id' | 'status'>) => void;
   onClose: () => void;
 }
 

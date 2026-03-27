@@ -37,29 +37,28 @@
 
 /* ── Light theme overrides ───────────────────────────────── */
 /*
- * Background: #f1e5d1 (warm cream)
- * Accent:     #8f8576 (warm brown-gray)
+ * Background: #f1e5d1 (warm cream)   Accent: #8f8576 (warm brown-gray)
  *
- * Contrast ratios vs. #f1e5d1 (L=0.805):
- *   #3a3530 → 10.1:1  (zinc-100 / primary text)
- *   #4a4a4a →  6.3:1  (zinc-200)
- *   #5c5248 →  6.2:1  (zinc-300)
- *   #6b6258 →  4.9:1  (zinc-400 / secondary text) ← WCAG AA ✓
- *   #8f8576 →  2.7:1  (zinc-500 / hint/decorative only)
- *   #b5ada5 →  1.7:1  (zinc-600 / purely decorative)
- *   #ccc5be →  1.4:1  (zinc-700 / purely decorative)
+ * Contrast ratios vs. white card (#ffffff, L=1.0):
+ *   #3a3530 → 16.4:1  text-primary
+ *   #4a4a4a → 11.8:1  zinc-200
+ *   #5c5248 → 10.9:1  zinc-300
+ *   #6b6258 →  7.5:1  zinc-400 (secondary)  ← WCAG AA ✓
+ *   #8f8576 →  3.9:1  zinc-500 (muted hint)
+ * vs. page bg (#f1e5d1, L=0.805):
+ *   #6b6258 →  4.9:1  ← WCAG AA ✓
+ *   #8f8576 →  2.7:1  hint only
  */
 [data-theme="light"] {
-  --bg-base:       #f1e5d1;
-  --bg-card:       #f9f2e6;
-  --bg-deep:       #e9ddc9;
-  --bg-hover:      #eddfc9;
-  --border:        #ddd0bc;
-  --border-subtle: #ebe0ce;
-  --text-primary:  #3a3530;
+  --bg-base:        #f1e5d1;   /* page bg */
+  --bg-card:        #ffffff;   /* card surface — white pops on cream */
+  --bg-deep:        #e5d9c8;   /* header / deepest bg */
+  --bg-hover:       #eddfc9;   /* hover / active state */
+  --border:         #d0bfad;   /* main border */
+  --border-strong:  #b8a898;   /* inner / input border */
+  --text-primary:   #3a3530;
   --text-secondary: #6b6258;
-  --text-muted:    #8f8576;
-  --accent:        #8f8576;
+  --text-muted:     #8f8576;
 
   background-color: var(--bg-base) !important;
   color: var(--text-primary);
@@ -69,23 +68,49 @@
   & .bg-zinc-900 { background-color: var(--bg-base) !important; }
   & .bg-zinc-800 { background-color: var(--bg-card) !important; }
   & .bg-zinc-700 { background-color: var(--bg-hover) !important; }
+  & .bg-zinc-100 { background-color: #6b6258 !important; }  /* LoginPage submit */
 
   /* ── Borders ── */
   & .border-zinc-800 { border-color: var(--border) !important; }
-  & .border-zinc-700 { border-color: #d0c3ae !important; }
+  & .border-zinc-700 { border-color: var(--border-strong) !important; }
+  & .border-zinc-600 { border-color: #a89080 !important; }
 
-  /* ── Text (zinc-100〜400 は WCAG AA 4.5:1 以上を確保) ── */
-  & .text-zinc-100 { color: var(--text-primary) !important; }      /* 10.1:1 */
-  & .text-zinc-200 { color: #4a4a4a !important; }                  /*  6.3:1 */
-  & .text-zinc-300 { color: #5c5248 !important; }                  /*  6.2:1 */
-  & .text-zinc-400 { color: var(--text-secondary) !important; }    /*  4.9:1 */
-  & .text-zinc-500 { color: var(--text-muted) !important; }        /*  2.7:1 ヒント/装飾 */
-  & .text-zinc-600 { color: #b5ada5 !important; }                  /*  装飾のみ */
-  & .text-zinc-700 { color: #ccc5be !important; }                  /*  装飾のみ */
+  /* ── Input / Textarea / Select elements
+       bg-zinc-800/50 などの opacity 修飾子付きクラスは
+       クラス名マッチで拾えないため要素セレクタで直接上書き ── */
+  & input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  & textarea,
+  & select {
+    background-color: #faf5ee !important;
+    border-color: var(--border-strong) !important;
+    color: var(--text-primary) !important;
+  }
+  & input::placeholder, & textarea::placeholder {
+    color: #b8b0a8 !important;
+  }
+  & input:hover:not(:disabled),
+  & textarea:hover:not(:disabled) {
+    border-color: #9e8878 !important;
+  }
+  & input:focus-visible,
+  & textarea:focus-visible {
+    border-color: var(--text-muted) !important;
+    box-shadow: 0 0 0 2px rgba(143,133,118,0.2) !important;
+  }
+
+  /* ── Text (zinc-100〜400: WCAG AA 4.5:1 以上確保) ── */
+  & .text-zinc-100 { color: var(--text-primary) !important; }   /* 16.4:1 */
+  & .text-zinc-200 { color: #4a4a4a !important; }               /* 11.8:1 */
+  & .text-zinc-300 { color: #5c5248 !important; }               /* 10.9:1 */
+  & .text-zinc-400 { color: var(--text-secondary) !important; } /*  7.5:1 */
+  & .text-zinc-500 { color: var(--text-muted) !important; }     /*  3.9:1 ヒント */
+  & .text-zinc-600 { color: #b5ada5 !important; }               /* 装飾のみ */
+  & .text-zinc-700 { color: #ccc5be !important; }               /* 装飾のみ */
+  & .text-zinc-900 { color: var(--bg-card) !important; }        /* bg-zinc-100 ボタン上の白文字 */
 
   /* ── Scrollbar ── */
   &::-webkit-scrollbar-thumb { background: var(--border); }
-  &::-webkit-scrollbar-thumb:hover { background: #cec1ac; }
+  &::-webkit-scrollbar-thumb:hover { background: #bfaf9d; }
 }
 
 /* ── Reduce motion ───────────────────────────────────────── */

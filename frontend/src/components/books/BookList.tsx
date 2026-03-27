@@ -252,7 +252,7 @@ export const BookList: React.FC = () => {
           size="sm"
           className="w-full relative flex items-center justify-center gap-2"
         >
-          <Download className="w-3.5 h-3.5" />
+          <Upload className="w-3.5 h-3.5" />
           エキスポート
           <ChevronDown className="w-3.5 h-3.5 absolute right-3" />
         </Button>
@@ -294,7 +294,7 @@ export const BookList: React.FC = () => {
           size="sm"
           className="w-full relative flex items-center justify-center gap-2"
         >
-          <Upload className="w-3.5 h-3.5" />
+          <Download className="w-3.5 h-3.5" />
           インポート
           <ChevronDown className="w-3.5 h-3.5 absolute right-3" />
         </Button>

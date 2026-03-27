@@ -15,9 +15,38 @@ const tabs = [
 export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const { settings } = useAppSettings();
+  const isLight = settings.theme === 'light';
 
   const isActive = (path: string) =>
     path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
+
+  const headerStyle = isLight
+    ? {
+        background: 'rgba(241,229,209,0.92)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        borderBottom: '1px solid rgba(221,208,188,0.8)',
+      }
+    : {
+        background: 'rgba(9,9,11,0.88)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        borderBottom: '1px solid rgba(39,39,42,0.7)',
+      };
+
+  const bottomNavStyle = isLight
+    ? {
+        background: 'rgba(241,229,209,0.96)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        borderTop: '1px solid rgba(221,208,188,0.8)',
+      }
+    : {
+        background: 'rgba(24,24,27,0.95)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        borderTop: '1px solid rgba(39,39,42,0.7)',
+      };
 
   // Apply reduce-motion class to document
   useEffect(() => {
@@ -45,12 +74,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
       {/* ── Top App Bar ─────────────────────────────────── */}
       <header
         className="sticky top-0 z-30 pt-[env(safe-area-inset-top)]"
-        style={{
-          background: 'rgba(9,9,11,0.88)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          borderBottom: '1px solid rgba(39,39,42,0.7)',
-        }}
+        style={headerStyle}
       >
         <div className="px-4 h-14 flex items-center justify-between">
 
@@ -102,12 +126,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
       {/* ── Bottom Navigation (mobile only) ─────────────── */}
       <nav
         className="sm:hidden fixed bottom-0 inset-x-0 z-30 pb-[env(safe-area-inset-bottom)]"
-        style={{
-          background: 'rgba(24,24,27,0.95)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          borderTop: '1px solid rgba(39,39,42,0.7)',
-        }}
+        style={bottomNavStyle}
       >
         <div className="flex items-center justify-around h-16">
           {tabs.map((tab) => {

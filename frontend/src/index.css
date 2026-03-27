@@ -36,34 +36,56 @@
 }
 
 /* ── Light theme overrides ───────────────────────────────── */
+/*
+ * Background: #f1e5d1 (warm cream)
+ * Accent:     #8f8576 (warm brown-gray)
+ *
+ * Contrast ratios vs. #f1e5d1 (L=0.805):
+ *   #3a3530 → 10.1:1  (zinc-100 / primary text)
+ *   #4a4a4a →  6.3:1  (zinc-200)
+ *   #5c5248 →  6.2:1  (zinc-300)
+ *   #6b6258 →  4.9:1  (zinc-400 / secondary text) ← WCAG AA ✓
+ *   #8f8576 →  2.7:1  (zinc-500 / hint/decorative only)
+ *   #b5ada5 →  1.7:1  (zinc-600 / purely decorative)
+ *   #ccc5be →  1.4:1  (zinc-700 / purely decorative)
+ */
 [data-theme="light"] {
-  --bg-base: #f4f4f5;
-  --bg-card: #ffffff;
-  --border: #d4d4d8;
-  --text-primary: #18181b;
-  --text-secondary: #71717a;
-  --text-muted: #a1a1aa;
+  --bg-base:       #f1e5d1;
+  --bg-card:       #f9f2e6;
+  --bg-deep:       #e9ddc9;
+  --bg-hover:      #eddfc9;
+  --border:        #ddd0bc;
+  --border-subtle: #ebe0ce;
+  --text-primary:  #3a3530;
+  --text-secondary: #6b6258;
+  --text-muted:    #8f8576;
+  --accent:        #8f8576;
 
   background-color: var(--bg-base) !important;
   color: var(--text-primary);
 
-  /* App background */
-  & .bg-zinc-950 { background-color: var(--bg-base) !important; }
-  & .bg-zinc-900 { background-color: var(--bg-card) !important; }
-  & .bg-zinc-800 { background-color: #e4e4e7 !important; }
-  & .bg-zinc-700 { background-color: #d4d4d8 !important; }
-  & .border-zinc-800 { border-color: var(--border) !important; }
-  & .border-zinc-700 { border-color: #d4d4d8 !important; }
-  & .text-zinc-100 { color: var(--text-primary) !important; }
-  & .text-zinc-200 { color: #27272a !important; }
-  & .text-zinc-300 { color: #3f3f46 !important; }
-  & .text-zinc-400 { color: var(--text-secondary) !important; }
-  & .text-zinc-500 { color: var(--text-muted) !important; }
-  & .text-zinc-600 { color: #b4b4bc !important; }
-  & .text-zinc-700 { color: #c9c9d0 !important; }
+  /* ── Backgrounds ── */
+  & .bg-zinc-950 { background-color: var(--bg-deep) !important; }
+  & .bg-zinc-900 { background-color: var(--bg-base) !important; }
+  & .bg-zinc-800 { background-color: var(--bg-card) !important; }
+  & .bg-zinc-700 { background-color: var(--bg-hover) !important; }
 
-  /* Scrollbar */
-  &::-webkit-scrollbar-thumb { background: #d4d4d8; }
+  /* ── Borders ── */
+  & .border-zinc-800 { border-color: var(--border) !important; }
+  & .border-zinc-700 { border-color: #d0c3ae !important; }
+
+  /* ── Text (zinc-100〜400 は WCAG AA 4.5:1 以上を確保) ── */
+  & .text-zinc-100 { color: var(--text-primary) !important; }      /* 10.1:1 */
+  & .text-zinc-200 { color: #4a4a4a !important; }                  /*  6.3:1 */
+  & .text-zinc-300 { color: #5c5248 !important; }                  /*  6.2:1 */
+  & .text-zinc-400 { color: var(--text-secondary) !important; }    /*  4.9:1 */
+  & .text-zinc-500 { color: var(--text-muted) !important; }        /*  2.7:1 ヒント/装飾 */
+  & .text-zinc-600 { color: #b5ada5 !important; }                  /*  装飾のみ */
+  & .text-zinc-700 { color: #ccc5be !important; }                  /*  装飾のみ */
+
+  /* ── Scrollbar ── */
+  &::-webkit-scrollbar-thumb { background: var(--border); }
+  &::-webkit-scrollbar-thumb:hover { background: #cec1ac; }
 }
 
 /* ── Reduce motion ───────────────────────────────────────── */

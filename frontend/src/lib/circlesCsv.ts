@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import type { Circle } from '../types';
+import type { Circle, CircleItem } from '../types';
 
 // ---- Column header mapping (Japanese and English) ----
 type CircleRow = Pick<Circle, 'name' | 'author' | 'hall' | 'block' | 'number' | 'status' | 'xUrl'>;
@@ -59,6 +59,84 @@ export function parseCirclesFile(buffer: ArrayBuffer): CircleRow[] {
 
   if (result.length === 0) throw new Error('インポートできる行がありません');
   return result;
+}
+
+// ---- JSON import ----
+export interface CirclesJsonPayload {
+  circles: CircleRow[];
+  circleItems?: Pick<CircleItem, 'title' | 'type' | 'price' | 'quantity'>[];
+}
+
+export function parseCirclesJson(json: string): CircleRow[] {
+  const data = JSON.parse(json);
+  const raw: any[] = Array.isArray(data)
+    ? data
+    : Array.isArray(data.circles) ? data.circles : [];
+  if (raw.length === 0) throw new Error('有効なサークルデータがありません');
+  return raw
+    .filter(r => r.name)
+    .map(r => ({
+      name:   String(r.name ?? ''),
+      author: String(r.author ?? ''),
+      hall:   String(r.hall ?? ''),
+      block:  String(r.block ?? ''),
+      number: String(r.number ?? ''),
+      status: VALID_STATUSES.has(r.status ?? '') ? (r.status as Circle['status']) : 'pending',
+      xUrl:   r.xUrl || undefined,
+    }));
+}
+
+// ---- Export ----
+const dateStr = () => new Date().toISOString().split('T')[0];
+
+function downloadFile(file: File): void {
+  const url = URL.createObjectURL(file);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = file.name;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function circlesToRows(circles: Circle[]): Record<string, string | number>[] {
+  return circles.map(c => ({
+    'サークル名':   c.name,
+    '作者名':       c.author,
+    'ホール':       c.hall,
+    'ブロック':     c.block,
+    'スペース番号': c.number,
+    'ステータス':   c.status,
+    'X(Twitter)':  c.xUrl ?? '',
+  }));
+}
+
+export function exportCirclesJson(circles: Circle[], circleItems: CircleItem[]): void {
+  const payload = { circles, circleItems };
+  const json = JSON.stringify(payload, null, 2);
+  downloadFile(new File([json], `shopping-list-${dateStr()}.json`, { type: 'application/json' }));
+}
+
+export function exportCirclesCsv(circles: Circle[]): void {
+  const rows = circlesToRows(circles);
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const csv = XLSX.utils.sheet_to_csv(ws);
+  downloadFile(new File(['\uFEFF' + csv], `shopping-list-${dateStr()}.csv`, { type: 'text/csv;charset=utf-8' }));
+}
+
+export function exportCirclesExcel(circles: Circle[]): void {
+  const rows = circlesToRows(circles);
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [
+    { wch: 24 }, { wch: 16 }, { wch: 8 }, { wch: 8 }, { wch: 12 }, { wch: 12 }, { wch: 32 },
+  ];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '買い物リスト');
+  const buf = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+  downloadFile(
+    new File([buf], `shopping-list-${dateStr()}.xlsx`, {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    })
+  );
 }
 
 // ---- Template download ----

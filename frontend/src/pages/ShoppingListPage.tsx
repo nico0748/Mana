@@ -5,12 +5,16 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   Plus, Trash2, Navigation, ChevronDown, ChevronUp, ChevronsUp,
   BookPlus, Check, Calendar, Pencil, FileSpreadsheet, FileDown, PanelLeft, ExternalLink,
+  Upload, Download, FileJson,
 } from 'lucide-react';
 import type { Circle, CircleItem, DoujinEvent } from '../types';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { PageSidebar } from '../components/layout/PageSidebar';
-import { parseCirclesFile, downloadCirclesTemplate } from '../lib/circlesCsv';
+import {
+  parseCirclesFile, parseCirclesJson, downloadCirclesTemplate,
+  exportCirclesJson, exportCirclesCsv, exportCirclesExcel,
+} from '../lib/circlesCsv';
 import { eventsApi, circlesApi, circleItemsApi, booksApi } from '../lib/api';
 
 // ─── status helpers ────────────────────────────────────────────────────────
@@ -911,7 +915,9 @@ const ShoppingListPage: React.FC = () => {
   const [editingCircle, setEditingCircle] = useState<Circle | null>(null);
   const [addItemForCircle, setAddItemForCircle] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const csvImportRef = useRef<HTMLInputElement>(null);
+  const jsonImportRef = useRef<HTMLInputElement>(null);
 
   if (eventsLoading || circlesLoading) {
     return <div className="text-center py-8 text-zinc-400">読み込み中...</div>;
@@ -1025,33 +1031,111 @@ const ShoppingListPage: React.FC = () => {
     }
   };
 
+  const handleCirclesJsonImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const json = await file.text();
+      const rows = parseCirclesJson(json);
+      if (!confirm(`${rows.length}件のサークルをインポートします。よろしいですか？`)) return;
+      const existing = circles ?? [];
+      const baseOrder = existing.length > 0 ? Math.max(...existing.map(c => c.order)) + 1 : 0;
+      await circlesApi.bulkCreate(rows.map((r, i) => ({
+        ...r,
+        order: baseOrder + i,
+        status: r.status ?? 'pending',
+      })));
+      queryClient.invalidateQueries({ queryKey: ['circles'] });
+      alert(`${rows.length}件のサークルをインポートしました。`);
+    } catch (err) {
+      console.error(err);
+      alert(`インポートに失敗しました。\n${err instanceof Error ? err.message : ''}`);
+    } finally {
+      if (jsonImportRef.current) jsonImportRef.current.value = '';
+    }
+  };
+
+  const handleExportJson = () => exportCirclesJson(circlesList, allItems);
+  const handleExportCsv = () => exportCirclesCsv(circlesList);
+  const handleExportExcel = () => exportCirclesExcel(circlesList);
+
   // Circles not linked to any event (legacy / migrated data)
   const orphanCircles = circlesList.filter(c => !c.eventId);
 
   const sidebarFooter = (
     <div className="space-y-2.5">
       <div className="mb-3">
-        <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-0.5">買い物リストのインポート</p>
-        <p className="text-xs text-zinc-600">CSV/Excelからサークルを一括登録</p>
+        <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-0.5">データ管理</p>
+        <p className="text-xs text-zinc-600">買い物リストのエキスポート・インポート</p>
       </div>
-      <Button
-        onClick={downloadCirclesTemplate}
-        variant="outline"
-        size="sm"
-        className="w-full flex items-center justify-center gap-2"
-      >
-        <FileDown className="w-3.5 h-3.5" />
-        テンプレートをDL
-      </Button>
-      <Button
-        onClick={() => csvImportRef.current?.click()}
-        variant="outline"
-        size="sm"
-        className="w-full flex items-center justify-center gap-2"
-      >
-        <FileSpreadsheet className="w-3.5 h-3.5" />
-        CSV / Excelからインポート
-      </Button>
+
+      {/* エキスポート */}
+      <div className="relative">
+        <Button
+          onClick={() => setExportMenuOpen(v => !v)}
+          variant="outline"
+          size="sm"
+          className="w-full flex items-center justify-center gap-2"
+        >
+          <Download className="w-3.5 h-3.5" />
+          エキスポート
+          <ChevronDown className="w-3.5 h-3.5 ml-auto" />
+        </Button>
+        {exportMenuOpen && (
+          <>
+            <div className="fixed inset-0 z-10" onClick={() => setExportMenuOpen(false)} />
+            <div className="absolute bottom-full left-0 right-0 mb-1 z-20 bg-zinc-800 border border-zinc-700 rounded-lg overflow-hidden shadow-xl">
+              <button
+                onClick={() => { handleExportJson(); setExportMenuOpen(false); }}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors"
+              >
+                <FileJson className="w-3.5 h-3.5 text-zinc-400" />
+                JSON 形式
+              </button>
+              <button
+                onClick={() => { handleExportCsv(); setExportMenuOpen(false); }}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-zinc-400" />
+                CSV 形式
+              </button>
+              <button
+                onClick={() => { handleExportExcel(); setExportMenuOpen(false); }}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-green-500" />
+                Excel 形式
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* インポート */}
+      <div className="relative group">
+        <p className="text-xs text-zinc-600 mb-1.5">インポート</p>
+        <div className="flex gap-1.5">
+          <Button
+            onClick={() => jsonImportRef.current?.click()}
+            variant="outline"
+            size="sm"
+            className="flex-1 flex items-center justify-center gap-1.5"
+          >
+            <FileJson className="w-3.5 h-3.5" />
+            JSON
+          </Button>
+          <Button
+            onClick={() => csvImportRef.current?.click()}
+            variant="outline"
+            size="sm"
+            className="flex-1 flex items-center justify-center gap-1.5"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5" />
+            CSV/Excel
+          </Button>
+        </div>
+      </div>
+
       <input
         ref={csvImportRef}
         type="file"
@@ -1059,6 +1143,24 @@ const ShoppingListPage: React.FC = () => {
         onChange={handleCirclesCsvImport}
         className="hidden"
       />
+      <input
+        ref={jsonImportRef}
+        type="file"
+        accept="application/json,.json"
+        onChange={handleCirclesJsonImport}
+        className="hidden"
+      />
+
+      {/* テンプレート */}
+      <Button
+        onClick={downloadCirclesTemplate}
+        variant="outline"
+        size="sm"
+        className="w-full flex items-center justify-center gap-2"
+      >
+        <FileDown className="w-3.5 h-3.5" />
+        テンプレートをDL (CSV/Excel)
+      </Button>
       <p className="text-xs text-zinc-700 text-center pt-1">テンプレートのフォーマットに合わせてご記入ください</p>
     </div>
   );

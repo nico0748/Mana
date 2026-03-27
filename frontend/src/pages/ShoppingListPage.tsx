@@ -105,16 +105,33 @@ interface CircleCardProps {
   onEdit: (circle: Circle) => void;
   onDelete: (id: string) => void;
   onStatusChange: (id: string, status: Circle['status']) => void;
+  onItemStatusChange: (itemId: string, status: CircleItem['status']) => void;
   onReorder?: (id: string, dir: 'top' | 'up' | 'down') => void;
   onAddItem: (circleId: string) => void;
   onDeleteItem: (itemId: string) => void;
 }
 
-const CircleCard: React.FC<CircleCardProps> = ({ circle, items, circleIndex, totalCircles, onEdit, onDelete, onStatusChange, onReorder, onAddItem, onDeleteItem }) => {
+const itemStatusLabel: Record<CircleItem['status'], string> = {
+  pending: '未購入',
+  bought: '購入済',
+  soldout: '完売',
+};
+const itemStatusClass: Record<CircleItem['status'], string> = {
+  pending: 'bg-zinc-700 text-zinc-400',
+  bought: 'bg-green-400/15 text-green-400',
+  soldout: 'bg-rose-400/15 text-rose-400',
+};
+
+const CircleCard: React.FC<CircleCardProps> = ({
+  circle, items, circleIndex, totalCircles,
+  onEdit, onDelete, onStatusChange, onItemStatusChange,
+  onReorder, onAddItem, onDeleteItem,
+}) => {
   const [expanded, setExpanded] = useState(true);
   const [addToLibraryItem, setAddToLibraryItem] = useState<CircleItem | null>(null);
   const [addedItemIds, setAddedItemIds] = useState<Set<string>>(new Set());
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const showItemStatus = items.length > 1;
 
   const handleAddedToLibrary = (itemId: string) => {
     setAddedItemIds(prev => new Set(prev).add(itemId));
@@ -199,42 +216,70 @@ const CircleCard: React.FC<CircleCardProps> = ({ circle, items, circleIndex, tot
             {items.length === 0 ? (
               <p className="text-sm text-zinc-600 italic">アイテムなし</p>
             ) : (
-              items.map(item => (
-                <div key={item.id} className="flex items-center justify-between gap-2 text-sm">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className={`px-1.5 py-0.5 text-xs rounded font-medium flex-shrink-0 ${
-                      item.type === 'shinkan' ? 'bg-blue-400/10 text-blue-400' : 'bg-zinc-800 text-zinc-400'
-                    }`}>
-                      {item.type === 'shinkan' ? '新刊' : item.type === 'kikan' ? '既刊' : item.type}
-                    </span>
-                    <span className="text-zinc-300 truncate">{item.title}</span>
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className="text-zinc-400">¥{(item.price ?? 0).toLocaleString()} × {item.quantity}</span>
-                    {circle.status === 'bought' && (
-                      <button
-                        onClick={() => !addedItemIds.has(item.id) && setAddToLibraryItem(item)}
-                        title={addedItemIds.has(item.id) ? '蔵書に追加済み' : '蔵書に追加'}
-                        className={`p-1 transition-colors ${
-                          addedItemIds.has(item.id)
-                            ? 'text-green-400 cursor-default'
-                            : 'text-zinc-500 hover:text-zinc-300'
-                        }`}
-                      >
-                        {addedItemIds.has(item.id)
-                          ? <Check className="w-3.5 h-3.5" />
-                          : <BookPlus className="w-3.5 h-3.5" />}
-                      </button>
+              items.map(item => {
+                const status = item.status ?? 'pending';
+                const nextStatus: Record<CircleItem['status'], CircleItem['status']> = {
+                  pending: 'bought',
+                  bought: 'soldout',
+                  soldout: 'pending',
+                };
+                return (
+                  <div key={item.id} className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-2 text-sm">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className={`px-1.5 py-0.5 text-xs rounded font-medium flex-shrink-0 ${
+                          item.type === 'shinkan' ? 'bg-blue-400/10 text-blue-400' : 'bg-zinc-800 text-zinc-400'
+                        }`}>
+                          {item.type === 'shinkan' ? '新刊' : item.type === 'kikan' ? '既刊' : item.type}
+                        </span>
+                        <span className="text-zinc-300 truncate">{item.title}</span>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="text-zinc-400">¥{(item.price ?? 0).toLocaleString()} × {item.quantity}</span>
+                        {(circle.status === 'bought' || item.status === 'bought') && (
+                          <button
+                            onClick={() => !addedItemIds.has(item.id) && setAddToLibraryItem(item)}
+                            title={addedItemIds.has(item.id) ? '蔵書に追加済み' : '蔵書に追加'}
+                            className={`p-1 transition-colors ${
+                              addedItemIds.has(item.id)
+                                ? 'text-green-400 cursor-default'
+                                : 'text-zinc-500 hover:text-zinc-300'
+                            }`}
+                          >
+                            {addedItemIds.has(item.id)
+                              ? <Check className="w-3.5 h-3.5" />
+                              : <BookPlus className="w-3.5 h-3.5" />}
+                          </button>
+                        )}
+                        <button
+                          onClick={() => onDeleteItem(item.id)}
+                          className="p-1 text-zinc-600 hover:text-red-400 transition-colors"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                    {/* Per-item status (複数アイテム時のみ表示) */}
+                    {showItemStatus && (
+                      <div className="flex gap-1 pl-1">
+                        {(['pending', 'bought', 'soldout'] as CircleItem['status'][]).map(s => (
+                          <button
+                            key={s}
+                            onClick={() => onItemStatusChange(item.id, s)}
+                            className={`px-2 py-0.5 text-[10px] font-medium rounded-full border transition-all ${
+                              status === s
+                                ? `${itemStatusClass[s]} border-transparent`
+                                : 'bg-transparent text-zinc-600 border-zinc-800 hover:border-zinc-600 hover:text-zinc-400'
+                            }`}
+                          >
+                            {itemStatusLabel[s]}
+                          </button>
+                        ))}
+                      </div>
                     )}
-                    <button
-                      onClick={() => onDeleteItem(item.id)}
-                      className="p-1 text-zinc-600 hover:text-red-400 transition-colors"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
             {items.length > 0 && (
               <div className="flex justify-end pt-1 border-t border-zinc-800">
@@ -731,6 +776,7 @@ interface EventCardProps {
   onEditCircle: (circle: Circle) => void;
   onDeleteCircle: (id: string) => void;
   onStatusChange: (id: string, status: Circle['status']) => void;
+  onItemStatusChange: (itemId: string, status: CircleItem['status']) => void;
   onReorder: (id: string, dir: 'top' | 'up' | 'down') => void;
   onAddItem: (circleId: string) => void;
   onDeleteItem: (itemId: string) => void;
@@ -740,7 +786,7 @@ interface EventCardProps {
 
 const EventCard: React.FC<EventCardProps> = ({
   event, circles, circleItems,
-  onAddCircle, onEditCircle, onDeleteCircle, onStatusChange, onReorder,
+  onAddCircle, onEditCircle, onDeleteCircle, onStatusChange, onItemStatusChange, onReorder,
   onAddItem, onDeleteItem, onDeleteEvent, onEditEvent,
 }) => {
   const [expanded, setExpanded] = useState(true);
@@ -878,6 +924,7 @@ const EventCard: React.FC<EventCardProps> = ({
                   onEdit={onEditCircle}
                   onDelete={onDeleteCircle}
                   onStatusChange={onStatusChange}
+                  onItemStatusChange={onItemStatusChange}
                   onReorder={onReorder}
                   onAddItem={onAddItem}
                   onDeleteItem={onDeleteItem}
@@ -991,13 +1038,18 @@ const ShoppingListPage: React.FC = () => {
     queryClient.invalidateQueries({ queryKey: ['circles'] });
   };
 
-  const handleAddItem = async (data: Omit<CircleItem, 'id'>) => {
+  const handleAddItem = async (data: Omit<CircleItem, 'id' | 'status'>) => {
     await circleItemsApi.create(data);
     queryClient.invalidateQueries({ queryKey: ['circleItems'] });
   };
 
   const handleDeleteItem = async (itemId: string) => {
     await circleItemsApi.delete(itemId);
+    queryClient.invalidateQueries({ queryKey: ['circleItems'] });
+  };
+
+  const handleItemStatusChange = async (itemId: string, status: CircleItem['status']) => {
+    await circleItemsApi.update(itemId, { status });
     queryClient.invalidateQueries({ queryKey: ['circleItems'] });
   };
 
@@ -1111,6 +1163,7 @@ const ShoppingListPage: React.FC = () => {
                 onEditCircle={setEditingCircle}
                 onDeleteCircle={handleDeleteCircle}
                 onStatusChange={handleStatusChange}
+                onItemStatusChange={handleItemStatusChange}
                 onReorder={(id, dir) => handleReorder(id, dir, event.id)}
                 onAddItem={setAddItemForCircle}
                 onDeleteItem={handleDeleteItem}
@@ -1134,6 +1187,7 @@ const ShoppingListPage: React.FC = () => {
                       onEdit={setEditingCircle}
                       onDelete={handleDeleteCircle}
                       onStatusChange={handleStatusChange}
+                      onItemStatusChange={handleItemStatusChange}
                       onAddItem={setAddItemForCircle}
                       onDeleteItem={handleDeleteItem}
                     />

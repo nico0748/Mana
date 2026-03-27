@@ -7,9 +7,9 @@ import {
   Trash2, ChevronLeft, ChevronRight, Plus,
   RotateCcw, RotateCw, Crop,
 } from 'lucide-react';
-import { eventsApi, circlesApi, venueMapsApi } from '../lib/api';
+import { eventsApi, circlesApi, venueMapsApi, circleItemsApi } from '../lib/api';
 import { renderPdfPageToDataUrl } from '../lib/pdfUtils';
-import type { } from '../types';
+import type { CircleItem } from '../types';
 import { clsx } from 'clsx';
 
 const statusColor: Record<string, string> = {
@@ -72,6 +72,7 @@ const MapPage: React.FC = () => {
   const { data: events } = useQuery({ queryKey: ['events'], queryFn: eventsApi.list });
   const { data: circles } = useQuery({ queryKey: ['circles'], queryFn: circlesApi.list });
   const { data: venueMaps } = useQuery({ queryKey: ['venueMaps'], queryFn: venueMapsApi.list });
+  const { data: circleItems } = useQuery({ queryKey: ['circleItems'], queryFn: circleItemsApi.list });
 
   // Auto-select event
   useEffect(() => {
@@ -619,47 +620,91 @@ const MapPage: React.FC = () => {
                       )} />
 
                       {/* Popup: hover on desktop, tap on mobile */}
-                      <div className={clsx(
-                        'absolute bottom-6 left-1/2 -translate-x-1/2 z-20 transition-opacity duration-150',
-                        activePinId === circle.id
-                          ? 'opacity-100 pointer-events-auto'
-                          : 'opacity-0 group-hover:opacity-100 pointer-events-none'
-                      )}>
-                        <div
-                          className="bg-zinc-800 text-zinc-100 text-xs rounded-lg shadow-xl border border-zinc-700 text-left min-w-[148px]"
-                          onClick={e => e.stopPropagation()}
-                        >
-                          <div className="px-2.5 py-2 border-b border-zinc-700/60">
-                            <div className="font-mono text-zinc-500 text-[10px]">{circle.block}-{circle.number}</div>
-                            <div className="text-zinc-200 font-medium truncate max-w-[160px]">{circle.name}</div>
+                      {(() => {
+                        const pinItems = (circleItems ?? []).filter(i => i.circleId === circle.id);
+                        return (
+                          <div className={clsx(
+                            'absolute bottom-6 left-1/2 -translate-x-1/2 z-20 transition-opacity duration-150',
+                            activePinId === circle.id
+                              ? 'opacity-100 pointer-events-auto'
+                              : 'opacity-0 group-hover:opacity-100 pointer-events-none'
+                          )}>
+                            <div
+                              className="bg-zinc-800 text-zinc-100 text-xs rounded-lg shadow-xl border border-zinc-700 text-left min-w-[160px] max-w-[220px]"
+                              onClick={e => e.stopPropagation()}
+                            >
+                              <div className="px-2.5 py-2 border-b border-zinc-700/60">
+                                <div className="font-mono text-zinc-500 text-[10px]">{circle.block}-{circle.number}</div>
+                                <div className="text-zinc-200 font-medium truncate">{circle.name}</div>
+                              </div>
+                              {/* サークルレベルのステータス */}
+                              <div className="flex gap-1 p-1.5 border-b border-zinc-700/40">
+                                {([
+                                  { s: 'pending',  label: '未購入', active: 'bg-zinc-600 text-zinc-200'        },
+                                  { s: 'bought',   label: '購入済', active: 'bg-emerald-500/20 text-emerald-400' },
+                                  { s: 'soldout',  label: '完売',   active: 'bg-red-500/20 text-red-400'        },
+                                ] as const).map(({ s, label, active }) => (
+                                  <button
+                                    key={s}
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      await circlesApi.update(circle.id, { status: s, updatedAt: Date.now() });
+                                      queryClient.invalidateQueries({ queryKey: ['circles'] });
+                                    }}
+                                    className={clsx(
+                                      'flex-1 py-1 rounded text-[10px] font-medium transition-colors',
+                                      circle.status === s
+                                        ? active
+                                        : 'text-zinc-600 hover:text-zinc-300 hover:bg-zinc-700'
+                                    )}
+                                  >
+                                    {label}
+                                  </button>
+                                ))}
+                              </div>
+                              {/* アイテムごとのステータス（複数アイテム時） */}
+                              {pinItems.length > 1 && (
+                                <div className="px-2 py-1.5 space-y-1.5 max-h-40 overflow-y-auto">
+                                  {pinItems.map(item => {
+                                    const s = item.status ?? 'pending';
+                                    const itemStatusActive: Record<CircleItem['status'], string> = {
+                                      pending: 'bg-zinc-600 text-zinc-200',
+                                      bought: 'bg-emerald-500/20 text-emerald-400',
+                                      soldout: 'bg-red-500/20 text-red-400',
+                                    };
+                                    return (
+                                      <div key={item.id} className="space-y-0.5">
+                                        <div className="text-[10px] text-zinc-400 truncate">{item.title}</div>
+                                        <div className="flex gap-1">
+                                          {(['pending', 'bought', 'soldout'] as CircleItem['status'][]).map(st => (
+                                            <button
+                                              key={st}
+                                              onClick={async (e) => {
+                                                e.stopPropagation();
+                                                await circleItemsApi.update(item.id, { status: st });
+                                                queryClient.invalidateQueries({ queryKey: ['circleItems'] });
+                                              }}
+                                              className={clsx(
+                                                'flex-1 py-0.5 rounded text-[9px] font-medium transition-colors',
+                                                s === st
+                                                  ? itemStatusActive[st]
+                                                  : 'text-zinc-600 hover:text-zinc-300 hover:bg-zinc-700'
+                                              )}
+                                            >
+                                              {st === 'pending' ? '未' : st === 'bought' ? '済' : '完売'}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                            <div className="w-2 h-2 bg-zinc-800 border-b border-r border-zinc-700 rotate-45 mx-auto -mt-1" />
                           </div>
-                          <div className="flex gap-1 p-1.5">
-                            {([
-                              { s: 'pending',  label: '未購入', active: 'bg-zinc-600 text-zinc-200'        },
-                              { s: 'bought',   label: '購入済', active: 'bg-emerald-500/20 text-emerald-400' },
-                              { s: 'soldout',  label: '完売',   active: 'bg-red-500/20 text-red-400'        },
-                            ] as const).map(({ s, label, active }) => (
-                              <button
-                                key={s}
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  await circlesApi.update(circle.id, { status: s, updatedAt: Date.now() });
-                                  queryClient.invalidateQueries({ queryKey: ['circles'] });
-                                }}
-                                className={clsx(
-                                  'flex-1 py-1 rounded text-[10px] font-medium transition-colors',
-                                  circle.status === s
-                                    ? active
-                                    : 'text-zinc-600 hover:text-zinc-300 hover:bg-zinc-700'
-                                )}
-                              >
-                                {label}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="w-2 h-2 bg-zinc-800 border-b border-r border-zinc-700 rotate-45 mx-auto -mt-1" />
-                      </div>
+                        );
+                      })()}
 
                       {editMode && (
                         <button

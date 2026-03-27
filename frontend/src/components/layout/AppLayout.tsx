@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { BookOpen, ShoppingBag, Map, Settings } from 'lucide-react';
 import { clsx } from 'clsx';
 import { motion } from 'framer-motion';
+import { useAppSettings } from '../../contexts/AppSettingsContext';
 
 const tabs = [
   { label: '本棚',   path: '/',         icon: BookOpen   },
@@ -13,12 +14,33 @@ const tabs = [
 
 export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
+  const { settings } = useAppSettings();
 
   const isActive = (path: string) =>
     path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
 
+  // Apply reduce-motion class to document
+  useEffect(() => {
+    if (settings.reduceMotion) {
+      document.documentElement.classList.add('reduce-motion');
+    } else {
+      document.documentElement.classList.remove('reduce-motion');
+    }
+  }, [settings.reduceMotion]);
+
   return (
-    <div className="min-h-dvh bg-zinc-950 text-zinc-100">
+    <div className="min-h-dvh bg-zinc-950 text-zinc-100 relative">
+
+      {/* 背景画像 */}
+      {settings.backgroundImageDataUrl && (
+        <div
+          className="fixed inset-0 z-0 bg-cover bg-center pointer-events-none"
+          style={{
+            backgroundImage: `url(${settings.backgroundImageDataUrl})`,
+            opacity: settings.backgroundOpacity / 100,
+          }}
+        />
+      )}
 
       {/* ── Top App Bar ─────────────────────────────────── */}
       <header

@@ -958,8 +958,10 @@ const ShoppingListPage: React.FC = () => {
   const [addItemForCircle, setAddItemForCircle] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [importMenuOpen, setImportMenuOpen] = useState(false);
   const csvImportRef = useRef<HTMLInputElement>(null);
   const jsonImportRef = useRef<HTMLInputElement>(null);
+  const excelImportRef = useRef<HTMLInputElement>(null);
 
   if (eventsLoading || circlesLoading) {
     return <div className="text-center py-8 text-zinc-400">読み込み中...</div>;
@@ -1074,7 +1076,7 @@ const ShoppingListPage: React.FC = () => {
       console.error(err);
       alert(`インポートに失敗しました。\n${err instanceof Error ? err.message : ''}`);
     } finally {
-      if (csvImportRef.current) csvImportRef.current.value = '';
+      e.target.value = '';
     }
   };
 
@@ -1098,7 +1100,7 @@ const ShoppingListPage: React.FC = () => {
       console.error(err);
       alert(`インポートに失敗しました。\n${err instanceof Error ? err.message : ''}`);
     } finally {
-      if (jsonImportRef.current) jsonImportRef.current.value = '';
+      e.target.value = '';
     }
   };
 
@@ -1116,17 +1118,17 @@ const ShoppingListPage: React.FC = () => {
         <p className="text-xs text-zinc-600">買い物リストのエキスポート・インポート</p>
       </div>
 
-      {/* エキスポート */}
+      {/* エキスポートドロップダウン */}
       <div className="relative">
         <Button
-          onClick={() => setExportMenuOpen(v => !v)}
+          onClick={() => { setExportMenuOpen(v => !v); setImportMenuOpen(false); }}
           variant="outline"
           size="sm"
-          className="w-full flex items-center justify-center gap-2"
+          className="w-full relative flex items-center justify-center gap-2"
         >
           <Download className="w-3.5 h-3.5" />
           エキスポート
-          <ChevronDown className="w-3.5 h-3.5 ml-auto" />
+          <ChevronDown className="w-3.5 h-3.5 absolute right-3" />
         </Button>
         {exportMenuOpen && (
           <>
@@ -1158,43 +1160,67 @@ const ShoppingListPage: React.FC = () => {
         )}
       </div>
 
-      {/* インポート */}
-      <div className="relative group">
-        <p className="text-xs text-zinc-600 mb-1.5">インポート</p>
-        <div className="flex gap-1.5">
-          <Button
-            onClick={() => jsonImportRef.current?.click()}
-            variant="outline"
-            size="sm"
-            className="flex-1 flex items-center justify-center gap-1.5"
-          >
-            <FileJson className="w-3.5 h-3.5" />
-            JSON
-          </Button>
-          <Button
-            onClick={() => csvImportRef.current?.click()}
-            variant="outline"
-            size="sm"
-            className="flex-1 flex items-center justify-center gap-1.5"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5" />
-            CSV/Excel
-          </Button>
-        </div>
+      {/* インポートドロップダウン */}
+      <div className="relative">
+        <Button
+          onClick={() => { setImportMenuOpen(v => !v); setExportMenuOpen(false); }}
+          variant="outline"
+          size="sm"
+          className="w-full relative flex items-center justify-center gap-2"
+        >
+          <Download className="w-3.5 h-3.5 rotate-180" />
+          インポート
+          <ChevronDown className="w-3.5 h-3.5 absolute right-3" />
+        </Button>
+        {importMenuOpen && (
+          <>
+            <div className="fixed inset-0 z-10" onClick={() => setImportMenuOpen(false)} />
+            <div className="absolute bottom-full left-0 right-0 mb-1 z-20 bg-zinc-800 border border-zinc-700 rounded-lg overflow-hidden shadow-xl">
+              <button
+                onClick={() => { jsonImportRef.current?.click(); setImportMenuOpen(false); }}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors"
+              >
+                <FileJson className="w-3.5 h-3.5 text-zinc-400" />
+                JSON 形式
+              </button>
+              <button
+                onClick={() => { csvImportRef.current?.click(); setImportMenuOpen(false); }}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-zinc-400" />
+                CSV 形式
+              </button>
+              <button
+                onClick={() => { excelImportRef.current?.click(); setImportMenuOpen(false); }}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs text-zinc-300 hover:bg-zinc-700 transition-colors"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-green-500" />
+                Excel 形式
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
-      <input
-        ref={csvImportRef}
-        type="file"
-        accept=".csv,.xlsx,.xls"
-        onChange={handleCirclesCsvImport}
-        className="hidden"
-      />
       <input
         ref={jsonImportRef}
         type="file"
         accept="application/json,.json"
         onChange={handleCirclesJsonImport}
+        className="hidden"
+      />
+      <input
+        ref={csvImportRef}
+        type="file"
+        accept=".csv"
+        onChange={handleCirclesCsvImport}
+        className="hidden"
+      />
+      <input
+        ref={excelImportRef}
+        type="file"
+        accept=".xlsx,.xls"
+        onChange={handleCirclesCsvImport}
         className="hidden"
       />
 

@@ -10,6 +10,7 @@ import ToolsPage from "./pages/ToolsPage";
 import MapPage from "./pages/MapPage";
 import Onboarding, { ONBOARDING_KEY } from "./components/Onboarding";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { AppSettingsProvider } from "./contexts/AppSettingsContext";
 import { LoginPage } from "./pages/LoginPage";
 
 const queryClient = new QueryClient({
@@ -79,7 +80,9 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <AppInner />
+        <AppSettingsProvider>
+          <AppInner />
+        </AppSettingsProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

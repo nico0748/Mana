@@ -22,10 +22,10 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
 
   const headerStyle = isLight
     ? {
-        background: 'rgba(241,229,209,0.92)',
+        background: 'rgba(232,219,198,0.93)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(221,208,188,0.8)',
+        borderBottom: '1px solid rgba(196,170,144,0.7)',
       }
     : {
         background: 'rgba(9,9,11,0.88)',
@@ -36,10 +36,10 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
 
   const bottomNavStyle = isLight
     ? {
-        background: 'rgba(241,229,209,0.96)',
+        background: 'rgba(232,219,198,0.97)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
-        borderTop: '1px solid rgba(221,208,188,0.8)',
+        borderTop: '1px solid rgba(196,170,144,0.7)',
       }
     : {
         background: 'rgba(24,24,27,0.95)',

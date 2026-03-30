@@ -4,7 +4,7 @@ import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { BarcodeScanner } from "./BarcodeScanner";
 import { fetchBookByIsbn, searchBookByTitle } from "../../lib/bookApi";
-import { Scan, Search } from "lucide-react";
+import { Scan, Search, X, Plus } from "lucide-react";
 
 interface BookFormProps {
   initialData?: Partial<Book>;
@@ -30,6 +30,8 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
     memo: initialData?.memo || "",
     coverUrl: initialData?.coverUrl || "",
   });
+  const [tags, setTags] = useState<string[]>(initialData?.tags ?? []);
+  const [tagInput, setTagInput] = useState("");
 
   const fetchBookData = async (isbn: string) => {
     if (!isbn) return;
@@ -84,6 +86,18 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const addTag = () => {
+    const t = tagInput.trim();
+    if (t && !tags.includes(t)) setTags(prev => [...prev, t]);
+    setTagInput("");
+  };
+
+  const removeTag = (tag: string) => setTags(prev => prev.filter(t => t !== tag));
+
+  const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') { e.preventDefault(); addTag(); }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -91,6 +105,7 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
       const submitData = {
         ...formData,
         price: formData.price !== "" ? Number(formData.price) : undefined,
+        tags,
       };
       await onSubmit(submitData as Omit<import('../../types').Book, 'id' | 'createdAt' | 'updatedAt'>);
     } catch (error) {
@@ -304,6 +319,33 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
             className="w-full bg-zinc-900 border border-zinc-700 text-zinc-100 rounded-md p-3 text-sm placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-white/10 focus:border-zinc-400"
             placeholder="メモ..."
           />
+        </div>
+
+        <div className="col-span-2">
+          <label className="block text-sm font-medium text-zinc-300 mb-1">タグ</label>
+          {tags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {tags.map(tag => (
+                <span key={tag} className="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-violet-400/10 text-violet-300 border border-violet-400/25">
+                  {tag}
+                  <button type="button" onClick={() => removeTag(tag)} className="hover:text-red-400 transition-colors">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+          <div className="flex gap-2">
+            <Input
+              value={tagInput}
+              onChange={e => setTagInput(e.target.value)}
+              onKeyDown={handleTagInputKeyDown}
+              placeholder="タグを入力してEnter"
+            />
+            <Button type="button" variant="outline" size="icon" onClick={addTag} disabled={!tagInput.trim()}>
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 

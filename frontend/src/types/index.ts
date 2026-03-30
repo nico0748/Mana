@@ -10,6 +10,7 @@ export interface Book {
   price?: number;
   memo?: string;
   coverUrl?: string;
+  tags?: string[];
   createdAt: number;
   updatedAt: number;
 }

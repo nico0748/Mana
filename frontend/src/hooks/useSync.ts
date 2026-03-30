@@ -24,13 +24,18 @@ const BOOK_CSV_COLUMNS = [
   { key: 'status',   label: 'ステータス' },
   { key: 'price',    label: '価格'       },
   { key: 'memo',     label: 'メモ'       },
+  { key: 'tags',     label: 'タグ'       },
 ] as const;
 
 
 function booksToRows(books: Book[]): Record<string, string | number | undefined>[] {
   return books.map(b =>
     Object.fromEntries(
-      BOOK_CSV_COLUMNS.map(({ key, label }) => [label, (b as any)[key] ?? ''])
+      BOOK_CSV_COLUMNS.map(({ key, label }) => {
+        // タグは配列をカンマ区切り文字列に変換
+        if (key === 'tags') return [label, (b.tags ?? []).join(',')];
+        return [label, (b as any)[key] ?? ''];
+      })
     )
   );
 }
@@ -44,6 +49,7 @@ function rowsToBookPayloads(rows: Record<string, any>[]): Omit<Book, 'id' | 'cre
         return v !== undefined && v !== '' ? String(v) : undefined;
       };
       const priceRaw = get('価格');
+      const tagsRaw = get('タグ');
       return {
         title:    get('タイトル') ?? '',
         author:   get('著者') ?? '',
@@ -54,6 +60,7 @@ function rowsToBookPayloads(rows: Record<string, any>[]): Omit<Book, 'id' | 'cre
         status:   (get('ステータス') ?? 'owned') as Book['status'],
         price:    priceRaw ? Number(priceRaw) : undefined,
         memo:     get('メモ'),
+        tags:     tagsRaw ? tagsRaw.split(',').map((t: string) => t.trim()).filter(Boolean) : [],
       };
     });
 }

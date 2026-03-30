@@ -109,6 +109,16 @@ export const BookItem: React.FC<BookItemProps> = ({ book, onSelect, onEdit, onDe
             </span>
           )}
 
+          {book.tags && book.tags.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {book.tags.map(tag => (
+                <span key={tag} className="px-2 py-0.5 text-xs rounded-full bg-violet-400/10 text-violet-300 border border-violet-400/25">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+
           {book.memo && (
             <p className="mt-2 text-xs text-zinc-600 line-clamp-2 leading-relaxed">{book.memo}</p>
           )}

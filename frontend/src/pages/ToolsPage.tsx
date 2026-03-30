@@ -1,8 +1,10 @@
 import React, { useState, useRef } from 'react';
 import {
+  Settings, Database, Palette, MessageSquare,
+  Briefcase, HelpCircle, User,
+  ChevronRight, ChevronLeft,
   Sun, Moon, ImageIcon, Trash2, Type, Zap, ZapOff,
-  User, Mail, Calendar, Shield,
-  ChevronDown, ChevronUp, FileText,
+  Mail, Calendar, Shield, FileText, ExternalLink, LogOut,
 } from 'lucide-react';
 import { useAppSettings } from '../contexts/AppSettingsContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -79,45 +81,92 @@ const PRIVACY_TEXT = `同人++ プライバシーポリシー
 
 以上`;
 
-// ── LegalSection コンポーネント ─────────────────────────────────────────────
+// ── 型定義 ──────────────────────────────────────────────────────────────────
 
-interface LegalSectionProps {
-  title: string;
+type CategoryId = 'general' | 'personalize' | 'data' | 'feedback' | 'service' | 'help' | 'account';
+
+interface Category {
+  id: CategoryId;
+  label: string;
   icon: React.ReactNode;
-  content: string;
 }
 
-const LegalSection: React.FC<LegalSectionProps> = ({ title, icon, content }) => {
-  const [open, setOpen] = useState(false);
+const categories: Category[] = [
+  { id: 'general',     label: '一般',           icon: <Settings      className="w-[18px] h-[18px]" /> },
+  { id: 'personalize', label: 'パーソナライズ', icon: <Palette       className="w-[18px] h-[18px]" /> },
+  { id: 'data',        label: 'データ',         icon: <Database      className="w-[18px] h-[18px]" /> },
+  { id: 'feedback',    label: 'フィードバック', icon: <MessageSquare className="w-[18px] h-[18px]" /> },
+  { id: 'service',     label: 'サービス',       icon: <Briefcase     className="w-[18px] h-[18px]" /> },
+  { id: 'help',        label: 'ヘルプ',         icon: <HelpCircle    className="w-[18px] h-[18px]" /> },
+  { id: 'account',     label: 'アカウント',     icon: <User          className="w-[18px] h-[18px]" /> },
+];
 
-  return (
-    <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
-      <button
-        onClick={() => setOpen(v => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-zinc-800/50 transition-colors"
-      >
-        <div className="flex items-center gap-2">
-          {icon}
-          <span className="text-sm font-medium text-zinc-200">{title}</span>
-        </div>
-        {open ? <ChevronUp className="w-4 h-4 text-zinc-500" /> : <ChevronDown className="w-4 h-4 text-zinc-500" />}
-      </button>
-      {open && (
-        <div className="px-4 pb-4 border-t border-zinc-800">
-          <pre className="text-xs text-zinc-400 leading-relaxed whitespace-pre-wrap mt-3 max-h-96 overflow-y-auto">
-            {content}
-          </pre>
-        </div>
-      )}
+// ── 共通 UI パーツ ───────────────────────────────────────────────────────────
+
+const SettingRow: React.FC<{
+  icon?: React.ReactNode;
+  label: string;
+  value?: string;
+  onClick?: () => void;
+  right?: React.ReactNode;
+  danger?: boolean;
+}> = ({ icon, label, value, onClick, right, danger }) => (
+  <button
+    onClick={onClick}
+    disabled={!onClick && !right}
+    className={`w-full flex items-center justify-between px-4 py-3.5 text-left transition-colors ${
+      onClick ? 'hover:bg-zinc-800/60 cursor-pointer' : 'cursor-default'
+    }`}
+  >
+    <div className="flex items-center gap-3">
+      {icon && <span className={danger ? 'text-red-400' : 'text-zinc-500'}>{icon}</span>}
+      <span className={`text-sm ${danger ? 'text-red-400' : 'text-zinc-200'}`}>{label}</span>
     </div>
-  );
-};
+    {right ?? (
+      value !== undefined && (
+        <div className="flex items-center gap-1.5 text-zinc-500">
+          <span className="text-sm">{value}</span>
+          {onClick && <ChevronRight className="w-4 h-4" />}
+        </div>
+      )
+    )}
+  </button>
+);
 
-// ── ToolsPage ───────────────────────────────────────────────────────────────
+const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <p className="px-4 pt-5 pb-1.5 text-xs font-semibold text-zinc-500 uppercase tracking-wider">{children}</p>
+);
 
-const ToolsPage: React.FC = () => {
-  const { settings, update, reset } = useAppSettings();
-  const { user } = useAuth();
+const Card: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="mx-4 rounded-xl border border-zinc-800 overflow-hidden divide-y divide-zinc-800">
+    {children}
+  </div>
+);
+
+// ── カテゴリ別コンテンツ ─────────────────────────────────────────────────────
+
+const GeneralContent: React.FC<{
+  settings: ReturnType<typeof useAppSettings>['settings'];
+  update: ReturnType<typeof useAppSettings>['update'];
+}> = ({ settings, update }) => (
+  <div className="pb-6">
+    <SectionTitle>外観</SectionTitle>
+    <Card>
+      <SettingRow
+        icon={settings.theme === 'dark' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+        label="テーマ"
+        value={settings.theme === 'dark' ? 'ダーク' : 'ライト'}
+        onClick={() => update({ theme: settings.theme === 'dark' ? 'light' : 'dark' })}
+      />
+    </Card>
+  </div>
+);
+
+const PersonalizeContent: React.FC<{
+  settings: ReturnType<typeof useAppSettings>['settings'];
+  update: ReturnType<typeof useAppSettings>['update'];
+  reset: ReturnType<typeof useAppSettings>['reset'];
+}> = ({ settings, update, reset }) => {
   const bgImageRef = useRef<HTMLInputElement>(null);
 
   const handleBgImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -131,18 +180,206 @@ const ToolsPage: React.FC = () => {
     if (bgImageRef.current) bgImageRef.current.value = '';
   };
 
+  return (
+    <div className="pb-6">
+      <SectionTitle>背景</SectionTitle>
+      <Card>
+        <div className="px-4 py-3.5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <ImageIcon className="w-4 h-4 text-zinc-500" />
+              <span className="text-sm text-zinc-200">背景画像</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {settings.backgroundImageDataUrl && (
+                <button
+                  onClick={() => update({ backgroundImageDataUrl: null })}
+                  className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-zinc-800 rounded-lg transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+              <button
+                onClick={() => bgImageRef.current?.click()}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 text-zinc-200 border border-zinc-700 hover:bg-zinc-700 transition-colors"
+              >
+                選択
+              </button>
+            </div>
+          </div>
+          {settings.backgroundImageDataUrl && (
+            <div className="space-y-2">
+              <div className="w-full h-16 rounded-lg overflow-hidden border border-zinc-700">
+                <img src={settings.backgroundImageDataUrl} alt="背景プレビュー" className="w-full h-full object-cover" />
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-zinc-500 flex-shrink-0">不透明度</span>
+                <input
+                  type="range" min={5} max={100}
+                  value={settings.backgroundOpacity}
+                  onChange={e => update({ backgroundOpacity: Number(e.target.value) })}
+                  className="flex-1 accent-zinc-400"
+                />
+                <span className="text-xs text-zinc-400 w-8 text-right tabular-nums">{settings.backgroundOpacity}%</span>
+              </div>
+            </div>
+          )}
+          <input ref={bgImageRef} type="file" accept="image/*" onChange={handleBgImageUpload} className="hidden" />
+        </div>
+      </Card>
+
+      <SectionTitle>テキスト</SectionTitle>
+      <Card>
+        <SettingRow
+          icon={<Type className="w-4 h-4" />}
+          label="フォントサイズ"
+          right={
+            <div className="flex bg-zinc-800 rounded-lg p-0.5 gap-0.5">
+              {(['normal', 'large'] as const).map(size => (
+                <button
+                  key={size}
+                  onClick={() => update({ fontSize: size })}
+                  className={`px-3 py-1 text-xs rounded-md font-medium transition-colors ${
+                    settings.fontSize === size ? 'bg-zinc-600 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
+                  }`}
+                >
+                  {size === 'normal' ? '標準' : '大'}
+                </button>
+              ))}
+            </div>
+          }
+        />
+      </Card>
+
+      <SectionTitle>アクセシビリティ</SectionTitle>
+      <Card>
+        <SettingRow
+          icon={settings.reduceMotion ? <ZapOff className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
+          label="アニメーション削減"
+          right={
+            <button
+              onClick={() => update({ reduceMotion: !settings.reduceMotion })}
+              className={`relative w-10 h-6 rounded-full transition-colors ${settings.reduceMotion ? 'bg-zinc-500' : 'bg-zinc-700'}`}
+            >
+              <span className={`absolute top-1 w-4 h-4 bg-zinc-100 rounded-full transition-transform ${settings.reduceMotion ? 'translate-x-5' : 'translate-x-1'}`} />
+            </button>
+          }
+        />
+      </Card>
+
+      <div className="px-4 pt-5">
+        <button
+          onClick={reset}
+          className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+        >
+          設定をリセット
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const DataContent: React.FC = () => (
+  <div className="pb-6">
+    <SectionTitle>エクスポート / インポート</SectionTitle>
+    <Card>
+      <SettingRow
+        icon={<Database className="w-4 h-4" />}
+        label="蔵書データのエクスポート・インポート"
+        value="本棚ページ"
+        onClick={() => window.location.assign('/')}
+      />
+      <SettingRow
+        icon={<Database className="w-4 h-4" />}
+        label="買い物リストのエクスポート・インポート"
+        value="買い物ページ"
+        onClick={() => window.location.assign('/shopping')}
+      />
+    </Card>
+    <p className="px-4 pt-3 text-xs text-zinc-600">各ページのサイドバーから JSON / CSV / Excel 形式でデータを管理できます。</p>
+  </div>
+);
+
+const FeedbackContent: React.FC = () => (
+  <div className="pb-6">
+    <SectionTitle>フィードバック</SectionTitle>
+    <Card>
+      <SettingRow
+        icon={<ExternalLink className="w-4 h-4" />}
+        label="フィードバックを送る"
+        value="Google フォーム"
+        onClick={() => window.open('https://forms.google.com', '_blank')}
+      />
+    </Card>
+    <p className="px-4 pt-3 text-xs text-zinc-600">ご意見・ご要望・バグ報告はフォームからお送りください。</p>
+  </div>
+);
+
+const ServiceContent: React.FC = () => {
+  const [openTerms, setOpenTerms] = useState(false);
+  const [openPrivacy, setOpenPrivacy] = useState(false);
+
+  return (
+    <div className="pb-6">
+      <SectionTitle>法的情報</SectionTitle>
+      <Card>
+        <div>
+          <button
+            onClick={() => setOpenTerms(v => !v)}
+            className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-zinc-800/60 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <FileText className="w-4 h-4 text-zinc-500" />
+              <span className="text-sm text-zinc-200">利用規約</span>
+            </div>
+            <ChevronRight className={`w-4 h-4 text-zinc-500 transition-transform ${openTerms ? 'rotate-90' : ''}`} />
+          </button>
+          {openTerms && (
+            <div className="px-4 pb-4 border-t border-zinc-800">
+              <pre className="text-xs text-zinc-400 leading-relaxed whitespace-pre-wrap mt-3 max-h-80 overflow-y-auto">{TERMS_TEXT}</pre>
+            </div>
+          )}
+        </div>
+        <div>
+          <button
+            onClick={() => setOpenPrivacy(v => !v)}
+            className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-zinc-800/60 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <Shield className="w-4 h-4 text-zinc-500" />
+              <span className="text-sm text-zinc-200">プライバシーポリシー</span>
+            </div>
+            <ChevronRight className={`w-4 h-4 text-zinc-500 transition-transform ${openPrivacy ? 'rotate-90' : ''}`} />
+          </button>
+          {openPrivacy && (
+            <div className="px-4 pb-4 border-t border-zinc-800">
+              <pre className="text-xs text-zinc-400 leading-relaxed whitespace-pre-wrap mt-3 max-h-80 overflow-y-auto">{PRIVACY_TEXT}</pre>
+            </div>
+          )}
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+const HelpContent: React.FC = () => (
+  <div className="pb-6">
+    <SectionTitle>アプリ情報</SectionTitle>
+    <Card>
+      <SettingRow label="アプリ名" value="同人++" />
+      <SettingRow label="説明" value="同人活動管理アプリ" />
+    </Card>
+    <p className="px-4 pt-3 text-xs text-zinc-600">設定はこのデバイスに保存されます。</p>
+  </div>
+);
+
+const AccountContent: React.FC<{ user: ReturnType<typeof useAuth>['user']; logout: ReturnType<typeof useAuth>['logout'] }> = ({ user, logout }) => {
   const createdAt = user?.metadata.creationTime
-    ? new Date(user.metadata.creationTime).toLocaleDateString('ja-JP', {
-        year: 'numeric', month: 'long', day: 'numeric',
-      })
+    ? new Date(user.metadata.creationTime).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })
     : null;
-
   const lastSignIn = user?.metadata.lastSignInTime
-    ? new Date(user.metadata.lastSignInTime).toLocaleDateString('ja-JP', {
-        year: 'numeric', month: 'long', day: 'numeric',
-      })
+    ? new Date(user.metadata.lastSignInTime).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })
     : null;
-
   const providers = user?.providerData.map(p => {
     if (p.providerId === 'google.com') return 'Google';
     if (p.providerId === 'password') return 'メール / パスワード';
@@ -150,246 +387,140 @@ const ToolsPage: React.FC = () => {
   }) ?? [];
 
   return (
-    <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
-
-      {/* アカウント情報 */}
-      <section className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
-        <div className="px-4 py-3 border-b border-zinc-800">
-          <h2 className="text-sm font-semibold text-zinc-200">アカウント情報</h2>
-        </div>
-        <div className="p-4 space-y-4">
-          <div className="flex items-center gap-3">
-            {user?.photoURL ? (
-              <img src={user.photoURL} alt="avatar" className="w-12 h-12 rounded-full" />
-            ) : (
-              <div className="w-12 h-12 rounded-full bg-zinc-700 flex items-center justify-center">
-                <User className="w-6 h-6 text-zinc-400" />
-              </div>
-            )}
-            <div>
-              <p className="text-sm font-medium text-zinc-100">
-                {user?.displayName ?? '名前未設定'}
-              </p>
-              <p className="text-xs text-zinc-500">{user?.email}</p>
-            </div>
+    <div className="pb-6">
+      <SectionTitle>プロフィール</SectionTitle>
+      <div className="mx-4 rounded-xl border border-zinc-800 p-4 flex items-center gap-3">
+        {user?.photoURL ? (
+          <img src={user.photoURL} alt="avatar" className="w-12 h-12 rounded-full flex-shrink-0" />
+        ) : (
+          <div className="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center flex-shrink-0">
+            <User className="w-6 h-6 text-zinc-400" />
           </div>
-
-          <div className="space-y-3">
-            <div className="flex items-start gap-3">
-              <Mail className="w-4 h-4 text-zinc-500 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-xs text-zinc-500 mb-0.5">メールアドレス</p>
-                <p className="text-sm text-zinc-200 break-all">{user?.email ?? '—'}</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <Shield className="w-4 h-4 text-zinc-500 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-xs text-zinc-500 mb-0.5">ログイン方法</p>
-                <p className="text-sm text-zinc-200">
-                  {providers.length > 0 ? providers.join(' / ') : '—'}
-                </p>
-              </div>
-            </div>
-
-            {createdAt && (
-              <div className="flex items-start gap-3">
-                <Calendar className="w-4 h-4 text-zinc-500 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-xs text-zinc-500 mb-0.5">アカウント作成日</p>
-                  <p className="text-sm text-zinc-200">{createdAt}</p>
-                </div>
-              </div>
-            )}
-
-            {lastSignIn && (
-              <div className="flex items-start gap-3">
-                <Calendar className="w-4 h-4 text-zinc-500 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-xs text-zinc-500 mb-0.5">最終ログイン</p>
-                  <p className="text-sm text-zinc-200">{lastSignIn}</p>
-                </div>
-              </div>
-            )}
-
-            <div className="flex items-start gap-3">
-              <User className="w-4 h-4 text-zinc-500 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="text-xs text-zinc-500 mb-0.5">ユーザー ID</p>
-                <p className="text-xs text-zinc-500 font-mono break-all">{user?.uid ?? '—'}</p>
-              </div>
-            </div>
-          </div>
+        )}
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-zinc-100 truncate">{user?.displayName ?? '名前未設定'}</p>
+          <p className="text-xs text-zinc-500 truncate">{user?.email}</p>
         </div>
-      </section>
+      </div>
 
-      {/* 環境設定 */}
-      <section className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
-        <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-zinc-200">環境設定</h2>
+      <SectionTitle>詳細情報</SectionTitle>
+      <Card>
+        <SettingRow icon={<Mail className="w-4 h-4" />} label="メールアドレス" value={user?.email ?? '—'} />
+        <SettingRow icon={<Shield className="w-4 h-4" />} label="ログイン方法" value={providers.length > 0 ? providers.join(' / ') : '—'} />
+        {createdAt && <SettingRow icon={<Calendar className="w-4 h-4" />} label="アカウント作成日" value={createdAt} />}
+        {lastSignIn && <SettingRow icon={<Calendar className="w-4 h-4" />} label="最終ログイン" value={lastSignIn} />}
+        <div className="px-4 py-3.5">
+          <div className="flex items-center gap-3 mb-0.5">
+            <User className="w-4 h-4 text-zinc-500" />
+            <span className="text-sm text-zinc-200">ユーザーID</span>
+          </div>
+          <p className="text-xs text-zinc-500 font-mono break-all pl-7">{user?.uid ?? '—'}</p>
+        </div>
+      </Card>
+
+      <SectionTitle>セッション</SectionTitle>
+      <Card>
+        <SettingRow
+          icon={<LogOut className="w-4 h-4" />}
+          label="ログアウト"
+          onClick={logout}
+          danger
+        />
+      </Card>
+    </div>
+  );
+};
+
+// ── ToolsPage ────────────────────────────────────────────────────────────────
+
+const ToolsPage: React.FC = () => {
+  const { settings, update, reset } = useAppSettings();
+  const { user, logout } = useAuth();
+  const [selected, setSelected] = useState<CategoryId>('general');
+  // モバイルでカテゴリを選択したかどうか
+  const [mobilePanel, setMobilePanel] = useState(false);
+
+  const handleSelect = (id: CategoryId) => {
+    setSelected(id);
+    setMobilePanel(true);
+  };
+
+  const renderContent = () => {
+    switch (selected) {
+      case 'general':     return <GeneralContent settings={settings} update={update} />;
+      case 'personalize': return <PersonalizeContent settings={settings} update={update} reset={reset} />;
+      case 'data':        return <DataContent />;
+      case 'feedback':    return <FeedbackContent />;
+      case 'service':     return <ServiceContent />;
+      case 'help':        return <HelpContent />;
+      case 'account':     return <AccountContent user={user} logout={logout} />;
+    }
+  };
+
+  const selectedCategory = categories.find(c => c.id === selected)!;
+
+  const navList = (
+    <nav className="py-2">
+      {categories.map(cat => (
+        <button
+          key={cat.id}
+          onClick={() => handleSelect(cat.id)}
+          className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
+            selected === cat.id
+              ? 'bg-zinc-800 text-zinc-100'
+              : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
+          }`}
+        >
+          <span className={selected === cat.id ? 'text-zinc-300' : 'text-zinc-600'}>{cat.icon}</span>
+          <span className="text-sm font-medium">{cat.label}</span>
+          {/* モバイルのみ: 矢印 */}
+          <ChevronRight className="w-4 h-4 ml-auto text-zinc-700 lg:hidden" />
+        </button>
+      ))}
+    </nav>
+  );
+
+  return (
+    <div className="flex h-[calc(100dvh-3.5rem-env(safe-area-inset-bottom))]">
+
+      {/* ── 左カテゴリパネル ── */}
+      {/* デスクトップ: 常時表示 / モバイル: mobilePanel=false のとき表示 */}
+      <aside className={`
+        ${mobilePanel ? 'hidden' : 'flex'} lg:flex
+        flex-col w-full lg:w-56 flex-shrink-0
+        border-r border-zinc-800 bg-zinc-950 overflow-y-auto
+      `}>
+        <div className="px-4 py-4 border-b border-zinc-800">
+          <h1 className="text-base font-semibold text-zinc-200">設定</h1>
+        </div>
+        {navList}
+      </aside>
+
+      {/* ── 右コンテンツパネル ── */}
+      {/* デスクトップ: 常時表示 / モバイル: mobilePanel=true のとき表示 */}
+      <main className={`
+        ${mobilePanel ? 'flex' : 'hidden'} lg:flex
+        flex-col flex-1 overflow-y-auto bg-zinc-950
+      `}>
+        {/* ヘッダー */}
+        <div className="sticky top-0 z-10 px-4 py-3.5 border-b border-zinc-800 flex items-center gap-3"
+          style={{ background: 'rgba(9,9,11,0.9)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}
+        >
+          {/* モバイルのみ: 戻るボタン */}
           <button
-            onClick={reset}
-            className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+            onClick={() => setMobilePanel(false)}
+            className="lg:hidden p-1 -ml-1 text-zinc-400 hover:text-zinc-200 transition-colors"
           >
-            リセット
+            <ChevronLeft className="w-5 h-5" />
           </button>
+          <h2 className="text-sm font-semibold text-zinc-200">{selectedCategory.label}</h2>
         </div>
 
-        <div className="divide-y divide-zinc-800">
-
-          {/* テーマ */}
-          <div className="px-4 py-3 flex items-center justify-between">
-            <div>
-              <p className="text-sm text-zinc-200">テーマ</p>
-              <p className="text-xs text-zinc-500 mt-0.5">ダークモード / ライトモード</p>
-            </div>
-            <button
-              onClick={() => update({ theme: settings.theme === 'dark' ? 'light' : 'dark' })}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                settings.theme === 'dark'
-                  ? 'bg-zinc-800 text-zinc-200 border-zinc-700'
-                  : 'bg-zinc-100 text-zinc-800 border-zinc-300'
-              }`}
-            >
-              {settings.theme === 'dark'
-                ? <><Moon className="w-3.5 h-3.5" /> ダーク</>
-                : <><Sun className="w-3.5 h-3.5" /> ライト</>
-              }
-            </button>
-          </div>
-
-          {/* 背景画像 */}
-          <div className="px-4 py-3">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <p className="text-sm text-zinc-200">背景画像</p>
-                <p className="text-xs text-zinc-500 mt-0.5">アプリの背景に画像を設定</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => bgImageRef.current?.click()}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 text-zinc-200 border border-zinc-700 hover:bg-zinc-700 transition-colors"
-                >
-                  <ImageIcon className="w-3.5 h-3.5" />
-                  選択
-                </button>
-                {settings.backgroundImageDataUrl && (
-                  <button
-                    onClick={() => update({ backgroundImageDataUrl: null })}
-                    className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-zinc-800 rounded-lg transition-colors"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {settings.backgroundImageDataUrl && (
-              <div className="space-y-2">
-                <div className="w-full h-16 rounded-lg overflow-hidden border border-zinc-700">
-                  <img
-                    src={settings.backgroundImageDataUrl}
-                    alt="背景プレビュー"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-zinc-500 flex-shrink-0">不透明度</span>
-                  <input
-                    type="range"
-                    min={5}
-                    max={100}
-                    value={settings.backgroundOpacity}
-                    onChange={e => update({ backgroundOpacity: Number(e.target.value) })}
-                    className="flex-1 accent-zinc-400"
-                  />
-                  <span className="text-xs text-zinc-400 w-8 text-right tabular-nums">
-                    {settings.backgroundOpacity}%
-                  </span>
-                </div>
-              </div>
-            )}
-
-            <input
-              ref={bgImageRef}
-              type="file"
-              accept="image/*"
-              onChange={handleBgImageUpload}
-              className="hidden"
-            />
-          </div>
-
-          {/* フォントサイズ */}
-          <div className="px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Type className="w-4 h-4 text-zinc-500" />
-              <div>
-                <p className="text-sm text-zinc-200">フォントサイズ</p>
-                <p className="text-xs text-zinc-500 mt-0.5">テキストの大きさを変更</p>
-              </div>
-            </div>
-            <div className="flex bg-zinc-800 rounded-lg p-0.5 gap-0.5">
-              {(['normal', 'large'] as const).map(size => (
-                <button
-                  key={size}
-                  onClick={() => update({ fontSize: size })}
-                  className={`px-3 py-1 text-xs rounded-md font-medium transition-colors ${
-                    settings.fontSize === size
-                      ? 'bg-zinc-600 text-zinc-100'
-                      : 'text-zinc-500 hover:text-zinc-300'
-                  }`}
-                >
-                  {size === 'normal' ? '標準' : '大'}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* アニメーション */}
-          <div className="px-4 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {settings.reduceMotion ? <ZapOff className="w-4 h-4 text-zinc-500" /> : <Zap className="w-4 h-4 text-zinc-500" />}
-              <div>
-                <p className="text-sm text-zinc-200">アニメーション</p>
-                <p className="text-xs text-zinc-500 mt-0.5">画面遷移・アニメーションを削減</p>
-              </div>
-            </div>
-            <button
-              onClick={() => update({ reduceMotion: !settings.reduceMotion })}
-              className={`relative w-10 h-6 rounded-full transition-colors ${
-                settings.reduceMotion ? 'bg-zinc-600' : 'bg-zinc-700'
-              }`}
-            >
-              <span className={`absolute top-1 w-4 h-4 bg-zinc-100 rounded-full transition-transform ${
-                settings.reduceMotion ? 'translate-x-5' : 'translate-x-1'
-              }`} />
-            </button>
-          </div>
+        {/* コンテンツ */}
+        <div className="flex-1">
+          {renderContent()}
         </div>
-      </section>
-
-      {/* 法的情報 */}
-      <section className="space-y-3">
-        <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider px-1">法的情報</h2>
-        <LegalSection
-          title="利用規約"
-          icon={<FileText className="w-4 h-4 text-zinc-500" />}
-          content={TERMS_TEXT}
-        />
-        <LegalSection
-          title="プライバシーポリシー"
-          icon={<Shield className="w-4 h-4 text-zinc-500" />}
-          content={PRIVACY_TEXT}
-        />
-      </section>
-
-      {/* App info */}
-      <section className="text-center text-zinc-600 text-xs space-y-1 pt-2">
-        <p className="font-semibold text-zinc-500">同人++</p>
-        <p>同人活動管理アプリ</p>
-        <p className="text-zinc-700">設定はこのデバイスに保存されます</p>
-      </section>
+      </main>
     </div>
   );
 };

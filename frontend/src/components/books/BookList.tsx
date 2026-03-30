@@ -489,6 +489,7 @@ export const BookList: React.FC = () => {
             <div className="mb-8">
               <h2 className="text-xl font-semibold mb-4 text-zinc-100">新しい本を追加</h2>
               <BookForm
+                initialData={{ type: selectedType }}
                 onSubmit={async (data) => {
                   await addBook(data);
                   setIsAdding(false);

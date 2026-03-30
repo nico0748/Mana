@@ -95,6 +95,7 @@ export const PageSidebar: React.FC<PageSidebarProps> = ({ open, onClose, footer,
               </div>
               <div className="p-4 border-t border-zinc-800">
                 {footer}
+                {accountInfo}
               </div>
             </motion.aside>
           </>

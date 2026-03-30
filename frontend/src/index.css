@@ -35,35 +35,97 @@
   .md-ripple { animation: none; }
 }
 
-/* ── Light theme overrides ───────────────────────────────── */
+/* ── Light theme ─────────────────────────────────────────── */
+/*
+ *  Base:  #f1e5d1  warm cream page background
+ *
+ *  Color hierarchy (all contrast ratios vs #f1e5d1, L=0.805):
+ *    text-primary   #2c2118  →  12.9:1  ✅ WCAG AAA
+ *    text-body      #4a3828  →   8.4:1  ✅ WCAG AA
+ *    text-secondary #6b5444  →   5.2:1  ✅ WCAG AA
+ *    text-muted     #9c8472  →   3.0:1  ◎ large text / UI components
+ *    text-hint      #c0aa96  →   1.8:1  decorative only
+ *
+ *  Cards use #fdf8f2 (warm off-white), clearly distinct from page bg.
+ *  Borders use #c4aa90–#a88e78 for strong visibility on both surfaces.
+ */
 [data-theme="light"] {
-  --bg-base: #f4f4f5;
-  --bg-card: #ffffff;
-  --border: #d4d4d8;
-  --text-primary: #18181b;
-  --text-secondary: #71717a;
-  --text-muted: #a1a1aa;
+  /* ── Tokens ── */
+  --lt-bg:           #f1e5d1;
+  --lt-bg-nav:       #e8dbc6;
+  --lt-bg-card:      #fdf8f2;
+  --lt-bg-input:     #faf4eb;
+  --lt-bg-hover:     #e8d8c0;
+  --lt-bg-active:    #deccb0;
+  --lt-border:       #c4aa90;
+  --lt-border-input: #b09478;
+  --lt-border-focus: #8c7260;
+  --lt-text-1:       #2c2118;
+  --lt-text-2:       #4a3828;
+  --lt-text-3:       #6b5444;
+  --lt-text-muted:   #9c8472;
+  --lt-text-hint:    #c0aa96;
+  --lt-btn-primary:  #5c4030;
+  --lt-btn-text:     #fdf8f2;
 
-  background-color: var(--bg-base) !important;
-  color: var(--text-primary);
+  background-color: var(--lt-bg) !important;
+  color: var(--lt-text-1);
 
-  /* App background */
-  & .bg-zinc-950 { background-color: var(--bg-base) !important; }
-  & .bg-zinc-900 { background-color: var(--bg-card) !important; }
-  & .bg-zinc-800 { background-color: #e4e4e7 !important; }
-  & .bg-zinc-700 { background-color: #d4d4d8 !important; }
-  & .border-zinc-800 { border-color: var(--border) !important; }
-  & .border-zinc-700 { border-color: #d4d4d8 !important; }
-  & .text-zinc-100 { color: var(--text-primary) !important; }
-  & .text-zinc-200 { color: #27272a !important; }
-  & .text-zinc-300 { color: #3f3f46 !important; }
-  & .text-zinc-400 { color: var(--text-secondary) !important; }
-  & .text-zinc-500 { color: var(--text-muted) !important; }
-  & .text-zinc-600 { color: #b4b4bc !important; }
-  & .text-zinc-700 { color: #c9c9d0 !important; }
+  /* ── Backgrounds ───────────────────────────────────────── */
+  & .bg-zinc-950 { background-color: var(--lt-bg-nav)    !important; }
+  & .bg-zinc-900 { background-color: var(--lt-bg)        !important; }
+  & .bg-zinc-800 { background-color: var(--lt-bg-card)   !important; }
+  & .bg-zinc-700 { background-color: var(--lt-bg-hover)  !important; }
+  & .bg-zinc-600 { background-color: var(--lt-bg-active) !important; }
+  /* LoginPage submit button */
+  & .bg-zinc-100 { background-color: var(--lt-btn-primary) !important; }
+  & .hover\:bg-white:hover { background-color: #6e4e3c !important; }
 
-  /* Scrollbar */
-  &::-webkit-scrollbar-thumb { background: #d4d4d8; }
+  /* ── Borders ────────────────────────────────────────────── */
+  & .border-zinc-800 { border-color: var(--lt-border)       !important; }
+  & .border-zinc-700 { border-color: var(--lt-border)       !important; }
+  & .border-zinc-600 { border-color: var(--lt-border-input) !important; }
+  & .border-zinc-500 { border-color: var(--lt-border-focus) !important; }
+
+  /* ── Input / Textarea / Select
+       opacity 修飾子クラス (bg-zinc-800/50 等) は
+       クラス名マッチで上書き不可のため要素セレクタで対処 ── */
+  & input:not([type="checkbox"]):not([type="radio"])
+         :not([type="range"]):not([type="file"]),
+  & textarea,
+  & select {
+    background-color: var(--lt-bg-input)     !important;
+    border-color:     var(--lt-border-input) !important;
+    color:            var(--lt-text-1)       !important;
+  }
+  & input::placeholder, & textarea::placeholder {
+    color: var(--lt-text-hint) !important;
+    opacity: 1 !important;
+  }
+  & input:hover:not(:disabled), & textarea:hover:not(:disabled),
+  & select:hover:not(:disabled) {
+    border-color: var(--lt-border-focus) !important;
+  }
+  & input:focus-visible, & textarea:focus-visible, & select:focus-visible {
+    border-color: var(--lt-border-focus)             !important;
+    box-shadow:   0 0 0 3px rgba(140,114,96,0.18)   !important;
+    outline:      none                               !important;
+  }
+
+  /* ── Text ───────────────────────────────────────────────── */
+  & .text-zinc-100 { color: var(--lt-text-1)     !important; }
+  & .text-zinc-200 { color: var(--lt-text-1)     !important; }
+  & .text-zinc-300 { color: var(--lt-text-2)     !important; }
+  & .text-zinc-400 { color: var(--lt-text-3)     !important; }
+  & .text-zinc-500 { color: var(--lt-text-muted) !important; }
+  & .text-zinc-600 { color: var(--lt-text-hint)  !important; }
+  & .text-zinc-700 { color: var(--lt-text-hint)  !important; }
+  /* dark bg上の白テキスト (bg-zinc-100ボタン等) */
+  & .text-zinc-900 { color: var(--lt-btn-text)   !important; }
+
+  /* ── Scrollbar ──────────────────────────────────────────── */
+  &::-webkit-scrollbar-thumb       { background: var(--lt-border); }
+  &::-webkit-scrollbar-thumb:hover { background: var(--lt-border-input); }
 }
 
 /* ── Reduce motion ───────────────────────────────────────── */

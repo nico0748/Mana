@@ -74,19 +74,68 @@ export const fetchBookByIsbn = async (isbn: string): Promise<OpenBDBook | null> 
   return null;
 };
 
+// Google Books のサムネイルURLをhttpsに正規化し、より大きい画像を取得する
+function normalizeGoogleBooksImageUrl(url: string | undefined): string | null {
+  if (!url) return null;
+  // http → https に統一、zoom=0(thumbnail) → zoom=1(small) に変更
+  return url.replace(/^http:\/\//, 'https://').replace(/zoom=\d/, 'zoom=1');
+}
+
+// Google Books の results から最初に画像を持つアイテムのURLを返す
+function pickCoverFromGoogleBooks(items: any[]): string | null {
+  for (const item of items) {
+    const links = item.volumeInfo?.imageLinks;
+    const url = links?.small || links?.thumbnail || links?.smallThumbnail;
+    const normalized = normalizeGoogleBooksImageUrl(url);
+    if (normalized) return normalized;
+  }
+  return null;
+}
+
 export const searchBookByTitle = async (title: string): Promise<string | null> => {
   if (!title) return null;
 
+  // 戦略1: intitle: 完全一致検索（日本語優先）
   try {
-    const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=intitle:${encodeURIComponent(title)}`);
-    const data = await response.json();
-
-    if (data.items && data.items.length > 0) {
-      const volumeInfo = data.items[0].volumeInfo;
-      return volumeInfo.imageLinks?.thumbnail || null;
+    const res1 = await fetch(
+      `https://www.googleapis.com/books/v1/volumes?q=intitle:${encodeURIComponent(title)}&langRestrict=ja&maxResults=5`
+    );
+    const data1 = await res1.json();
+    if (data1.items?.length) {
+      const url = pickCoverFromGoogleBooks(data1.items);
+      if (url) return url;
     }
   } catch (error) {
-    console.error("Google Books title search failed:", error);
+    console.warn("Google Books intitle(ja) search failed:", error);
   }
+
+  // 戦略2: intitle: 検索（言語制限なし）
+  try {
+    const res2 = await fetch(
+      `https://www.googleapis.com/books/v1/volumes?q=intitle:${encodeURIComponent(title)}&maxResults=5`
+    );
+    const data2 = await res2.json();
+    if (data2.items?.length) {
+      const url = pickCoverFromGoogleBooks(data2.items);
+      if (url) return url;
+    }
+  } catch (error) {
+    console.warn("Google Books intitle search failed:", error);
+  }
+
+  // 戦略3: フリーテキスト検索（最後の手段）
+  try {
+    const res3 = await fetch(
+      `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(title)}&maxResults=10`
+    );
+    const data3 = await res3.json();
+    if (data3.items?.length) {
+      const url = pickCoverFromGoogleBooks(data3.items);
+      if (url) return url;
+    }
+  } catch (error) {
+    console.error("Google Books full-text search failed:", error);
+  }
+
   return null;
 };

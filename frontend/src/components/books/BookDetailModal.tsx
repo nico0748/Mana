@@ -13,6 +13,7 @@ interface BookDetailModalProps {
   onUpdate: (id: string, data: Partial<Book>) => Promise<unknown>;
   onDelete: (id: string) => Promise<void>;
   onUploadImage: (file: File) => Promise<string>;
+  existingBooks?: Book[];
 }
 
 export const BookDetailModal: React.FC<BookDetailModalProps> = ({
@@ -22,6 +23,7 @@ export const BookDetailModal: React.FC<BookDetailModalProps> = ({
   onUpdate,
   onDelete,
   onUploadImage,
+  existingBooks,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
 
@@ -48,6 +50,7 @@ export const BookDetailModal: React.FC<BookDetailModalProps> = ({
             </div>
             <BookForm
               initialData={book}
+              existingBooks={existingBooks}
               onSubmit={async (data) => {
                 await onUpdate(book.id, data);
                 setIsEditing(false);

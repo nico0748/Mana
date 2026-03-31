@@ -9,7 +9,6 @@ import NavModePage from "./pages/NavModePage";
 import ToolsPage from "./pages/ToolsPage";
 import MapPage from "./pages/MapPage";
 import LandingPage from "./pages/LandingPage";
-import LineCallbackPage from "./pages/LineCallbackPage";
 import Onboarding, { ONBOARDING_KEY } from "./components/Onboarding";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AppSettingsProvider } from "./contexts/AppSettingsContext";
@@ -82,7 +81,6 @@ function AppRoot() {
   return (
     <Routes>
       <Route path="/about" element={<LandingPage />} />
-      <Route path="/line-callback" element={<LineCallbackPage />} />
       <Route path="/*" element={<AuthGate />} />
     </Routes>
   );

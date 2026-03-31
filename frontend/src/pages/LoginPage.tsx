@@ -5,7 +5,6 @@ import {
   signInWithPopup,
   getAdditionalUserInfo,
   GoogleAuthProvider,
-  TwitterAuthProvider,
   type UserCredential,
 } from 'firebase/auth';
 import { auth } from '../lib/firebase';
@@ -164,30 +163,6 @@ const GoogleIcon = () => (
   </svg>
 );
 
-const XIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-  </svg>
-);
-
-const LineIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" className="text-[#06C755]">
-    <path d="M19.365 9.89c.50 0 .907.406.907.907s-.407.907-.907.907h-2.26v1.44h2.26c.5 0 .907.406.907.907s-.407.907-.907.907H16.2a.907.907 0 0 1-.907-.907V9.89c0-.5.406-.907.907-.907h3.165zm-5.474 0c.5 0 .906.406.906.907v4.161a.907.907 0 0 1-1.813 0V9.89c0-.5.406-.907.907-.907zm-2.447 0c.5 0 .907.406.907.907v2.668l-2.355-3.178a.907.907 0 0 0-.735-.397.907.907 0 0 0-.907.907v4.161c0 .5.406.907.907.907s.907-.407.907-.907v-2.668l2.355 3.178a.907.907 0 0 0 .735.397.907.907 0 0 0 .907-.907V9.89a.907.907 0 0 0-.907-.907h-.814zm-4.71 0c.5 0 .906.406.906.907v4.161a.907.907 0 0 1-1.813 0V9.89c0-.5.407-.907.907-.907zM12 2C6.477 2 2 6.15 2 11.255c0 4.57 3.655 8.395 8.59 9.124.334.072.79.22.905.505.103.259.067.665.033.927l-.146.876c-.044.26-.205 1.02.893.556 1.098-.463 5.927-3.49 8.087-5.98C21.695 15.44 22 13.408 22 11.255 22 6.15 17.523 2 12 2z"/>
-  </svg>
-);
-
-// LINE OAuth URL 生成
-const getLineAuthUrl = (): string => {
-  const params = new URLSearchParams({
-    response_type: 'code',
-    client_id: import.meta.env.VITE_LINE_CHANNEL_ID ?? '',
-    redirect_uri: `${window.location.origin}/api/auth/line/callback`,
-    state: crypto.randomUUID(),
-    scope: 'profile openid',
-  });
-  return `https://access.line.me/oauth2/v2.1/authorize?${params}`;
-};
-
 // ─── LoginPage ─────────────────────────────────────────────────────────────
 
 export const LoginPage: React.FC = () => {
@@ -196,7 +171,7 @@ export const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [socialLoading, setSocialLoading] = useState<'google' | 'x' | 'line' | null>(null);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [termsScrolled, setTermsScrolled] = useState(false);
   const [termsAgreed, setTermsAgreed] = useState(false);
 
@@ -249,7 +224,7 @@ export const LoginPage: React.FC = () => {
 
   const handleGoogleLogin = async () => {
     setError('');
-    setSocialLoading('google');
+    setGoogleLoading(true);
     try {
       const result = await signInWithPopup(auth, new GoogleAuthProvider());
       await handleSocialLogin(result);
@@ -258,33 +233,11 @@ export const LoginPage: React.FC = () => {
         setError('Googleログインに失敗しました');
       }
     } finally {
-      setSocialLoading(null);
+      setGoogleLoading(false);
     }
-  };
-
-  const handleXLogin = async () => {
-    setError('');
-    setSocialLoading('x');
-    try {
-      const result = await signInWithPopup(auth, new TwitterAuthProvider());
-      await handleSocialLogin(result);
-    } catch (err: any) {
-      if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
-        setError('Xログインに失敗しました');
-      }
-    } finally {
-      setSocialLoading(null);
-    }
-  };
-
-  const handleLineLogin = () => {
-    setError('');
-    setSocialLoading('line');
-    window.location.href = getLineAuthUrl();
   };
 
   const canSubmit = mode === 'login' || termsAgreed;
-  const isSocialLoading = socialLoading !== null;
 
   return (
     <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
@@ -314,35 +267,15 @@ export const LoginPage: React.FC = () => {
 
         <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-6 space-y-4">
           {/* ─ ソーシャルログイン ─ */}
-          <div className="space-y-2">
-            <SocialButton
-              onClick={handleGoogleLogin}
-              disabled={loading || isSocialLoading}
-              icon={socialLoading === 'google'
-                ? <span className="w-4 h-4 rounded-full border-2 border-zinc-500 border-t-zinc-300 animate-spin" />
-                : <GoogleIcon />
-              }
-              label="Googleで続ける"
-            />
-            <SocialButton
-              onClick={handleXLogin}
-              disabled={loading || isSocialLoading}
-              icon={socialLoading === 'x'
-                ? <span className="w-4 h-4 rounded-full border-2 border-zinc-500 border-t-zinc-300 animate-spin" />
-                : <XIcon />
-              }
-              label="X（Twitter）で続ける"
-            />
-            <SocialButton
-              onClick={handleLineLogin}
-              disabled={loading || isSocialLoading}
-              icon={socialLoading === 'line'
-                ? <span className="w-4 h-4 rounded-full border-2 border-zinc-500 border-t-zinc-300 animate-spin" />
-                : <LineIcon />
-              }
-              label="LINEで続ける"
-            />
-          </div>
+          <SocialButton
+            onClick={handleGoogleLogin}
+            disabled={loading || googleLoading}
+            icon={googleLoading
+              ? <span className="w-4 h-4 rounded-full border-2 border-zinc-500 border-t-zinc-300 animate-spin" />
+              : <GoogleIcon />
+            }
+            label="Googleで続ける"
+          />
 
           {/* ─ 区切り ─ */}
           <div className="flex items-center gap-3">
@@ -409,7 +342,7 @@ export const LoginPage: React.FC = () => {
 
             <button
               type="submit"
-              disabled={loading || isSocialLoading || !canSubmit}
+              disabled={loading || googleLoading || !canSubmit}
               className="w-full py-2.5 bg-zinc-100 hover:bg-white text-zinc-900 font-semibold text-sm rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? '処理中...' : mode === 'login' ? 'ログイン' : '登録'}

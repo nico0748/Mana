@@ -15,16 +15,17 @@ const downloadFile = (file: File) => {
 
 // CSV/Excel カラム定義
 const BOOK_CSV_COLUMNS = [
-  { key: 'title',    label: 'タイトル'   },
-  { key: 'author',   label: '著者'       },
-  { key: 'isbn',     label: 'ISBN'       },
-  { key: 'type',     label: '種別'       },
-  { key: 'category', label: 'カテゴリ'   },
-  { key: 'ndcCode',  label: 'NDCコード'  },
-  { key: 'status',   label: 'ステータス' },
-  { key: 'price',    label: '価格'       },
-  { key: 'memo',     label: 'メモ'       },
-  { key: 'tags',     label: 'タグ'       },
+  { key: 'title',      label: 'タイトル'     },
+  { key: 'author',     label: '著者'         },
+  { key: 'circleName', label: 'サークル名'   },
+  { key: 'isbn',       label: 'ISBN'         },
+  { key: 'type',       label: '種別'         },
+  { key: 'category',   label: 'カテゴリ'     },
+  { key: 'ndcCode',    label: 'NDCコード'    },
+  { key: 'status',     label: 'ステータス'   },
+  { key: 'price',      label: '価格'         },
+  { key: 'memo',       label: 'メモ'         },
+  { key: 'tags',       label: 'タグ'         },
 ] as const;
 
 
@@ -51,16 +52,17 @@ function rowsToBookPayloads(rows: Record<string, any>[]): Omit<Book, 'id' | 'cre
       const priceRaw = get('価格');
       const tagsRaw = get('タグ');
       return {
-        title:    get('タイトル') ?? '',
-        author:   get('著者') ?? '',
-        isbn:     get('ISBN'),
-        type:     (get('種別') === 'doujin' ? 'doujin' : 'commercial') as Book['type'],
-        category: get('カテゴリ'),
-        ndcCode:  get('NDCコード'),
-        status:   (get('ステータス') ?? 'owned') as Book['status'],
-        price:    priceRaw ? Number(priceRaw) : undefined,
-        memo:     get('メモ'),
-        tags:     tagsRaw ? tagsRaw.split(',').map((t: string) => t.trim()).filter(Boolean) : [],
+        title:      get('タイトル') ?? '',
+        author:     get('著者') ?? '',
+        circleName: get('サークル名'),
+        isbn:       get('ISBN'),
+        type:       (get('種別') === 'doujin' ? 'doujin' : 'commercial') as Book['type'],
+        category:   get('カテゴリ'),
+        ndcCode:    get('NDCコード'),
+        status:     (get('ステータス') ?? 'owned') as Book['status'],
+        price:      priceRaw ? Number(priceRaw) : undefined,
+        memo:       get('メモ'),
+        tags:       tagsRaw ? tagsRaw.split(',').map((t: string) => t.trim()).filter(Boolean) : [],
       };
     });
 }

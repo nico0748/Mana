@@ -66,7 +66,7 @@ function buildCommercialGroups(books: Book[]): CategoryGroup[] {
 function buildDoujinGroups(books: Book[]): CategoryGroup[] {
   const map = new Map<string, Book[]>();
   for (const book of books) {
-    const key = book.author.trim() || '不明';
+    const key = (book.circleName?.trim() || book.author.trim()) || '不明';
     if (!map.has(key)) map.set(key, []);
     map.get(key)!.push(book);
   }
@@ -123,7 +123,7 @@ export const BookList: React.FC = () => {
       result = result.filter(b =>
         selectedType === 'commercial'
           ? getNdcGroup(b) === selectedCategory
-          : (b.author.trim() || '不明') === selectedCategory
+          : ((b.circleName?.trim() || b.author.trim()) || '不明') === selectedCategory
       );
     }
     return result;
@@ -490,6 +490,7 @@ export const BookList: React.FC = () => {
               <h2 className="text-xl font-semibold mb-4 text-zinc-100">新しい本を追加</h2>
               <BookForm
                 initialData={{ type: selectedType }}
+                existingBooks={books}
                 onSubmit={async (data) => {
                   await addBook(data);
                   setIsAdding(false);
@@ -570,6 +571,7 @@ export const BookList: React.FC = () => {
                 onUpdate={updateBook}
                 onDelete={deleteBook}
                 onUploadImage={uploadImage}
+                existingBooks={books}
               />
             )}
           </AnimatePresence>

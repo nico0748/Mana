@@ -8,6 +8,7 @@ import ShoppingListPage from "./pages/ShoppingListPage";
 import NavModePage from "./pages/NavModePage";
 import ToolsPage from "./pages/ToolsPage";
 import MapPage from "./pages/MapPage";
+import LandingPage from "./pages/LandingPage";
 import Onboarding, { ONBOARDING_KEY } from "./components/Onboarding";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AppSettingsProvider } from "./contexts/AppSettingsContext";
@@ -45,7 +46,7 @@ function AnimatedRoutes() {
   );
 }
 
-function AppInner() {
+function AuthGate() {
   const { user, loading } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(
     () => !localStorage.getItem(ONBOARDING_KEY)
@@ -67,12 +68,21 @@ function AppInner() {
   };
 
   return (
-    <Router>
+    <>
       {showOnboarding && <Onboarding onComplete={handleOnboardingComplete} />}
       <AppLayout>
         <AnimatedRoutes />
       </AppLayout>
-    </Router>
+    </>
+  );
+}
+
+function AppRoot() {
+  return (
+    <Routes>
+      <Route path="/about" element={<LandingPage />} />
+      <Route path="/*" element={<AuthGate />} />
+    </Routes>
   );
 }
 
@@ -81,7 +91,9 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <AppSettingsProvider>
-          <AppInner />
+          <Router>
+            <AppRoot />
+          </Router>
         </AppSettingsProvider>
       </AuthProvider>
     </QueryClientProvider>

@@ -8,6 +8,7 @@ import circleItemsRouter from './routes/circleItems';
 import venueMapsRouter from './routes/venueMaps';
 import distributionsRouter from './routes/distributions';
 import syncRouter from './routes/sync';
+import authRouter from './routes/auth';
 import { authenticate } from './middleware/auth';
 
 const app = express();
@@ -19,6 +20,9 @@ app.use(cors({
   credentials: !!corsOrigin,
 }));
 app.use(express.json({ limit: '50mb' })); // large for image data URLs
+
+// Public auth routes (no authenticate middleware)
+app.use('/api/auth', authRouter);
 
 app.use('/api', authenticate);
 app.use('/api/books', booksRouter);

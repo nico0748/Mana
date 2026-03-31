@@ -1,16 +1,18 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   Upload, MapPin, Edit2, Check, X, History,
   Trash2, ChevronLeft, ChevronRight, Plus,
-  RotateCcw, RotateCw, Crop,
+  RotateCcw, RotateCw, Crop, FileJson,
 } from 'lucide-react';
 import { eventsApi, circlesApi, venueMapsApi, circleItemsApi } from '../lib/api';
 import { renderPdfPageToDataUrl } from '../lib/pdfUtils';
 import type { CircleItem } from '../types';
+import type { EventTemplate } from '../types/template';
 import { clsx } from 'clsx';
+import TemplateImportModal from '../components/map/TemplateImportModal';
 
 const statusColor: Record<string, string> = {
   pending: 'bg-yellow-400 border-yellow-200',
@@ -47,6 +49,9 @@ const MapPage: React.FC = () => {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(
     () => searchParams.get('eventId') ?? null
   );
+
+  // Template import modal
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
 
   // Add-hall inline input
   const [showAddHall, setShowAddHall] = useState(false);
@@ -356,45 +361,68 @@ const MapPage: React.FC = () => {
     setShowAddHall(false);
   };
 
+  const handleTemplateImport = async (template: EventTemplate) => {
+    const event = await eventsApi.create({
+      name: template.event.name,
+      date: template.event.date,
+      budget: template.event.budget,
+    });
+    await Promise.all(
+      template.halls.map(hall =>
+        venueMapsApi.upsert({ eventId: event.id, hall, imageDataUrl: '' })
+      )
+    );
+    await queryClient.invalidateQueries({ queryKey: ['events'] });
+    await queryClient.invalidateQueries({ queryKey: ['venueMaps'] });
+    setSelectedEventId(event.id);
+  };
+
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <div className="flex flex-col" style={{ height: 'calc(100dvh - 3.5rem)' }}>
 
       {/* ── Event selector row ──────────────────────────────────────────── */}
-      {((events ?? []).length > 0 || hasOrphanData) && (
-        <div className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900 border-b border-zinc-800/60 overflow-x-auto">
-          <span className="text-xs text-zinc-600 flex-shrink-0">即売会</span>
-          <span className="text-zinc-800 text-xs flex-shrink-0">|</span>
-          {hasOrphanData && (
-            <button
-              onClick={() => setSelectedEventId(null)}
-              className={clsx(
-                'px-2.5 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap flex-shrink-0',
-                selectedEventId === null
-                  ? 'bg-emerald-500 text-zinc-900'
-                  : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
-              )}
-            >
-              未分類
-            </button>
-          )}
-          {(events ?? []).map(event => (
-            <button
-              key={event.id}
-              onClick={() => setSelectedEventId(event.id)}
-              className={clsx(
-                'px-2.5 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap flex-shrink-0',
-                selectedEventId === event.id
-                  ? 'bg-emerald-500 text-zinc-900'
-                  : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
-              )}
-            >
-              {event.name}
-            </button>
-          ))}
-        </div>
-      )}
+      <div className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900 border-b border-zinc-800/60 overflow-x-auto">
+        <span className="text-xs text-zinc-600 flex-shrink-0">即売会</span>
+        <span className="text-zinc-800 text-xs flex-shrink-0">|</span>
+        {hasOrphanData && (
+          <button
+            onClick={() => setSelectedEventId(null)}
+            className={clsx(
+              'px-2.5 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap flex-shrink-0',
+              selectedEventId === null
+                ? 'bg-emerald-500 text-zinc-900'
+                : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
+            )}
+          >
+            未分類
+          </button>
+        )}
+        {(events ?? []).map(event => (
+          <button
+            key={event.id}
+            onClick={() => setSelectedEventId(event.id)}
+            className={clsx(
+              'px-2.5 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap flex-shrink-0',
+              selectedEventId === event.id
+                ? 'bg-emerald-500 text-zinc-900'
+                : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
+            )}
+          >
+            {event.name}
+          </button>
+        ))}
+        <div className="flex-1" />
+        <button
+          onClick={() => setShowTemplateModal(true)}
+          title="テンプレートから読み込む"
+          className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 text-xs text-violet-400 hover:text-violet-300 bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/20 rounded-md transition-colors"
+        >
+          <FileJson size={12} />
+          テンプレート
+        </button>
+      </div>
 
       {/* ── Hall tabs + tools row ────────────────────────────────────────── */}
       <div className="flex-shrink-0 bg-zinc-900 border-b border-zinc-800">
@@ -946,6 +974,16 @@ const MapPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* ── Template import modal ─────────────────────────────────────────── */}
+      <AnimatePresence>
+        {showTemplateModal && (
+          <TemplateImportModal
+            onClose={() => setShowTemplateModal(false)}
+            onImport={handleTemplateImport}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

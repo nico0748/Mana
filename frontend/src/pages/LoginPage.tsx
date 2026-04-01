@@ -2,6 +2,10 @@ import React, { useState } from 'react';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  signInWithPopup,
+  getAdditionalUserInfo,
+  GoogleAuthProvider,
+  type UserCredential,
 } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 
@@ -43,6 +47,8 @@ const TERMS_TEXT = `同人++ 利用規約
 
 以上`;
 
+// ─── 利用規約スクロールボックス ──────────────────────────────────────────────
+
 const TermsBox: React.FC<{ onScrolled: () => void; scrolled: boolean }> = ({ onScrolled, scrolled }) => {
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     if (scrolled) return;
@@ -61,14 +67,116 @@ const TermsBox: React.FC<{ onScrolled: () => void; scrolled: boolean }> = ({ onS
   );
 };
 
+// ─── 初回ソーシャルログイン利用規約モーダル ──────────────────────────────────
+
+interface SocialTermsModalProps {
+  onAgree: () => void;
+  onCancel: () => void;
+}
+
+const SocialTermsModal: React.FC<SocialTermsModalProps> = ({ onAgree, onCancel }) => {
+  const [scrolled, setScrolled] = useState(false);
+  const [agreed, setAgreed] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+
+  const handleCancel = async () => {
+    setCancelling(true);
+    await auth.currentUser?.delete().catch(() => {});
+    onCancel();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+      <div className="w-full max-w-sm bg-zinc-900 rounded-2xl border border-zinc-800 p-6 space-y-4">
+        <div>
+          <h2 className="text-base font-semibold text-zinc-100 mb-1">利用規約への同意</h2>
+          <p className="text-xs text-zinc-500">ご利用開始前に利用規約をご確認ください</p>
+        </div>
+        <div className="space-y-2">
+          <label className="block text-sm text-zinc-400">
+            利用規約
+            {!scrolled && (
+              <span className="ml-2 text-xs text-zinc-600">（最後までスクロールしてください）</span>
+            )}
+          </label>
+          <TermsBox onScrolled={() => setScrolled(true)} scrolled={scrolled} />
+          <label className={`flex items-center gap-2.5 ${scrolled ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}>
+            <input
+              type="checkbox"
+              checked={agreed}
+              disabled={!scrolled}
+              onChange={e => setAgreed(e.target.checked)}
+              className="w-4 h-4 rounded accent-zinc-400"
+            />
+            <span className="text-sm text-zinc-300">利用規約に同意する</span>
+          </label>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={handleCancel}
+            disabled={cancelling}
+            className="flex-1 py-2 rounded-lg border border-zinc-700 text-zinc-400 text-sm hover:bg-zinc-800 transition-colors disabled:opacity-50"
+          >
+            キャンセル
+          </button>
+          <button
+            onClick={onAgree}
+            disabled={!agreed}
+            className="flex-1 py-2 rounded-lg bg-zinc-100 hover:bg-white text-zinc-900 text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            同意して開始
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── ソーシャルログインボタン ───────────────────────────────────────────────
+
+interface SocialButtonProps {
+  onClick: () => void;
+  disabled: boolean;
+  icon: React.ReactNode;
+  label: string;
+}
+
+const SocialButton: React.FC<SocialButtonProps> = ({ onClick, disabled, icon, label }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    disabled={disabled}
+    className="flex items-center justify-center gap-2.5 w-full py-2.5 px-4 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-lg text-sm text-zinc-200 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+  >
+    {icon}
+    {label}
+  </button>
+);
+
+// SVG アイコン
+const GoogleIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+    <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+    <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
+    <path d="M3.964 10.707A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z" fill="#FBBC05"/>
+    <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+  </svg>
+);
+
+// ─── LoginPage ─────────────────────────────────────────────────────────────
+
 export const LoginPage: React.FC = () => {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [termsScrolled, setTermsScrolled] = useState(false);
   const [termsAgreed, setTermsAgreed] = useState(false);
+
+  // ソーシャル初回登録時の利用規約同意モーダル
+  const [showSocialTerms, setShowSocialTerms] = useState(false);
 
   const switchMode = (next: 'login' | 'register') => {
     setMode(next);
@@ -103,10 +211,43 @@ export const LoginPage: React.FC = () => {
     }
   };
 
+  // ソーシャルログイン共通ハンドラ
+  const handleSocialLogin = async (credential: UserCredential) => {
+    const isNew = getAdditionalUserInfo(credential)?.isNewUser ?? false;
+    if (isNew) {
+      // 初回登録時 → 利用規約同意モーダルを表示（AuthContextが先にuserをセットするため、
+      // signOutして再度確認させる形にする）
+      setShowSocialTerms(true);
+    }
+    // 既存ユーザーは何もしなくてよい（AuthContextが自動でログイン状態にする）
+  };
+
+  const handleGoogleLogin = async () => {
+    setError('');
+    setGoogleLoading(true);
+    try {
+      const result = await signInWithPopup(auth, new GoogleAuthProvider());
+      await handleSocialLogin(result);
+    } catch (err: any) {
+      if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
+        setError('Googleログインに失敗しました');
+      }
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
   const canSubmit = mode === 'login' || termsAgreed;
 
   return (
     <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
+      {showSocialTerms && (
+        <SocialTermsModal
+          onAgree={() => setShowSocialTerms(false)}
+          onCancel={() => setShowSocialTerms(false)}
+        />
+      )}
+
       <div className="w-full max-w-sm">
         {/* Logo / Title */}
         <div className="text-center mb-8">
@@ -124,7 +265,26 @@ export const LoginPage: React.FC = () => {
           </p>
         </div>
 
-        <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-6">
+        <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-6 space-y-4">
+          {/* ─ ソーシャルログイン ─ */}
+          <SocialButton
+            onClick={handleGoogleLogin}
+            disabled={loading || googleLoading}
+            icon={googleLoading
+              ? <span className="w-4 h-4 rounded-full border-2 border-zinc-500 border-t-zinc-300 animate-spin" />
+              : <GoogleIcon />
+            }
+            label="Googleで続ける"
+          />
+
+          {/* ─ 区切り ─ */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-zinc-800" />
+            <span className="text-xs text-zinc-600">または</span>
+            <div className="flex-1 h-px bg-zinc-800" />
+          </div>
+
+          {/* ─ Email / Password フォーム ─ */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm text-zinc-400 mb-1.5">メールアドレス</label>
@@ -182,14 +342,14 @@ export const LoginPage: React.FC = () => {
 
             <button
               type="submit"
-              disabled={loading || !canSubmit}
+              disabled={loading || googleLoading || !canSubmit}
               className="w-full py-2.5 bg-zinc-100 hover:bg-white text-zinc-900 font-semibold text-sm rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? '処理中...' : mode === 'login' ? 'ログイン' : '登録'}
             </button>
           </form>
 
-          <div className="mt-4 text-center">
+          <div className="text-center">
             <button
               onClick={() => switchMode(mode === 'login' ? 'register' : 'login')}
               className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors"

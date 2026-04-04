@@ -3,11 +3,12 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
+  updateProfile,
   getAdditionalUserInfo,
   GoogleAuthProvider,
-  type UserCredential,
 } from 'firebase/auth';
 import { auth } from '../lib/firebase';
+import { useAuth } from '../contexts/AuthContext';
 
 const TERMS_TEXT = `同人++ 利用規約
 
@@ -74,7 +75,7 @@ interface SocialTermsModalProps {
   onCancel: () => void;
 }
 
-const SocialTermsModal: React.FC<SocialTermsModalProps> = ({ onAgree, onCancel }) => {
+export const SocialTermsModal: React.FC<SocialTermsModalProps> = ({ onAgree, onCancel }) => {
   const [scrolled, setScrolled] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [cancelling, setCancelling] = useState(false);
@@ -166,21 +167,21 @@ const GoogleIcon = () => (
 // ─── LoginPage ─────────────────────────────────────────────────────────────
 
 export const LoginPage: React.FC = () => {
+  const { setPendingTerms } = useAuth();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [termsScrolled, setTermsScrolled] = useState(false);
   const [termsAgreed, setTermsAgreed] = useState(false);
 
-  // ソーシャル初回登録時の利用規約同意モーダル
-  const [showSocialTerms, setShowSocialTerms] = useState(false);
-
   const switchMode = (next: 'login' | 'register') => {
     setMode(next);
     setError('');
+    setUsername('');
     setTermsScrolled(false);
     setTermsAgreed(false);
   };
@@ -194,7 +195,10 @@ export const LoginPage: React.FC = () => {
       if (mode === 'login') {
         await signInWithEmailAndPassword(auth, email, password);
       } else {
-        await createUserWithEmailAndPassword(auth, email, password);
+        const credential = await createUserWithEmailAndPassword(auth, email, password);
+        if (username.trim()) {
+          await updateProfile(credential.user, { displayName: username.trim() });
+        }
       }
     } catch (err: any) {
       const msg: Record<string, string> = {
@@ -205,21 +209,10 @@ export const LoginPage: React.FC = () => {
         'auth/weak-password':        'パスワードは6文字以上にしてください',
         'auth/invalid-email':        'メールアドレスの形式が正しくありません',
       };
-      setError(msg[err.code] ?? 'エラーが発生しました');
+      setError(msg[err.code] ?? `エラーが発生しました (${err.code})`);
     } finally {
       setLoading(false);
     }
-  };
-
-  // ソーシャルログイン共通ハンドラ
-  const handleSocialLogin = async (credential: UserCredential) => {
-    const isNew = getAdditionalUserInfo(credential)?.isNewUser ?? false;
-    if (isNew) {
-      // 初回登録時 → 利用規約同意モーダルを表示（AuthContextが先にuserをセットするため、
-      // signOutして再度確認させる形にする）
-      setShowSocialTerms(true);
-    }
-    // 既存ユーザーは何もしなくてよい（AuthContextが自動でログイン状態にする）
   };
 
   const handleGoogleLogin = async () => {
@@ -227,10 +220,15 @@ export const LoginPage: React.FC = () => {
     setGoogleLoading(true);
     try {
       const result = await signInWithPopup(auth, new GoogleAuthProvider());
-      await handleSocialLogin(result);
+      const isNew = getAdditionalUserInfo(result)?.isNewUser ?? false;
+      if (isNew) {
+        // AuthContext 経由で pendingTerms をセット。
+        // LoginPage がアンマウントされた後も AuthGate がモーダルを表示し続ける。
+        setPendingTerms(true);
+      }
     } catch (err: any) {
       if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
-        setError('Googleログインに失敗しました');
+        setError(`Googleログインに失敗しました (${err.code})`);
       }
     } finally {
       setGoogleLoading(false);
@@ -241,13 +239,6 @@ export const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4">
-      {showSocialTerms && (
-        <SocialTermsModal
-          onAgree={() => setShowSocialTerms(false)}
-          onCancel={() => setShowSocialTerms(false)}
-        />
-      )}
-
       <div className="w-full max-w-sm">
         {/* Logo / Title */}
         <div className="text-center mb-8">
@@ -286,6 +277,20 @@ export const LoginPage: React.FC = () => {
 
           {/* ─ Email / Password フォーム ─ */}
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* ユーザー名（新規登録時のみ） */}
+            {mode === 'register' && (
+              <div>
+                <label className="block text-sm text-zinc-400 mb-1.5">ユーザー名</label>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={e => setUsername(e.target.value)}
+                  maxLength={30}
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 text-sm placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+                  placeholder="アプリ内で表示される名前"
+                />
+              </div>
+            )}
             <div>
               <label className="block text-sm text-zinc-400 mb-1.5">メールアドレス</label>
               <input

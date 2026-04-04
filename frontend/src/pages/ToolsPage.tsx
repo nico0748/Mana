@@ -374,6 +374,24 @@ const HelpContent: React.FC = () => (
 );
 
 const AccountContent: React.FC<{ user: ReturnType<typeof useAuth>['user']; logout: ReturnType<typeof useAuth>['logout'] }> = ({ user, logout }) => {
+  const { refreshUser } = useAuth();
+  const [editingName, setEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState(user?.displayName ?? '');
+  const [nameSaving, setNameSaving] = useState(false);
+
+  const handleSaveName = async () => {
+    if (!user || !nameInput.trim()) return;
+    setNameSaving(true);
+    try {
+      const { updateProfile } = await import('firebase/auth');
+      await updateProfile(user, { displayName: nameInput.trim() });
+      await refreshUser();
+      setEditingName(false);
+    } finally {
+      setNameSaving(false);
+    }
+  };
+
   const createdAt = user?.metadata.creationTime
     ? new Date(user.metadata.creationTime).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })
     : null;
@@ -405,13 +423,58 @@ const AccountContent: React.FC<{ user: ReturnType<typeof useAuth>['user']; logou
 
       <SectionTitle>詳細情報</SectionTitle>
       <Card>
+        {/* ユーザー名（インライン編集） */}
+        <div className="px-4 py-3.5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <User className="w-4 h-4 text-zinc-500 flex-shrink-0" />
+              <span className="text-sm text-zinc-200">ユーザー名</span>
+            </div>
+            {!editingName ? (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-zinc-500 truncate max-w-[140px]">{user?.displayName ?? '未設定'}</span>
+                <button
+                  onClick={() => { setNameInput(user?.displayName ?? ''); setEditingName(true); }}
+                  className="text-xs text-zinc-500 hover:text-zinc-300 px-2 py-1 rounded-md hover:bg-zinc-800 transition-colors flex-shrink-0"
+                >
+                  変更
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 flex-1 justify-end">
+                <input
+                  type="text"
+                  value={nameInput}
+                  onChange={e => setNameInput(e.target.value)}
+                  maxLength={30}
+                  autoFocus
+                  onKeyDown={e => { if (e.key === 'Enter') handleSaveName(); if (e.key === 'Escape') setEditingName(false); }}
+                  className="w-36 px-2 py-1 bg-zinc-800 border border-zinc-600 rounded-lg text-zinc-100 text-sm focus:outline-none focus:ring-1 focus:ring-zinc-500"
+                />
+                <button
+                  onClick={handleSaveName}
+                  disabled={!nameInput.trim() || nameSaving}
+                  className="text-xs text-zinc-900 bg-zinc-100 hover:bg-white px-2.5 py-1 rounded-md transition-colors disabled:opacity-50 flex-shrink-0"
+                >
+                  {nameSaving ? '…' : '保存'}
+                </button>
+                <button
+                  onClick={() => setEditingName(false)}
+                  className="text-xs text-zinc-500 hover:text-zinc-300 px-2 py-1 rounded-md hover:bg-zinc-800 transition-colors flex-shrink-0"
+                >
+                  キャンセル
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
         <SettingRow icon={<Mail className="w-4 h-4" />} label="メールアドレス" value={user?.email ?? '—'} />
         <SettingRow icon={<Shield className="w-4 h-4" />} label="ログイン方法" value={providers.length > 0 ? providers.join(' / ') : '—'} />
         {createdAt && <SettingRow icon={<Calendar className="w-4 h-4" />} label="アカウント作成日" value={createdAt} />}
         {lastSignIn && <SettingRow icon={<Calendar className="w-4 h-4" />} label="最終ログイン" value={lastSignIn} />}
         <div className="px-4 py-3.5">
           <div className="flex items-center gap-3 mb-0.5">
-            <User className="w-4 h-4 text-zinc-500" />
+            <Shield className="w-4 h-4 text-zinc-500" />
             <span className="text-sm text-zinc-200">ユーザーID</span>
           </div>
           <p className="text-xs text-zinc-500 font-mono break-all pl-7">{user?.uid ?? '—'}</p>

@@ -8,6 +8,7 @@ import circleItemsRouter from './routes/circleItems';
 import venueMapsRouter from './routes/venueMaps';
 import distributionsRouter from './routes/distributions';
 import syncRouter from './routes/sync';
+import uploadRouter from './routes/upload';
 import { authenticate } from './middleware/auth';
 
 const app = express();
@@ -24,7 +25,8 @@ app.use(cors({
   origin: corsOrigin ?? '*',
   credentials: !!corsOrigin,
 }));
-app.use(express.json({ limit: '50mb' })); // large for image data URLs
+// R2移行後は画像をJSONに含めないため制限を縮小（既存データの移行期間中は10mbに緩和）
+app.use(express.json({ limit: '10mb' }));
 
 app.use('/api', authenticate);
 app.use('/api/books', booksRouter);
@@ -34,6 +36,7 @@ app.use('/api/circle-items', circleItemsRouter);
 app.use('/api/venue-maps', venueMapsRouter);
 app.use('/api/distributions', distributionsRouter);
 app.use('/api/sync', syncRouter);
+app.use('/api/upload', uploadRouter);
 
 app.listen(PORT, () => {
   console.log(`Backend listening on port ${PORT}`);

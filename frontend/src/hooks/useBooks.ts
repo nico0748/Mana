@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { booksApi } from '../lib/api';
 import { type Book } from '../types';
+import { uploadToR2 } from '../lib/r2Upload';
 
 export type SortField = 'createdAt' | 'title' | 'author' | 'ndcCode';
 export type SortDirection = 'asc' | 'desc';
@@ -63,13 +64,7 @@ export const useBooks = (sortField: SortField = 'createdAt', sortDirection: Sort
 
   const deleteBook = (id: string) => deleteMutation.mutateAsync(id);
 
-  const uploadImage = (file: File): Promise<string> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = () => reject(new Error('Failed to read file'));
-      reader.readAsDataURL(file);
-    });
+  const uploadImage = (file: File): Promise<string> => uploadToR2(file, 'books');
 
   return { books, loading, error, addBook, updateBook, deleteBook, uploadImage };
 };

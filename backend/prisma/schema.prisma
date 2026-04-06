@@ -75,7 +75,8 @@ model VenueMap {
   userId       String?
   eventId      String?
   hall         String
-  imageDataUrl String
+  imageUrl     String?  // R2のURL（新方式）
+  imageDataUrl String?  // Base64（後方互換・移行期間中のみ）
   generatedSvg String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

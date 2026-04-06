@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { eventsApi, circlesApi, venueMapsApi, circleItemsApi } from '../lib/api';
 import { renderPdfPageToDataUrl } from '../lib/pdfUtils';
+import { uploadDataUrlToR2, uploadToR2 } from '../lib/r2Upload';
 import type { CircleItem } from '../types';
 import type { EventTemplate } from '../types/template';
 import { clsx } from 'clsx';
@@ -187,7 +188,7 @@ const MapPage: React.FC = () => {
     setProcessing(true);
     try {
       const img = new Image();
-      img.src = currentMap.imageDataUrl;
+      img.src = currentMap.imageUrl ?? currentMap.imageDataUrl ?? '';
       await new Promise<void>(resolve => { img.onload = () => resolve(); });
       const canvas = document.createElement('canvas');
       canvas.width = img.naturalHeight;
@@ -205,7 +206,8 @@ const MapPage: React.FC = () => {
       // Clear pin positions — coordinate axes swap after rotation
       const pinned = hallCircles.filter(c => c.mapX != null);
       await Promise.all(pinned.map(c => circlesApi.update(c.id, { mapX: undefined, mapY: undefined })));
-      await saveMapDataUrl(selectedHall, dataUrl);
+      const imageUrl = await uploadDataUrlToR2(dataUrl, 'maps');
+      await saveMapImageUrl(selectedHall, imageUrl);
       setImgNaturalSize(null);
       queryClient.invalidateQueries({ queryKey: ['circles'] });
     } finally {
@@ -246,7 +248,7 @@ const MapPage: React.FC = () => {
     setProcessing(true);
     try {
       const img = new Image();
-      img.src = currentMap.imageDataUrl;
+      img.src = currentMap.imageUrl ?? currentMap.imageDataUrl ?? '';
       await new Promise<void>(resolve => { img.onload = () => resolve(); });
       const sx = (nx / 100) * img.naturalWidth;
       const sy = (ny / 100) * img.naturalHeight;
@@ -257,7 +259,7 @@ const MapPage: React.FC = () => {
       canvas.height = Math.round(sh);
       const ctx = canvas.getContext('2d')!;
       ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+      const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.92);
       // Remap pin coordinates to new crop area; remove pins outside the crop
       await Promise.all(hallCircles.map(c => {
         if (c.mapX == null || c.mapY == null) return Promise.resolve();
@@ -268,7 +270,8 @@ const MapPage: React.FC = () => {
         }
         return circlesApi.update(c.id, { mapX: newX, mapY: newY });
       }));
-      await saveMapDataUrl(selectedHall, dataUrl);
+      const croppedUrl = await uploadDataUrlToR2(croppedDataUrl, 'maps');
+      await saveMapImageUrl(selectedHall, croppedUrl);
       setImgNaturalSize(null);
       queryClient.invalidateQueries({ queryKey: ['circles'] });
       setCropMode(false);
@@ -278,17 +281,17 @@ const MapPage: React.FC = () => {
     }
   };
 
-  const saveMapDataUrl = async (hall: string, imageDataUrl: string) => {
+  const saveMapImageUrl = async (hall: string, imageUrl: string) => {
     const existing = (venueMaps ?? []).find(
       m => m.hall === hall && m.eventId === (selectedEventId ?? undefined)
     );
     if (existing) {
-      await venueMapsApi.update(existing.id, { imageDataUrl });
+      await venueMapsApi.update(existing.id, { imageUrl });
     } else {
       await venueMapsApi.upsert({
         eventId: selectedEventId ?? undefined,
         hall,
-        imageDataUrl,
+        imageUrl,
       });
     }
     queryClient.invalidateQueries({ queryKey: ['venueMaps'] });
@@ -303,16 +306,13 @@ const MapPage: React.FC = () => {
       setPdfPage(1);
       const { dataUrl, totalPages } = await renderPdfPageToDataUrl(file, 1);
       setPdfTotalPages(totalPages);
-      await saveMapDataUrl(hall, dataUrl);
+      const imageUrl = await uploadDataUrlToR2(dataUrl, 'maps');
+      await saveMapImageUrl(hall, imageUrl);
     } else {
       setPdfFile(null);
       setPdfTotalPages(0);
-      const reader = new FileReader();
-      reader.onload = async (ev) => {
-        if (!mountedRef.current) return;
-        await saveMapDataUrl(hall, ev.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+      const imageUrl = await uploadToR2(file, 'maps');
+      await saveMapImageUrl(hall, imageUrl);
     }
     e.target.value = '';
   };
@@ -321,7 +321,8 @@ const MapPage: React.FC = () => {
     if (!pdfFile || newPage < 1 || newPage > pdfTotalPages) return;
     setPdfPage(newPage);
     const { dataUrl } = await renderPdfPageToDataUrl(pdfFile, newPage);
-    await saveMapDataUrl(selectedHall, dataUrl);
+    const imageUrl = await uploadDataUrlToR2(dataUrl, 'maps');
+    await saveMapImageUrl(selectedHall, imageUrl);
   };
 
   const handleDeleteMap = async () => {
@@ -570,7 +571,7 @@ const MapPage: React.FC = () => {
             {/* Fallback image shown before imageBox is computed (object-contain, no letterbox correction) */}
             <img
               ref={imgCallbackRef}
-              src={currentMap.imageDataUrl}
+              src={currentMap.imageUrl ?? currentMap.imageDataUrl ?? ''}
               alt={`${selectedHall}マップ`}
               className={clsx(
                 'absolute inset-0 w-full h-full object-contain',
@@ -602,7 +603,7 @@ const MapPage: React.FC = () => {
                 onPointerUp={handleCropPointerUp}
               >
                 <img
-                  src={currentMap.imageDataUrl}
+                  src={currentMap.imageUrl ?? currentMap.imageDataUrl ?? ''}
                   alt={`${selectedHall}マップ`}
                   className="w-full h-full block"
                   draggable={false}

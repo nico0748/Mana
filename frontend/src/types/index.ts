@@ -50,7 +50,8 @@ export interface VenueMap {
   id: string;
   eventId?: string;
   hall: string;
-  imageDataUrl: string;
+  imageUrl?: string;
+  imageDataUrl?: string;
   generatedSvg?: string;
   createdAt: number;
   updatedAt: number;

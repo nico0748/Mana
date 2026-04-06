@@ -13,6 +13,12 @@ import { authenticate } from './middleware/auth';
 const app = express();
 const PORT = process.env.PORT ?? 3000;
 
+// X-Powered-By: Express ヘッダーを除去（サーバー情報の露出防止）
+app.disable('x-powered-by');
+
+// Cloudflare 経由の場合は CF-Connecting-IP を信頼する
+app.set('trust proxy', 1);
+
 const corsOrigin = process.env.CORS_ORIGIN;
 app.use(cors({
   origin: corsOrigin ?? '*',

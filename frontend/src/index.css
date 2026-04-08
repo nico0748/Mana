@@ -60,9 +60,9 @@
  */
 [data-theme="light"] {
   /* ── Design tokens ── */
-  --lt-bg:            #fff8f0;
+  --lt-bg:            #f5eade;
   --lt-bg-nav:        #f0e0cc;
-  --lt-bg-card:       #fffdf9;
+  --lt-bg-card:       #d0c0ae;
   --lt-bg-input:      #fffdf9;
   --lt-bg-hover:      #f0e0cc;
   --lt-bg-tint:       #fdebd8;
@@ -234,7 +234,7 @@
   -webkit-backdrop-filter: blur(12px);
 }
 [data-theme="light"] .tools-panel-header {
-  background: rgba(255,248,240,0.88);
+  background: #d0c0ae;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }

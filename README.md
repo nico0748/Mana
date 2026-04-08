@@ -3,6 +3,14 @@
 蔵書管理 + 同人イベント買い物リスト + 会場マップを一体化した PWA。
 React + TypeScript + Vite（フロントエンド）、Express + Prisma + PostgreSQL（バックエンド）で構成し、Docker Compose で一括起動できる。
 
+## 認証・ストレージ
+
+| サービス | 用途 |
+|---|---|
+| Firebase Authentication | Email/Password・Google ソーシャルログイン |
+| Cloudflare R2 | マップ画像ストレージ（presigned PUT 経由でブラウザから直接アップロード） |
+| Cloudflare CDN | フロントエンド配信・HTTP/3 は無効化済み |
+
 ## ディレクトリ構成
 
 ```

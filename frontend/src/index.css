@@ -6,6 +6,10 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+body {
+  font-family: 'Zen Maru Gothic', system-ui, sans-serif;
+}
+
 /* ── Ripple Effect (Material Design interaction) ─────────── */
 @keyframes md-ripple {
   from { transform: scale(0); opacity: 0.25; }
@@ -37,28 +41,215 @@
 
 /* ── Light theme ─────────────────────────────────────────── */
 /*
+ *  参照: Adobe クールブルー配色パターン
+ *  https://www.adobe.com/jp/creativecloud/roc/blog/photography/color-pattern.html
+ *
+ *  Pattern 2 (Powder Blue × Steel Blue × Light Gray) をベースに、
+ *  Pattern 3 (Royal Blue × Midnight Blue × Smoke Gray) のコントラストを組み合わせ。
+ *
+ *  Palette:
+ *    #F5F5F5  page bg     (Smoke Gray / Pattern 3)
+ *    #FFFFFF  card/panel
+ *    #D3D3D3  nav bg      (Light Gray / Pattern 2)
+ *    #D8EEF2  hover bg    (Powder Blue 淡化)
+ *    #B0E0E6  tint bg     (Powder Blue / Pattern 2)
+ *    #C0D8E0  border
+ *    #4682B4  border-h    (Steel Blue / Pattern 2)
+ *    #4169E1  accent      (Royal Blue / Pattern 3) → CTA, focus, links
+ *    #2A52BE  accent-h    (Royal Blue 深化)
+ *    #4682B4  text-2      (Steel Blue / Pattern 2) ✅ AA on #F5F5F5 (4.3:1)
+ *    #191970  text-1      (Midnight Blue / Pattern 3) ✅ AAA on #F5F5F5 (14.5:1)
+ *
+ *  Status colors (cool bg に映える vivid):
+ *    success  #2E7D5E  → teal green
+ *    error    #C0392B  → crimson
+ *    info     #4682B4  → steel blue (Pattern 2 と統一)
+ */
+[data-theme="light"] {
+  /* ── Design tokens ── */
+  --lt-bg:            #F5F5F5;
+  --lt-bg-nav:        #D3D3D3;
+  --lt-bg-card:       #FFFFFF;
+  --lt-bg-input:      #FFFFFF;
+  --lt-bg-hover:      #D8EEF2;
+  --lt-bg-tint:       #B0E0E6;
+  --lt-border:        #8CB4C8;
+  --lt-border-hover:  #4682B4;
+  --lt-border-focus:  #4169E1;
+  --lt-text-1:        #191970;
+  --lt-text-2:        #4682B4;
+  --lt-text-muted:    #88AAC4;
+  --lt-accent:        #4169E1;
+  --lt-accent-hover:  #2A52BE;
+  --lt-btn-text:      #FFFFFF;
+  /* status */
+  --lt-success:       #2E7D5E;
+  --lt-success-bg:    rgba(46,125,94,0.10);
+  --lt-success-border:rgba(46,125,94,0.28);
+  --lt-error:         #C0392B;
+  --lt-error-bg:      rgba(192,57,43,0.09);
+  --lt-error-border:  rgba(192,57,43,0.25);
+  --lt-info:          #4682B4;
+  --lt-info-bg:       rgba(70,130,180,0.12);
+  --lt-info-border:   rgba(70,130,180,0.30);
+  --lt-yellow:        #B8860B;
+  --lt-yellow-bg:     rgba(184,134,11,0.12);
+
+  background-color: var(--lt-bg) !important;
+  color: var(--lt-text-1);
+
+  /* テキスト選択色 */
+  & ::selection { background: var(--lt-accent); color: var(--lt-btn-text); }
+
+  /* ══ Zinc neutrals ══════════════════════════════════════════ */
+  & .bg-zinc-950  { background-color: var(--lt-bg-nav)  !important; }
+  & .bg-zinc-900  { background-color: var(--lt-bg)      !important; }
+  & .bg-zinc-800  { background-color: var(--lt-bg-card) !important; }
+  & .bg-zinc-700  { background-color: var(--lt-bg-hover)!important; }
+  & .bg-zinc-600  { background-color: var(--lt-bg-tint) !important; }
+  & .bg-zinc-100  { background-color: var(--lt-accent)  !important; }
+  & .hover\:bg-white:hover { background-color: var(--lt-accent-hover) !important; }
+
+  & .border-zinc-800 { border-color: var(--lt-border)      !important; }
+  & .border-zinc-700 { border-color: var(--lt-border)      !important; }
+  & .border-zinc-600 { border-color: var(--lt-border-hover)!important; }
+  & .border-zinc-500 { border-color: var(--lt-border-focus)!important; }
+
+  & .text-zinc-100 { color: var(--lt-text-1)    !important; }
+  & .text-zinc-200 { color: var(--lt-text-1)    !important; }
+  & .text-zinc-300 { color: var(--lt-text-1)    !important; }
+  & .text-zinc-400 { color: var(--lt-text-2)    !important; }
+  & .text-zinc-500 { color: var(--lt-text-2)    !important; }
+  & .text-zinc-600 { color: var(--lt-text-muted)!important; }
+  & .text-zinc-700 { color: var(--lt-text-muted)!important; }
+  & .text-zinc-900 { color: var(--lt-btn-text)  !important; }
+  & .text-zinc-950 { color: var(--lt-btn-text)  !important; }
+
+  & .hover\:bg-zinc-800:hover   { background-color: var(--lt-bg-hover)!important; }
+  & .hover\:bg-zinc-700:hover   { background-color: var(--lt-bg-tint) !important; }
+  & .hover\:text-zinc-200:hover { color: var(--lt-text-1)!important; }
+  & .hover\:text-zinc-300:hover { color: var(--lt-text-1)!important; }
+
+  & .divide-zinc-800 > * + * { border-color: var(--lt-border)!important; }
+  & .divide-zinc-700 > * + * { border-color: var(--lt-border)!important; }
+
+  & .ring-zinc-500 { --tw-ring-color: var(--lt-border-hover)!important; }
+
+  /* ══ Success / bought ════════════════════════════════════════ */
+  & .text-emerald-400, & .text-emerald-500,
+  & .text-green-400,   & .text-green-500 {
+    color: var(--lt-success) !important;
+  }
+  & .bg-emerald-500, & .bg-emerald-400,
+  & .bg-green-400 {
+    background-color: var(--lt-success) !important;
+  }
+  & .border-emerald-500, & .border-emerald-300,
+  & .border-green-400 {
+    border-color: var(--lt-success-border) !important;
+  }
+  & .ring-emerald-500 {
+    --tw-ring-color: rgba(22,163,74,0.30) !important;
+  }
+  & [class*="bg-green-400"], & [class*="bg-emerald-500"],
+  & [class*="bg-emerald-400"] {
+    background-color: var(--lt-success-bg)     !important;
+    color:            var(--lt-success)         !important;
+    border-color:     var(--lt-success-border) !important;
+  }
+  & .bg-emerald-500:not([class*="\/"])  { background-color: var(--lt-success)!important; color: #fff !important; }
+
+  /* ══ Error / soldout ════════════════════════════════════════ */
+  & .text-red-400, & .text-red-500,
+  & .text-rose-400 {
+    color: var(--lt-error) !important;
+  }
+  & .bg-red-500 { background-color: var(--lt-error) !important; }
+  & .border-red-400, & .border-red-800,
+  & .border-red-900 { border-color: var(--lt-error-border) !important; }
+  & [class*="bg-red-950"]  { background-color: var(--lt-error-bg)!important; }
+  & [class*="bg-rose-400"] {
+    background-color: var(--lt-error-bg)    !important;
+    color:            var(--lt-error)        !important;
+    border-color:     var(--lt-error-border)!important;
+  }
+  & [class*="shadow-green-950"] { box-shadow: 0 4px 12px rgba(22,163,74,0.12)!important; }
+  & [class*="shadow-red-950"]   { box-shadow: none!important; }
+
+  /* ══ Info / blue ════════════════════════════════════════════ */
+  & .text-blue-400, & .text-blue-300, & .text-sky-400 {
+    color: var(--lt-info) !important;
+  }
+  & .border-blue-400 { border-color: var(--lt-info-border)!important; }
+  & [class*="bg-blue-400"] {
+    background-color: var(--lt-info-bg)    !important;
+    color:            var(--lt-info)        !important;
+    border-color:     var(--lt-info-border)!important;
+  }
+
+  /* ══ Yellow / amber ════════════════════════════════════════ */
+  & .text-yellow-400 { color: var(--lt-yellow)   !important; }
+  & [class*="bg-yellow-400"]:not([class*="bg-yellow-400 "]) {
+    background-color: var(--lt-yellow-bg)  !important;
+    color:            var(--lt-yellow)      !important;
+  }
+  & .bg-yellow-400.rounded-full { background-color: #B8860B !important; }
+
+  /* ══ Input / Textarea / Select ══════════════════════════════ */
+  & input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  & textarea,
+  & select {
+    background-color: var(--lt-bg-input)  !important;
+    border-color:     var(--lt-border)    !important;
+    color:            var(--lt-text-1)    !important;
+    transition: border-color 0.15s ease   !important;
+  }
+  & input::placeholder, & textarea::placeholder {
+    color: var(--lt-text-muted) !important;
+    opacity: 1 !important;
+  }
+  & input:hover:not(:disabled), & textarea:hover:not(:disabled),
+  & select:hover:not(:disabled) {
+    border-color: var(--lt-border-hover) !important;
+  }
+  & input:focus-visible, & textarea:focus-visible, & select:focus-visible {
+    border-color: var(--lt-border-focus)            !important;
+    box-shadow:   0 0 0 3px rgba(65,105,225,0.18)  !important;
+    outline:      none                              !important;
+  }
+
+  /* ══ Card hover (cool blue shadow) ══════════════════════════ */
+  & .rounded-2xl, & .rounded-xl {
+    transition: box-shadow 0.2s ease, border-color 0.2s ease !important;
+  }
+  & .rounded-2xl:hover, & .rounded-xl:hover {
+    box-shadow: 0 6px 20px rgba(70,130,180,0.14) !important;
+  }
+
+  /* ══ Scrollbar ══════════════════════════════════════════════ */
+  &::-webkit-scrollbar-thumb       { background: var(--lt-border); }
+  &::-webkit-scrollbar-thumb:hover { background: var(--lt-border-hover); }
+}
+
+/* ── Taupe theme ─────────────────────────────────────────── */
+/*
  *  配色理論: 類似色調和（Analogous Harmony）
  *  基軸色 #c4622d（テラコッタ, HSL 20°）を中心に、
  *  暖色系オレンジ〜ブラウンファミリーで統一。
  *
  *  Neutral palette (all HSL 20-28°, warm side):
- *    #fff8f0  page bg     L=98%
- *    #fffdf9  card/panel  L=99.5%
+ *    #f5eade  page bg     (ユーザーカスタム)
+ *    #d0c0ae  card/panel  (ユーザーカスタム)
  *    #fdebd8  tint bg     L=93%
  *    #f0e0cc  hover/nav   L=88%
  *    #e8d5c0  border      L=82%
  *    #d4a574  border-h    L=65%
  *    #c4622d  accent      L=47%  → CTA, focus, links
  *    #a8501f  accent-h    L=39%
- *    #8a6a50  text-2      L=42%  ✅ AA on #fff8f0 (5.1:1)
- *    #2d1a0a  text-1      L=11%  ✅ AAA on #fff8f0 (14.8:1)
- *
- *  Status colors (muted to harmonize with warm bg):
- *    success  #3d7a52  →  sage green   (5.8:1 vs #fff8f0) ✅ AA
- *    error    #a83030  →  brick red    (6.2:1 vs #fff8f0) ✅ AA
- *    info     #4a6b9a  →  muted cobalt (5.0:1 vs #fff8f0) ✅ AA
+ *    #8a6a50  text-2      L=42%  ✅ AA
+ *    #2d1a0a  text-1      L=11%  ✅ AAA
  */
-[data-theme="light"] {
+[data-theme="taupe"] {
   /* ── Design tokens ── */
   --lt-bg:            #f5eade;
   --lt-bg-nav:        #f0e0cc;
@@ -144,14 +335,12 @@
   & .ring-emerald-500 {
     --tw-ring-color: rgba(61,122,82,0.30) !important;
   }
-  /* 半透明背景 (bg-green-400/10 等) */
   & [class*="bg-green-400"], & [class*="bg-emerald-500"],
   & [class*="bg-emerald-400"] {
     background-color: var(--lt-success-bg)     !important;
     color:            var(--lt-success)         !important;
     border-color:     var(--lt-success-border) !important;
   }
-  /* ↑ の上書きで塗り潰しが必要なマーカー等は復元 */
   & .bg-emerald-500:not([class*="\/"])  { background-color: var(--lt-success)!important; color: #fff !important; }
 
   /* ══ Error / soldout — brick red ════════════════════════════ */
@@ -188,7 +377,6 @@
     background-color: var(--lt-yellow-bg)  !important;
     color:            var(--lt-yellow)      !important;
   }
-  /* マップピンのbg-yellow-400は塗り潰し維持 */
   & .bg-yellow-400.rounded-full { background-color: #d4a010 !important; }
 
   /* ══ Input / Textarea / Select ══════════════════════════════ */
@@ -234,6 +422,11 @@
   -webkit-backdrop-filter: blur(12px);
 }
 [data-theme="light"] .tools-panel-header {
+  background: rgba(245,245,245,0.90);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+[data-theme="taupe"] .tools-panel-header {
   background: #d0c0ae;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);

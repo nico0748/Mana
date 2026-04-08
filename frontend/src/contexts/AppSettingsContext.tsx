@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-export type Theme = 'dark' | 'light';
+export type Theme = 'dark' | 'light' | 'taupe';
 export type FontSize = 'normal' | 'large';
 export type MapMarkerSize = 'small' | 'normal' | 'large';
 
@@ -69,8 +69,8 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
   // Apply theme class to <html>
   useEffect(() => {
     const html = document.documentElement;
-    if (settings.theme === 'light') {
-      html.setAttribute('data-theme', 'light');
+    if (settings.theme === 'light' || settings.theme === 'taupe') {
+      html.setAttribute('data-theme', settings.theme);
     } else {
       html.removeAttribute('data-theme');
     }

@@ -15,38 +15,54 @@ const tabs = [
 export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
   const { settings } = useAppSettings();
-  const isLight = settings.theme === 'light';
+  const { theme } = settings;
 
   const isActive = (path: string) =>
     path === '/' ? location.pathname === '/' : location.pathname.startsWith(path);
 
-  const headerStyle = isLight
-    ? {
-        background: 'rgba(232,219,198,0.93)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(196,170,144,0.7)',
-      }
-    : {
-        background: 'rgba(9,9,11,0.88)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(39,39,42,0.7)',
-      };
+  const headerStyle =
+    theme === 'light'
+      ? {
+          background: 'rgba(245,245,245,0.90)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderBottom: '1px solid rgba(192,216,224,0.7)',
+        }
+      : theme === 'taupe'
+      ? {
+          background: 'rgba(240,224,204,0.93)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderBottom: '1px solid rgba(212,165,116,0.7)',
+        }
+      : {
+          background: 'rgba(9,9,11,0.88)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderBottom: '1px solid rgba(39,39,42,0.7)',
+        };
 
-  const bottomNavStyle = isLight
-    ? {
-        background: 'rgba(232,219,198,0.97)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        borderTop: '1px solid rgba(196,170,144,0.7)',
-      }
-    : {
-        background: 'rgba(24,24,27,0.95)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        borderTop: '1px solid rgba(39,39,42,0.7)',
-      };
+  const bottomNavStyle =
+    theme === 'light'
+      ? {
+          background: 'rgba(245,245,245,0.97)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderTop: '1px solid rgba(192,216,224,0.7)',
+        }
+      : theme === 'taupe'
+      ? {
+          background: 'rgba(240,224,204,0.97)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderTop: '1px solid rgba(212,165,116,0.7)',
+        }
+      : {
+          background: 'rgba(24,24,27,0.95)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          borderTop: '1px solid rgba(39,39,42,0.7)',
+        };
 
   // Apply reduce-motion class to document
   useEffect(() => {

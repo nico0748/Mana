@@ -152,12 +152,31 @@ const GeneralContent: React.FC<{
   <div className="pb-6">
     <SectionTitle>外観</SectionTitle>
     <Card>
-      <SettingRow
-        icon={settings.theme === 'dark' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
-        label="テーマ"
-        value={settings.theme === 'dark' ? 'ダーク' : 'ライト'}
-        onClick={() => update({ theme: settings.theme === 'dark' ? 'light' : 'dark' })}
-      />
+      <div className="px-4 py-3.5 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="text-zinc-500">
+            {settings.theme === 'dark' ? <Moon className="w-4 h-4" /> :
+             settings.theme === 'taupe' ? <Palette className="w-4 h-4" /> :
+             <Sun className="w-4 h-4" />}
+          </span>
+          <span className="text-sm text-zinc-200">テーマ</span>
+        </div>
+        <div className="flex gap-0.5 bg-zinc-800 rounded-lg p-0.5">
+          {(['dark', 'light', 'taupe'] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => update({ theme: t })}
+              className={`px-2.5 py-1 rounded-md text-xs transition-colors ${
+                settings.theme === t
+                  ? 'bg-zinc-600 text-zinc-100'
+                  : 'text-zinc-500 hover:text-zinc-400'
+              }`}
+            >
+              {t === 'dark' ? 'ダーク' : t === 'light' ? 'ライト' : 'トープ'}
+            </button>
+          ))}
+        </div>
+      </div>
     </Card>
   </div>
 );

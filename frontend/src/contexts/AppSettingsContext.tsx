@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 
 export type Theme = 'dark' | 'light';
 export type FontSize = 'normal' | 'large';
+export type MapMarkerSize = 'small' | 'normal' | 'large';
 
 export interface AppSettings {
   theme: Theme;
@@ -9,6 +10,7 @@ export interface AppSettings {
   backgroundOpacity: number;
   fontSize: FontSize;
   reduceMotion: boolean;
+  mapMarkerSize: MapMarkerSize;
 }
 
 const DEFAULTS: AppSettings = {
@@ -17,6 +19,7 @@ const DEFAULTS: AppSettings = {
   backgroundOpacity: 30,
   fontSize: 'normal',
   reduceMotion: false,
+  mapMarkerSize: 'normal',
 };
 
 const STORAGE_KEY = 'doujin-pp-settings';

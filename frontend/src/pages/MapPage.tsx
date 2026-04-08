@@ -13,6 +13,7 @@ import type { CircleItem } from '../types';
 import type { EventTemplate } from '../types/template';
 import { clsx } from 'clsx';
 import TemplateImportModal from '../components/map/TemplateImportModal';
+import { useAppSettings } from '../contexts/AppSettingsContext';
 
 const statusColor: Record<string, string> = {
   pending: 'bg-yellow-400 border-yellow-200',
@@ -25,6 +26,8 @@ const MapPage: React.FC = () => {
   const queryClient = useQueryClient();
   const highlightId = searchParams.get('highlight');
   const defaultHall = searchParams.get('hall');
+  const { settings } = useAppSettings();
+  const markerSize = settings.mapMarkerSize;
 
   const [editMode, setEditMode] = useState(false);
   const [selectedCircleId, setSelectedCircleId] = useState<string | null>(null);
@@ -640,10 +643,16 @@ const MapPage: React.FC = () => {
                       <div className={clsx(
                         'rounded-full border shadow-lg transition-all opacity-85',
                         circle.id === highlightId
-                          ? 'w-4 h-4 bg-emerald-500 border-emerald-200 ring-2 ring-emerald-500/50'
+                          ? clsx(
+                              markerSize === 'small' ? 'w-3 h-3' : markerSize === 'large' ? 'w-5 h-5' : 'w-4 h-4',
+                              'bg-emerald-500 border-emerald-200 ring-2 ring-emerald-500/50'
+                            )
                           : editMode && selectedCircleId === circle.id
-                            ? 'w-4 h-4 ring-2 ring-white/80'
-                            : 'w-2.5 h-2.5',
+                            ? clsx(
+                                markerSize === 'small' ? 'w-3 h-3' : markerSize === 'large' ? 'w-5 h-5' : 'w-4 h-4',
+                                'ring-2 ring-white/80'
+                              )
+                            : markerSize === 'small' ? 'w-2 h-2' : markerSize === 'large' ? 'w-4 h-4' : 'w-2.5 h-2.5',
                         statusColor[circle.status] ?? 'bg-zinc-600 border-zinc-500'
                       )} />
 

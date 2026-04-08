@@ -4,7 +4,7 @@ import {
   Briefcase, HelpCircle, User,
   ChevronRight, ChevronLeft,
   Sun, Moon, ImageIcon, Trash2, Type, Zap, ZapOff,
-  Mail, Calendar, Shield, FileText, ExternalLink, LogOut,
+  Mail, Calendar, Shield, FileText, ExternalLink, LogOut, MapPin,
 } from 'lucide-react';
 import { useAppSettings } from '../contexts/AppSettingsContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -244,6 +244,33 @@ const PersonalizeContent: React.FC<{
                   }`}
                 >
                   {size === 'normal' ? '標準' : '大'}
+                </button>
+              ))}
+            </div>
+          }
+        />
+      </Card>
+
+      <SectionTitle>マップ</SectionTitle>
+      <Card>
+        <SettingRow
+          icon={<MapPin className="w-4 h-4" />}
+          label="サークルマーカーの大きさ"
+          right={
+            <div className="flex bg-zinc-800 rounded-lg p-0.5 gap-0.5">
+              {([
+                { value: 'small',  label: '小' },
+                { value: 'normal', label: '標準' },
+                { value: 'large',  label: '大' },
+              ] as const).map(({ value, label }) => (
+                <button
+                  key={value}
+                  onClick={() => update({ mapMarkerSize: value })}
+                  className={`px-3 py-1 text-xs rounded-md font-medium transition-colors ${
+                    settings.mapMarkerSize === value ? 'bg-zinc-600 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
+                  }`}
+                >
+                  {label}
                 </button>
               ))}
             </div>

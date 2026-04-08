@@ -1,3 +1,11 @@
+# src/context/ （廃止済み）
+
+> **このディレクトリは廃止済みです。** 現在の Context ファイルは [`src/contexts/`](../contexts/README.md) に配置されています。
+
+---
+
+（以下は旧ドキュメントの参考として残しています）
+
 # src/context/
 
 React Contextを使ったグローバル状態管理のプロバイダーを格納するディレクトリ。

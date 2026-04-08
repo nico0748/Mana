@@ -1,61 +1,81 @@
 # src/hooks/
 
-Firestoreとのデータ同期・書籍のCRUD操作を担うカスタムReactフックを格納するディレクトリ。
+React Query を用いたサーバー状態管理・書籍 CRUD・インポートエクスポート・ルートナビを担うカスタムフックを格納するディレクトリ。
 
 ## ファイル
 
 ### `useBooks.ts`
 
-書籍データの管理を一元化するカスタムフック。Firestoreのリアルタイムリスナーと全CRUD操作を提供する。
+書籍データの管理を一元化するカスタムフック。React Query（`@tanstack/react-query`）で REST API とのデータ同期を行う。
 
 **使用箇所:** `src/components/books/BookList.tsx`
 
----
+#### シグネチャ
+
+```typescript
+const { books, loading, error, addBook, updateBook, deleteBook, uploadImage } =
+  useBooks(sortField?, sortDirection?);
+```
+
+| パラメータ | 型 | デフォルト | 説明 |
+|-----------|-----|----------|------|
+| `sortField` | `'createdAt' \| 'title' \| 'author' \| 'ndcCode'` | `'createdAt'` | ソートキー |
+| `sortDirection` | `'asc' \| 'desc'` | `'desc'` | ソート方向 |
 
 #### 戻り値
 
 | プロパティ | 型 | 説明 |
 |-----------|-----|------|
-| `books` | `Book[]` | 現在のユーザーの書籍リスト（リアルタイム同期） |
-| `loading` | `boolean` | データ取得中は`true` |
-| `error` | `string \| null` | エラーメッセージ。正常時は`null` |
-| `addBook` | `Function` | 書籍を新規追加する |
-| `updateBook` | `Function` | 既存書籍を更新する |
-| `deleteBook` | `Function` | 書籍を削除する |
+| `books` | `Book[]` | ソート済みの書籍リスト |
+| `loading` | `boolean` | データ取得中は `true` |
+| `error` | `string \| null` | エラーメッセージ。正常時は `null` |
+| `addBook` | `(data) => Promise<Book>` | 書籍を新規追加する |
+| `updateBook` | `(id, data) => Promise<Book>` | 既存書籍を更新する |
+| `deleteBook` | `(id) => Promise<void>` | 書籍を削除する |
+| `uploadImage` | `(file) => Promise<string>` | 画像ファイルを Base64 Data URL に変換する |
 
----
-
-#### `addBook(bookData, imageFile?)`
-Firestoreに新規書籍を追加する。
-
-1. `imageFile`が渡された場合はFirebase Storageに`covers/{uid}/{timestamp}`でアップロードし、`coverUrl`を取得
-2. `{...bookData, uid, coverUrl, createdAt: serverTimestamp()}`をFirestoreの`books`コレクションに保存
-
-#### `updateBook(bookId, bookData, imageFile?)`
-既存書籍を更新する。
-
-1. `imageFile`が渡された場合はStorage新規アップロードし`coverUrl`を更新
-2. FirestoreのドキュメントをIDで指定し`updateDoc`で部分更新
-
-#### `deleteBook(bookId)`
-書籍をFirestoreから削除する。`deleteDoc`で該当ドキュメントを削除。
-
----
-
-#### リアルタイム同期
-
-フックのマウント時に`onSnapshot`リスナーを`books`コレクションに設定。ユーザー自身の書籍（`uid == currentUser.uid`）のみをフィルタリングして取得。コンポーネントのアンマウント時にリスナーを自動解除。
+#### データフロー
 
 ```
-Firestore books コレクション
-    ↓ onSnapshot (リアルタイム監視)
-useBooks.books state
-    ↓
-BookList → BookItem[] の再描画
+useQuery(['books'])
+  → booksApi.list() → GET /api/books
+  → rawBooks（React Query キャッシュ）
+  → useMemo でソート
+  → books（表示用）
+
+addBook / updateBook / deleteBook
+  → useMutation
+  → 成功後 queryClient.invalidateQueries(['books']) で自動再取得
 ```
 
 ---
 
-#### エラーハンドリング
+### `useSync.ts`
 
-各CRUD操作は`try/catch`で囲み、失敗時は`error`ステートにメッセージを設定。成功時は`error`を`null`にリセット。
+本棚データ（書籍リスト）のインポート・エクスポートを担うカスタムフック。
+
+#### 戻り値
+
+| 関数 | 説明 |
+|------|------|
+| `exportBooksJson()` | 全データを JSON でエクスポート（PWA は `navigator.share`、それ以外はダウンロード） |
+| `exportBooksCsv()` | 書籍一覧を CSV でエクスポート（BOM 付き UTF-8） |
+| `exportBooksExcel()` | 書籍一覧を Excel（`.xlsx`）でエクスポート |
+| `importBooks(file)` | JSON / CSV / Excel ファイルをインポートして一括登録 |
+
+**CSV/Excel のカラム:** タイトル・著者・サークル名・ISBN・種別・カテゴリ・NDCコード・ステータス・価格・メモ・タグ
+
+**使用箇所:** `src/pages/ToolsPage.tsx`
+
+---
+
+### `useVenueRoute.ts`
+
+会場マップ上でのサークル間最短経路を計算するカスタムフック。
+
+**内部処理:**
+1. `VenueGraph`（グラフデータ）と出発・到着サークルの座標を受け取る
+2. `lib/dijkstra.ts` のダイクストラ法で最短経路を探索
+3. SVG パスとして描画可能な座標列を返す
+
+**使用箇所:** `src/pages/NavModePage.tsx`（ナビモード）

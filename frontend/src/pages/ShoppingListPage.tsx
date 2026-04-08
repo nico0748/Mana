@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   Plus, Trash2, Navigation, ChevronDown, ChevronUp, ChevronsUp,
   BookPlus, Check, Calendar, Pencil, FileSpreadsheet, FileDown, PanelLeft, ExternalLink,
-  Download, Upload, FileJson,
+  Download, Upload, FileJson, Share2,
 } from 'lucide-react';
 import type { Circle, CircleItem, DoujinEvent } from '../types';
 import { Button } from '../components/ui/Button';
@@ -35,6 +35,50 @@ const formatDate = (dateStr: string) => {
   const [y, m, d] = dateStr.split('-').map(Number);
   return `${y}年${m}月${d}日`;
 };
+
+// ─── X (Twitter) share helpers ─────────────────────────────────────────────
+
+function openXShare(text: string) {
+  const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+function buildCircleShareText(circle: Circle, items: CircleItem[], eventName?: string): string {
+  const pendingItems = items.filter(i => i.status !== 'soldout');
+  const lines: string[] = [];
+  if (eventName) lines.push(`【${eventName}】`);
+  lines.push(`${circle.name}（${circle.hall} ${circle.block}-${circle.number}）`);
+  if (pendingItems.length > 0) {
+    pendingItems.forEach(item => {
+      lines.push(`・${item.title} ¥${item.price.toLocaleString()} ×${item.quantity}`);
+    });
+  }
+  lines.push('');
+  lines.push('代理購入できる方はDMください🙏');
+  lines.push('#同人イベント #代理購入');
+  return lines.join('\n');
+}
+
+function buildEventShareText(event: DoujinEvent, circles: Circle[], circleItems: CircleItem[]): string {
+  const pendingCircles = circles.filter(c => c.status !== 'soldout');
+  const lines: string[] = [];
+  lines.push(`【${event.name}${event.date ? ` ${formatDate(event.date)}` : ''}】`);
+  lines.push('購入予定リストをシェアします！');
+  lines.push('');
+  pendingCircles.slice(0, 5).forEach(circle => {
+    const items = circleItems.filter(i => i.circleId === circle.id && i.status !== 'soldout');
+    lines.push(`▸ ${circle.name}（${circle.block}-${circle.number}）`);
+    items.slice(0, 2).forEach(item => {
+      lines.push(`  ・${item.title}`);
+    });
+    if (items.length > 2) lines.push(`  他${items.length - 2}点`);
+  });
+  if (pendingCircles.length > 5) lines.push(`他${pendingCircles.length - 5}サークル...`);
+  lines.push('');
+  lines.push('代理購入できる方はDMください🙏');
+  lines.push('#同人イベント #代理購入');
+  return lines.join('\n');
+}
 
 // ─── AddToLibraryModal ─────────────────────────────────────────────────────
 
@@ -106,6 +150,7 @@ interface CircleCardProps {
   items: CircleItem[];
   circleIndex?: number;
   totalCircles?: number;
+  eventName?: string;
   onEdit: (circle: Circle) => void;
   onDelete: (id: string) => void;
   onStatusChange: (id: string, status: Circle['status']) => void;
@@ -127,7 +172,7 @@ const itemStatusClass: Record<CircleItem['status'], string> = {
 };
 
 const CircleCard: React.FC<CircleCardProps> = ({
-  circle, items, circleIndex, totalCircles,
+  circle, items, circleIndex, totalCircles, eventName,
   onEdit, onDelete, onStatusChange, onItemStatusChange,
   onReorder, onAddItem, onDeleteItem,
 }) => {
@@ -175,6 +220,15 @@ const CircleCard: React.FC<CircleCardProps> = ({
                 >
                   <ExternalLink className="w-4 h-4" />
                 </a>
+              )}
+              {items.length > 0 && (
+                <button
+                  onClick={() => openXShare(buildCircleShareText(circle, items, eventName))}
+                  title="Xで共有（代理購入依頼）"
+                  className="p-2 text-zinc-500 hover:text-sky-400 hover:bg-zinc-800 rounded-full transition-all duration-150 active:scale-90"
+                >
+                  <Share2 className="w-4 h-4" />
+                </button>
               )}
               <button
                 onClick={() => onEdit(circle)}
@@ -843,6 +897,15 @@ const EventCard: React.FC<EventCardProps> = ({
                 ナビ
               </span>
             )}
+            {circles.length > 0 && (
+              <button
+                onClick={() => openXShare(buildEventShareText(event, circles, circleItems))}
+                title="Xで共有（代理購入依頼）"
+                className="p-2 text-zinc-500 hover:text-sky-400 hover:bg-zinc-800 rounded-lg transition-colors"
+              >
+                <Share2 className="w-4 h-4" />
+              </button>
+            )}
             <button
               onClick={() => onEditEvent(event)}
               className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-lg transition-colors"
@@ -920,6 +983,7 @@ const EventCard: React.FC<EventCardProps> = ({
                   items={circleItems.filter(i => i.circleId === circle.id)}
                   circleIndex={circles.indexOf(circle)}
                   totalCircles={circles.length}
+                  eventName={event.name}
                   onEdit={onEditCircle}
                   onDelete={onDeleteCircle}
                   onStatusChange={onStatusChange}

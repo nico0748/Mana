@@ -37,56 +37,59 @@
 
 /* ── Light theme ─────────────────────────────────────────── */
 /*
- *  配色理論: 類似色調和（Analogous Harmony）
- *  基軸色 #3b82f6（ブルー, HSL 217°）を中心に、
- *  200°〜240° のクールなスレートファミリーで統一。
+ *  参照: Adobe クールブルー配色パターン
+ *  https://www.adobe.com/jp/creativecloud/roc/blog/photography/color-pattern.html
  *
- *  Neutral palette (all HSL 210-220°, cool side):
- *    #f8fafc  page bg     L=98.8%  (slate-50)
- *    #ffffff  card/panel  L=100%
- *    #dbeafe  tint bg     L=93.1%  (blue-100)
- *    #e2e8f0  hover/nav   L=90.6%  (slate-200)
- *    #e2e8f0  border      L=90.6%  (slate-200)
- *    #93c5fd  border-h    L=78.2%  (blue-300)
- *    #3b82f6  accent      L=60.4%  → CTA, focus, links (blue-500)
- *    #2563eb  accent-h    L=54.7%  (blue-600)
- *    #475569  text-2      L=37.5%  ✅ AA on #f8fafc (5.5:1) (slate-600)
- *    #0f172a  text-1      L=11.0%  ✅ AAA on #f8fafc (16.1:1) (slate-900)
+ *  Pattern 2 (Powder Blue × Steel Blue × Light Gray) をベースに、
+ *  Pattern 3 (Royal Blue × Midnight Blue × Smoke Gray) のコントラストを組み合わせ。
  *
- *  Status colors (standard, vivid on cool bg):
- *    success  #16a34a  →  green-600   (5.4:1 vs #f8fafc) ✅ AA
- *    error    #dc2626  →  red-600     (5.0:1 vs #f8fafc) ✅ AA
- *    info     #0284c7  →  sky-600     (5.1:1 vs #f8fafc) ✅ AA
+ *  Palette:
+ *    #F5F5F5  page bg     (Smoke Gray / Pattern 3)
+ *    #FFFFFF  card/panel
+ *    #D3D3D3  nav bg      (Light Gray / Pattern 2)
+ *    #D8EEF2  hover bg    (Powder Blue 淡化)
+ *    #B0E0E6  tint bg     (Powder Blue / Pattern 2)
+ *    #C0D8E0  border
+ *    #4682B4  border-h    (Steel Blue / Pattern 2)
+ *    #4169E1  accent      (Royal Blue / Pattern 3) → CTA, focus, links
+ *    #2A52BE  accent-h    (Royal Blue 深化)
+ *    #4682B4  text-2      (Steel Blue / Pattern 2) ✅ AA on #F5F5F5 (4.3:1)
+ *    #191970  text-1      (Midnight Blue / Pattern 3) ✅ AAA on #F5F5F5 (14.5:1)
+ *
+ *  Status colors (cool bg に映える vivid):
+ *    success  #2E7D5E  → teal green
+ *    error    #C0392B  → crimson
+ *    info     #4682B4  → steel blue (Pattern 2 と統一)
  */
 [data-theme="light"] {
   /* ── Design tokens ── */
-  --lt-bg:            #f8fafc;
-  --lt-bg-nav:        #e2e8f0;
-  --lt-bg-card:       #ffffff;
-  --lt-bg-input:      #ffffff;
-  --lt-bg-hover:      #e2e8f0;
-  --lt-bg-tint:       #dbeafe;
-  --lt-border:        #e2e8f0;
-  --lt-border-hover:  #93c5fd;
-  --lt-border-focus:  #3b82f6;
-  --lt-text-1:        #0f172a;
-  --lt-text-2:        #475569;
-  --lt-text-muted:    #94a3b8;
-  --lt-accent:        #3b82f6;
-  --lt-accent-hover:  #2563eb;
-  --lt-btn-text:      #ffffff;
-  /* status — vivid on cool bg */
-  --lt-success:       #16a34a;
-  --lt-success-bg:    rgba(22,163,74,0.10);
-  --lt-success-border:rgba(22,163,74,0.28);
-  --lt-error:         #dc2626;
-  --lt-error-bg:      rgba(220,38,38,0.09);
-  --lt-error-border:  rgba(220,38,38,0.25);
-  --lt-info:          #0284c7;
-  --lt-info-bg:       rgba(2,132,199,0.10);
-  --lt-info-border:   rgba(2,132,199,0.28);
-  --lt-yellow:        #d97706;
-  --lt-yellow-bg:     rgba(217,119,6,0.12);
+  --lt-bg:            #F5F5F5;
+  --lt-bg-nav:        #D3D3D3;
+  --lt-bg-card:       #FFFFFF;
+  --lt-bg-input:      #FFFFFF;
+  --lt-bg-hover:      #D8EEF2;
+  --lt-bg-tint:       #B0E0E6;
+  --lt-border:        #C0D8E0;
+  --lt-border-hover:  #4682B4;
+  --lt-border-focus:  #4169E1;
+  --lt-text-1:        #191970;
+  --lt-text-2:        #4682B4;
+  --lt-text-muted:    #88AAC4;
+  --lt-accent:        #4169E1;
+  --lt-accent-hover:  #2A52BE;
+  --lt-btn-text:      #FFFFFF;
+  /* status */
+  --lt-success:       #2E7D5E;
+  --lt-success-bg:    rgba(46,125,94,0.10);
+  --lt-success-border:rgba(46,125,94,0.28);
+  --lt-error:         #C0392B;
+  --lt-error-bg:      rgba(192,57,43,0.09);
+  --lt-error-border:  rgba(192,57,43,0.25);
+  --lt-info:          #4682B4;
+  --lt-info-bg:       rgba(70,130,180,0.12);
+  --lt-info-border:   rgba(70,130,180,0.30);
+  --lt-yellow:        #B8860B;
+  --lt-yellow-bg:     rgba(184,134,11,0.12);
 
   background-color: var(--lt-bg) !important;
   color: var(--lt-text-1);
@@ -186,7 +189,7 @@
     background-color: var(--lt-yellow-bg)  !important;
     color:            var(--lt-yellow)      !important;
   }
-  & .bg-yellow-400.rounded-full { background-color: #f59e0b !important; }
+  & .bg-yellow-400.rounded-full { background-color: #B8860B !important; }
 
   /* ══ Input / Textarea / Select ══════════════════════════════ */
   & input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
@@ -206,17 +209,17 @@
     border-color: var(--lt-border-hover) !important;
   }
   & input:focus-visible, & textarea:focus-visible, & select:focus-visible {
-    border-color: var(--lt-border-focus)           !important;
-    box-shadow:   0 0 0 3px rgba(59,130,246,0.15) !important;
-    outline:      none                             !important;
+    border-color: var(--lt-border-focus)            !important;
+    box-shadow:   0 0 0 3px rgba(65,105,225,0.18)  !important;
+    outline:      none                              !important;
   }
 
-  /* ══ Card hover (cool shadow) ═══════════════════════════════ */
+  /* ══ Card hover (cool blue shadow) ══════════════════════════ */
   & .rounded-2xl, & .rounded-xl {
     transition: box-shadow 0.2s ease, border-color 0.2s ease !important;
   }
   & .rounded-2xl:hover, & .rounded-xl:hover {
-    box-shadow: 0 6px 20px rgba(59,130,246,0.10) !important;
+    box-shadow: 0 6px 20px rgba(70,130,180,0.14) !important;
   }
 
   /* ══ Scrollbar ══════════════════════════════════════════════ */
@@ -415,7 +418,7 @@
   -webkit-backdrop-filter: blur(12px);
 }
 [data-theme="light"] .tools-panel-header {
-  background: rgba(248,250,252,0.88);
+  background: rgba(245,245,245,0.90);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }

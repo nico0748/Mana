@@ -3,7 +3,7 @@ import {
   Settings, Database, Palette, MessageSquare,
   Briefcase, HelpCircle, User,
   ChevronRight, ChevronLeft,
-  Sun, Moon, ImageIcon, Trash2, Type, Zap, ZapOff,
+  Sun, Moon, Palette, ImageIcon, Trash2, Type, Zap, ZapOff,
   Mail, Calendar, Shield, FileText, ExternalLink, LogOut, MapPin,
 } from 'lucide-react';
 import { useAppSettings } from '../contexts/AppSettingsContext';
@@ -153,10 +153,20 @@ const GeneralContent: React.FC<{
     <SectionTitle>外観</SectionTitle>
     <Card>
       <SettingRow
-        icon={settings.theme === 'dark' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+        icon={
+          settings.theme === 'dark'  ? <Moon    className="w-4 h-4" /> :
+          settings.theme === 'taupe' ? <Palette className="w-4 h-4" /> :
+                                       <Sun     className="w-4 h-4" />
+        }
         label="テーマ"
-        value={settings.theme === 'dark' ? 'ダーク' : 'ライト'}
-        onClick={() => update({ theme: settings.theme === 'dark' ? 'light' : 'dark' })}
+        value={
+          settings.theme === 'dark'  ? 'ダーク' :
+          settings.theme === 'taupe' ? 'トープ' : 'ライト'
+        }
+        onClick={() => update({
+          theme: settings.theme === 'dark' ? 'light' :
+                 settings.theme === 'light' ? 'taupe' : 'dark'
+        })}
       />
     </Card>
   </div>

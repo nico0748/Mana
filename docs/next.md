@@ -13,12 +13,9 @@ Claude Code はこのファイルを上から順に読み取り、対応しま�
 
 ## 未対応
 
-<!-- 例:
-- [bug] ログアウト後にページを再読み込みするとエラーになる
-- [feat] 本棚に並び替え機能を追加してほしい
-- [chore] ○○のコードを整理してほしい
--->
- 
+- [ ] [feat] R2 への既存 imageDataUrl（Base64）データの一括移行スクリプト作成（マップ画像）
+- [ ] [chore] 既存データ移行完了後に imageDataUrl フィールドをスキーマ・型定義から削除
+- [ ] [feat] 書籍・サークルのカバー画像も R2 移行できているか動作確認・テスト
 
 ---
 
@@ -44,4 +41,32 @@ Claude Code はこのファイルを上から順に読み取り、対応しま�
 - [x] [fix] BookFormのUIをセクション分け・種別連動表示にリデザイン → feat/book-form-improvements
 - [x] [feat] ログイン不要のアプリ紹介ページ（/about）を実装。機能紹介・公式テンプレートDL・FAQを掲載 → feat/landing-page
 - [x] [feat] 公式テンプレートデータ（即売会+ホール一覧JSON）のインポート機能をマップページに追加。アプリ内選択 or ファイル読み込みに対応 → feat/landing-page
+- [x] [fix] LandingPage.tsx の TemplateCard ビルドエラー修正（削除済みコンポーネントの参照を除去） → feat/landing-page
+- [x] [feat] ランディングページの機能紹介セクションを実スクリーンショット画像に差し替え → feat/landing-page
 - [x] [feat] Google・X（Twitter）・LINEでのソーシャルログイン/新規登録機能を追加。初回登録時の利用規約同意モーダルにも対応 → feat/social-login
+- [x] [fix] Google認証のレースコンディション修正（LoginPage アンマウント後も pendingTerms 状態が消えないよう AuthContext に移動） → feat/social-login
+- [x] [feat] Google 新規登録時にユーザー名入力モーダル（UsernameSetupModal）を表示する機能追加 → feat/social-login
+- [x] [feat] Email 新規登録フォームにユーザー名入力欄を追加し、登録時に displayName を設定 → feat/social-login
+- [x] [feat] 設定画面（ToolsPage）でユーザー名をインライン編集できる機能追加 → feat/social-login
+- [x] [chore] nginx.conf に `server_tokens off` を追加（Nginx バージョン非公開化） → chore/security-hardening
+- [x] [chore] nginx.conf にセキュリティヘッダーを追加（X-Content-Type-Options / X-Frame-Options / Referrer-Policy / Permissions-Policy） → chore/security-hardening
+- [x] [chore] nginx.conf に静的アセットのキャッシュルールを追加（/assets/ 1年 immutable・画像 7日・index.html no-cache） → chore/security-hardening
+- [x] [chore] 未使用の LINE 認証コード（backend/src/routes/auth.ts）を削除 → chore/security-hardening
+- [x] [chore] Cloudflare CDN を導入（DNS プロキシ有効化） → インフラ作業（コード変更なし）
+- [x] [chore] nginx.conf に Cloudflare 実 IP フォワード設定を追加（CF-Connecting-IP / X-Forwarded-Proto / real_ip_header） → chore/security-hardening
+- [x] [chore] backend で X-Powered-By ヘッダーを除去（app.disable('x-powered-by')） → chore/security-hardening
+- [x] [chore] backend に `trust proxy 1` 設定を追加（Cloudflare 経由の実 IP 取得対応） → chore/security-hardening
+- [x] [chore] Cloudflare HTTP/3（QUIC）無効化（ERR_QUIC_PROTOCOL_ERROR 対策） → Cloudflare ダッシュボード作業
+- [x] [feat] 画像ストレージを DB の Base64 格納から Cloudflare R2 に移行 → feat/r2-image-storage
+  - [x] backend: `@aws-sdk/client-s3` + `s3-request-presigner` を追加
+  - [x] backend: `src/lib/r2.ts`（R2 クライアント・presigned URL 生成・オブジェクト削除）を追加
+  - [x] backend: `POST /api/upload/presign` エンドポイントを追加（contentType・folder バリデーション含む）
+  - [x] backend: Prisma スキーマに `VenueMap.imageUrl String?` を追加
+  - [x] backend: `VenueMap.imageDataUrl` を nullable（String?）に変更（後方互換）
+  - [x] backend: Prisma マイグレーション実行（`20260406193640_add_image_url_to_venue_map`）
+  - [x] frontend: `src/lib/r2Upload.ts`（presigned PUT 経由の R2 直接アップロードユーティリティ）を追加
+  - [x] frontend: `MapPage.tsx` のマップ画像アップロード（PDF・画像ファイル・回転・クロップ）を R2 に移行
+  - [x] frontend: `VenueMap` 型に `imageUrl?` を追加・`imageDataUrl` を optional 化
+  - [x] frontend: 画像表示を `imageUrl ?? imageDataUrl` のフォールバック方式に変更（既存データ後方互換）
+  - [x] docker-compose.prod.yml: バックエンドに R2 環境変数（R2_ACCOUNT_ID 等）を追加
+- [x] [fix] ライトモードのカラーパレット・ボーダー視認性を大幅改善・温かみのあるデザインに刷新（#f1e5d1 ベース） → fix/light-theme

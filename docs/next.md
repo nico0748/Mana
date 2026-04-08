@@ -16,12 +16,6 @@ Claude Code はこのファイルを上から順に読み取り、対応しま�
 - [ ] [feat] R2 への既存 imageDataUrl（Base64）データの一括移行スクリプト作成（マップ画像）
 - [ ] [chore] 既存データ移行完了後に imageDataUrl フィールドをスキーマ・型定義から削除
 - [ ] [test] 書籍・サークルのカバー画像も R2 移行できているか動作確認・テスト
-- [ ] [feat] 設定のパーソナライズでMAPのサークルの目印として配置するマーカーの大きさを調整できる設定を追加
-- [ ] [fix] 設定のパーソナライズ内のテーマ設定において、ライトモード時に以下のelementにカラーテーマが正常に適用できていないので修正。現在指定しているベースカラーの#e8dbc5は変えずに、この色に適したような色合いにしてほしい。Contrast値が十分に良い値となるように設定してほしい。全体的に落ち着いて色合いを目指してほしい。
-```
-<div class="sticky top-0 z-10 px-4 py-3.5 border-b border-zinc-800 flex items-center gap-3" style="background: rgba(9, 9, 11, 0.9); backdrop-filter: blur(12px);"><button class="lg:hidden p-1 -ml-1 text-zinc-400 hover:text-zinc-200 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-left w-5 h-5" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg></button><h2 class="text-sm font-semibold text-zinc-200">一般</h2></div> 
-```
-- [ ] [feat] 買い物リスト機能でX（旧Twitter）で買い物リストを共有する機能を追加。即売会・サークルごとに共有できるものとする。Xで共有することによって、他の即売会参加者に代理購入を依頼できるきっかけとなるような目的がある。
 
 
 ---
@@ -77,3 +71,6 @@ Claude Code はこのファイルを上から順に読み取り、対応しま�
   - [x] frontend: 画像表示を `imageUrl ?? imageDataUrl` のフォールバック方式に変更（既存データ後方互換）
   - [x] docker-compose.prod.yml: バックエンドに R2 環境変数（R2_ACCOUNT_ID 等）を追加
 - [x] [fix] ライトモードのカラーパレット・ボーダー視認性を大幅改善・温かみのあるデザインに刷新（#f1e5d1 ベース） → fix/light-theme
+- [x] [fix] 設定パネルのヘッダーがライトモード時にダーク背景のままになる問題を修正（インラインstyle → CSSクラス化） → fix/light-theme-settings-panel
+- [x] [feat] 設定のパーソナライズにMAPサークルマーカーサイズ調整（小/標準/大）を追加 → feat/map-marker-size-setting
+- [x] [feat] 買い物リストにX（Twitter）代理購入シェア機能を追加（即売会単位・サークル単位） → feat/shopping-list-x-share

@@ -16,7 +16,7 @@ Claude Code はこのファイルを上から順に読み取り、対応しま�
 - [ ] [feat] R2 への既存 imageDataUrl（Base64）データの一括移行スクリプト作成（マップ画像）
 - [ ] [chore] 既存データ移行完了後に imageDataUrl フィールドをスキーマ・型定義から削除
 - [ ] [test] 書籍・サークルのカバー画像も R2 移行できているか動作確認・テスト
-- [ ] [fix] 設定のパーソナライズにおけるライトテーマのUI/UXを大幅に改善する。以下のデザイン用件に従って、ライトモードを一新してほしい。
+- [ ] [fix] 設定のパーソナライズにおけるライトテーマのUI/UXを大幅に改善する。以下のデザイン用件に従って、ライトモードを一新してほしい。また、adobeのカラーテーマと配色パターンの記事リンクを参考にしながら進めてほしい。https://www.adobe.com/jp/creativecloud/roc/blog/photography/color-pattern.html
 ```
 # UI Design System Prompt
 # Based on: newt239.dev UI/UX patterns

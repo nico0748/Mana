@@ -6,6 +6,10 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+body {
+  font-family: 'Zen Maru Gothic', system-ui, sans-serif;
+}
+
 /* ── Ripple Effect (Material Design interaction) ─────────── */
 @keyframes md-ripple {
   from { transform: scale(0); opacity: 0.25; }

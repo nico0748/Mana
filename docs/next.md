@@ -16,7 +16,130 @@ Claude Code はこのファイルを上から順に読み取り、対応しま�
 - [ ] [feat] R2 への既存 imageDataUrl（Base64）データの一括移行スクリプト作成（マップ画像）
 - [ ] [chore] 既存データ移行完了後に imageDataUrl フィールドをスキーマ・型定義から削除
 - [ ] [test] 書籍・サークルのカバー画像も R2 移行できているか動作確認・テスト
+- [ ] [fix] 設定のパーソナライズにおけるライトテーマのUI/UXを大幅に改善する。以下のデザイン用件に従って、ライトモードを一新してほしい。
+```
+# UI Design System Prompt
+# Based on: newt239.dev UI/UX patterns
+# Base color: #fff8f0 (warm off-white)
 
+## Color System
+
+Base background      : #fff8f0  /* warm off-white — page background */
+Surface (cards)      : #fffdf9  /* slightly brighter than base */
+Hover background     : #f0e0cc  /* warm beige for hover states */
+Tint (accent bg)     : #fdebd8  /* button secondary hover, link hover */
+Border default       : #e8d5c0  /* 0.5px — default dividers & card borders */
+Border hover         : #d4a574  /* border color on hover/focus */
+Text primary         : #2d1a0a  /* dark warm brown — headings & body */
+Text secondary       : #8a6a50  /* mid-tone — subtitles, labels */
+Text muted           : #b89880  /* dates, handles, hints */
+Accent (primary)     : #c4622d  /* terracotta — CTA buttons, links */
+Accent hover         : #a8501f  /* darkened accent for hover state */
+Gradient start→end   : #f4a862 → #c4622d → #8a2a0a  /* thumbnails, hero */
+
+## Typography
+
+Font family   : system-ui, "LINE Seed JP", sans-serif
+Body size     : 14–15px / line-height 1.7
+Weight scale  : 400 (body), 500 (headings & labels only)
+Heading sizes : h1=22px, h2=18px, h3=15px — all weight 500
+Mono (dates)  : font-family: monospace — used for timestamps only
+
+## Component Styles
+
+Border radius   : 8px (inputs, small cards), 12px (cards), 16px (large panels)
+Border width    : 0.5px everywhere (except featured card: 1.5px accent border)
+Card background : #fffdf9 on base #fff8f0
+Card shadow     : none at rest → 0 8px 24px rgba(180,120,60,0.12) on hover
+
+## Button Variants
+
+Primary
+  background : #c4622d  color: #fff8f0
+  hover      : background → #a8501f
+  active     : transform: scale(0.97)
+  radius     : 8px / padding: 7px 16px
+
+Secondary (outlined)
+  background : transparent  color: #c4622d  border: 1px solid #c4622d
+  hover      : background → #fdebd8
+
+Ghost
+  background : transparent  color: #8a6a50  border: 0.5px solid #e8d5c0
+  hover      : background → #f0e0cc, border → #d4a574, color → #2d1a0a
+
+## Hover Interactions
+
+Card (Works/content)
+  transform   : translateY(-3px)
+  border-color: #e8d5c0 → #d4a574
+  box-shadow  : 0 8px 24px rgba(180,120,60,0.12)
+  transition  : all 0.2s ease
+
+Navigation links
+  background  : transparent → #f0e0cc
+  color       : #8a6a50 → #2d1a0a
+  transition  : 0.15s
+
+Timeline item
+  padding-left: +4px (indent increase)
+  dot (::before): scale(1.4) + color → #c4622d
+  transition  : 0.15s
+
+Track / List row
+  background  : transparent → #f0e0cc
+  transition  : 0.12s
+
+Link card (SNS etc.)
+  background  : #fffdf9 → #fdebd8
+  border-color: #e8d5c0 → #d4a574
+  transition  : 0.15s
+
+## Layout Patterns
+
+Navigation
+  position        : sticky top-0
+  backdrop-filter : blur(8px)
+  background      : rgba(255,248,240,0.85)
+  border-bottom   : 0.5px solid #e8d5c0
+
+Works grid
+  columns     : repeat(auto-fill, minmax(200px,1fr))
+  gap         : 12px
+  card-link   : entire card is <a> wrapping thumb + title + desc
+
+Timeline
+  border-left   : 1.5px solid #e8d5c0
+  dot (::before): 6px circle, color #d4a574, abs-positioned at left:-4px
+  year-label    : 10px, color #b89880, letter-spacing 0.08em
+
+AI Theme Input
+  layout      : flex row — input (flex:1) + primary button
+  container   : border 0.5px #e8d5c0, focus → border #c4622d
+  note        : "All prompts are recorded." warning text below
+
+Media list (tracks)
+  layout      : flex row — art(34px sq) + title/artist + duration(right)
+  art-radius  : 5px
+  hover       : full row background change
+
+## Animation Timing
+
+Default   : transition: all 0.15s ease
+Cards    : transition: transform 0.2s ease, box-shadow 0.2s ease
+Dot scale: transition: transform 0.15s, background 0.15s
+Tracks   : transition: background 0.12s
+
+## Key Design Rules
+
+1. No pure black or pure white — use warm tones only (#2d1a0a / #fff8f0)
+2. Border width is always 0.5px unless it's a featured/accent element
+3. No decorative shadows at rest — shadows appear only on hover
+4. All interactive elements transition in 0.12–0.20s
+5. Entire card = clickable link (large tap target for mobile)
+6. Gradient used only in visual/thumbnail areas, not UI chrome
+7. Font weight: 400 (body) and 500 (labels) only — never 600/700
+```
 
 ---
 

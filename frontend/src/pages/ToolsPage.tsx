@@ -566,9 +566,7 @@ const ToolsPage: React.FC = () => {
         flex-col flex-1 overflow-y-auto bg-zinc-950
       `}>
         {/* ヘッダー */}
-        <div className="sticky top-0 z-10 px-4 py-3.5 border-b border-zinc-800 flex items-center gap-3"
-          style={{ background: 'rgba(9,9,11,0.9)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)' }}
-        >
+        <div className="tools-panel-header sticky top-0 z-10 px-4 py-3.5 border-b border-zinc-800 flex items-center gap-3">
           {/* モバイルのみ: 戻るボタン */}
           <button
             onClick={() => setMobilePanel(false)}

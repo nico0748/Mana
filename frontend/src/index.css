@@ -37,34 +37,56 @@
 
 /* ── Light theme ─────────────────────────────────────────── */
 /*
- *  Design system: warm terracotta palette
+ *  配色理論: 類似色調和（Analogous Harmony）
+ *  基軸色 #c4622d（テラコッタ, HSL 20°）を中心に、
+ *  暖色系オレンジ〜ブラウンファミリーで統一。
  *
- *  Base:    #fff8f0  warm off-white page background
- *  Surface: #fffdf9  card/panel surface
- *  Accent:  #c4622d  terracotta — CTA, links, focus rings
+ *  Neutral palette (all HSL 20-28°, warm side):
+ *    #fff8f0  page bg     L=98%
+ *    #fffdf9  card/panel  L=99.5%
+ *    #fdebd8  tint bg     L=93%
+ *    #f0e0cc  hover/nav   L=88%
+ *    #e8d5c0  border      L=82%
+ *    #d4a574  border-h    L=65%
+ *    #c4622d  accent      L=47%  → CTA, focus, links
+ *    #a8501f  accent-h    L=39%
+ *    #8a6a50  text-2      L=42%  ✅ AA on #fff8f0 (5.1:1)
+ *    #2d1a0a  text-1      L=11%  ✅ AAA on #fff8f0 (14.8:1)
  *
- *  Contrast ratios vs #fff8f0:
- *    text-primary   #2d1a0a  →  14.8:1  ✅ WCAG AAA
- *    text-secondary #8a6a50  →   5.1:1  ✅ WCAG AA
- *    text-muted     #b89880  →   3.0:1  ◎ large text / UI
+ *  Status colors (muted to harmonize with warm bg):
+ *    success  #3d7a52  →  sage green   (5.8:1 vs #fff8f0) ✅ AA
+ *    error    #a83030  →  brick red    (6.2:1 vs #fff8f0) ✅ AA
+ *    info     #4a6b9a  →  muted cobalt (5.0:1 vs #fff8f0) ✅ AA
  */
 [data-theme="light"] {
   /* ── Design tokens ── */
-  --lt-bg:           #fff8f0;
-  --lt-bg-nav:       #f0e0cc;
-  --lt-bg-card:      #fffdf9;
-  --lt-bg-input:     #fffdf9;
-  --lt-bg-hover:     #f0e0cc;
-  --lt-bg-tint:      #fdebd8;
-  --lt-border:       #e8d5c0;
-  --lt-border-hover: #d4a574;
-  --lt-border-focus: #c4622d;
-  --lt-text-1:       #2d1a0a;
-  --lt-text-2:       #8a6a50;
-  --lt-text-muted:   #b89880;
-  --lt-accent:       #c4622d;
-  --lt-accent-hover: #a8501f;
-  --lt-btn-text:     #fff8f0;
+  --lt-bg:            #fff8f0;
+  --lt-bg-nav:        #f0e0cc;
+  --lt-bg-card:       #fffdf9;
+  --lt-bg-input:      #fffdf9;
+  --lt-bg-hover:      #f0e0cc;
+  --lt-bg-tint:       #fdebd8;
+  --lt-border:        #e8d5c0;
+  --lt-border-hover:  #d4a574;
+  --lt-border-focus:  #c4622d;
+  --lt-text-1:        #2d1a0a;
+  --lt-text-2:        #8a6a50;
+  --lt-text-muted:    #b89880;
+  --lt-accent:        #c4622d;
+  --lt-accent-hover:  #a8501f;
+  --lt-btn-text:      #fff8f0;
+  /* status — muted to harmonize with warm bg */
+  --lt-success:       #3d7a52;
+  --lt-success-bg:    rgba(61,122,82,0.10);
+  --lt-success-border:rgba(61,122,82,0.28);
+  --lt-error:         #a83030;
+  --lt-error-bg:      rgba(168,48,48,0.09);
+  --lt-error-border:  rgba(168,48,48,0.25);
+  --lt-info:          #4a6b9a;
+  --lt-info-bg:       rgba(74,107,154,0.10);
+  --lt-info-border:   rgba(74,107,154,0.28);
+  --lt-yellow:        #96700a;
+  --lt-yellow-bg:     rgba(150,112,10,0.12);
 
   background-color: var(--lt-bg) !important;
   color: var(--lt-text-1);
@@ -72,30 +94,111 @@
   /* テキスト選択色 */
   & ::selection { background: var(--lt-accent); color: var(--lt-btn-text); }
 
-  /* ── Backgrounds ───────────────────────────────────────── */
-  & .bg-zinc-950 { background-color: var(--lt-bg-nav)  !important; }
-  & .bg-zinc-900 { background-color: var(--lt-bg)      !important; }
-  & .bg-zinc-800 { background-color: var(--lt-bg-card) !important; }
-  & .bg-zinc-700 { background-color: var(--lt-bg-hover)!important; }
-  & .bg-zinc-600 { background-color: var(--lt-bg-tint) !important; }
-  /* primary button (bg-zinc-100) → accent terracotta */
-  & .bg-zinc-100 { background-color: var(--lt-accent)  !important; }
+  /* ══ Zinc neutrals ══════════════════════════════════════════ */
+  & .bg-zinc-950  { background-color: var(--lt-bg-nav)  !important; }
+  & .bg-zinc-900  { background-color: var(--lt-bg)      !important; }
+  & .bg-zinc-800  { background-color: var(--lt-bg-card) !important; }
+  & .bg-zinc-700  { background-color: var(--lt-bg-hover)!important; }
+  & .bg-zinc-600  { background-color: var(--lt-bg-tint) !important; }
+  & .bg-zinc-100  { background-color: var(--lt-accent)  !important; }
   & .hover\:bg-white:hover { background-color: var(--lt-accent-hover) !important; }
 
-  /* ── Borders ────────────────────────────────────────────── */
-  & .border-zinc-800 { border-color: var(--lt-border)       !important; }
-  & .border-zinc-700 { border-color: var(--lt-border)       !important; }
-  & .border-zinc-600 { border-color: var(--lt-border-hover) !important; }
-  & .border-zinc-500 { border-color: var(--lt-border-focus) !important; }
+  & .border-zinc-800 { border-color: var(--lt-border)      !important; }
+  & .border-zinc-700 { border-color: var(--lt-border)      !important; }
+  & .border-zinc-600 { border-color: var(--lt-border-hover)!important; }
+  & .border-zinc-500 { border-color: var(--lt-border-focus)!important; }
 
-  /* ── Input / Textarea / Select ── */
+  & .text-zinc-100 { color: var(--lt-text-1)    !important; }
+  & .text-zinc-200 { color: var(--lt-text-1)    !important; }
+  & .text-zinc-300 { color: var(--lt-text-1)    !important; }
+  & .text-zinc-400 { color: var(--lt-text-2)    !important; }
+  & .text-zinc-500 { color: var(--lt-text-2)    !important; }
+  & .text-zinc-600 { color: var(--lt-text-muted)!important; }
+  & .text-zinc-700 { color: var(--lt-text-muted)!important; }
+  & .text-zinc-900 { color: var(--lt-btn-text)  !important; }
+  & .text-zinc-950 { color: var(--lt-btn-text)  !important; }
+
+  & .hover\:bg-zinc-800:hover   { background-color: var(--lt-bg-hover)!important; }
+  & .hover\:bg-zinc-700:hover   { background-color: var(--lt-bg-tint) !important; }
+  & .hover\:text-zinc-200:hover { color: var(--lt-text-1)!important; }
+  & .hover\:text-zinc-300:hover { color: var(--lt-text-1)!important; }
+
+  & .divide-zinc-800 > * + * { border-color: var(--lt-border)!important; }
+  & .divide-zinc-700 > * + * { border-color: var(--lt-border)!important; }
+
+  & .ring-zinc-500 { --tw-ring-color: var(--lt-border-hover)!important; }
+
+  /* ══ Success / bought — muted sage green ════════════════════ */
+  & .text-emerald-400, & .text-emerald-500,
+  & .text-green-400,   & .text-green-500 {
+    color: var(--lt-success) !important;
+  }
+  & .bg-emerald-500, & .bg-emerald-400,
+  & .bg-green-400 {
+    background-color: var(--lt-success) !important;
+  }
+  & .border-emerald-500, & .border-emerald-300,
+  & .border-green-400 {
+    border-color: var(--lt-success-border) !important;
+  }
+  & .ring-emerald-500 {
+    --tw-ring-color: rgba(61,122,82,0.30) !important;
+  }
+  /* 半透明背景 (bg-green-400/10 等) */
+  & [class*="bg-green-400"], & [class*="bg-emerald-500"],
+  & [class*="bg-emerald-400"] {
+    background-color: var(--lt-success-bg)     !important;
+    color:            var(--lt-success)         !important;
+    border-color:     var(--lt-success-border) !important;
+  }
+  /* ↑ の上書きで塗り潰しが必要なマーカー等は復元 */
+  & .bg-emerald-500:not([class*="\/"])  { background-color: var(--lt-success)!important; color: #fff !important; }
+
+  /* ══ Error / soldout — brick red ════════════════════════════ */
+  & .text-red-400, & .text-red-500,
+  & .text-rose-400 {
+    color: var(--lt-error) !important;
+  }
+  & .bg-red-500 { background-color: var(--lt-error) !important; }
+  & .border-red-400, & .border-red-800,
+  & .border-red-900 { border-color: var(--lt-error-border) !important; }
+  & [class*="bg-red-950"]  { background-color: var(--lt-error-bg)!important; }
+  & [class*="bg-rose-400"] {
+    background-color: var(--lt-error-bg)    !important;
+    color:            var(--lt-error)        !important;
+    border-color:     var(--lt-error-border)!important;
+  }
+  & [class*="shadow-green-950"] { box-shadow: 0 4px 12px rgba(61,122,82,0.12)!important; }
+  & [class*="shadow-red-950"]   { box-shadow: none!important; }
+
+  /* ══ Info / blue — muted cobalt ═════════════════════════════ */
+  & .text-blue-400, & .text-blue-300, & .text-sky-400 {
+    color: var(--lt-info) !important;
+  }
+  & .border-blue-400 { border-color: var(--lt-info-border)!important; }
+  & [class*="bg-blue-400"] {
+    background-color: var(--lt-info-bg)    !important;
+    color:            var(--lt-info)        !important;
+    border-color:     var(--lt-info-border)!important;
+  }
+
+  /* ══ Yellow / amber — dark gold (visible on warm bg) ════════ */
+  & .text-yellow-400 { color: var(--lt-yellow)   !important; }
+  & [class*="bg-yellow-400"]:not([class*="bg-yellow-400 "]) {
+    background-color: var(--lt-yellow-bg)  !important;
+    color:            var(--lt-yellow)      !important;
+  }
+  /* マップピンのbg-yellow-400は塗り潰し維持 */
+  & .bg-yellow-400.rounded-full { background-color: #d4a010 !important; }
+
+  /* ══ Input / Textarea / Select ══════════════════════════════ */
   & input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
   & textarea,
   & select {
-    background-color: var(--lt-bg-input)   !important;
-    border-color:     var(--lt-border)     !important;
-    color:            var(--lt-text-1)     !important;
-    transition: border-color 0.15s ease    !important;
+    background-color: var(--lt-bg-input)  !important;
+    border-color:     var(--lt-border)    !important;
+    color:            var(--lt-text-1)    !important;
+    transition: border-color 0.15s ease   !important;
   }
   & input::placeholder, & textarea::placeholder {
     color: var(--lt-text-muted) !important;
@@ -106,33 +209,20 @@
     border-color: var(--lt-border-hover) !important;
   }
   & input:focus-visible, & textarea:focus-visible, & select:focus-visible {
-    border-color: var(--lt-border-focus)              !important;
-    box-shadow:   0 0 0 3px rgba(196,98,45,0.15)     !important;
-    outline:      none                                !important;
+    border-color: var(--lt-border-focus)           !important;
+    box-shadow:   0 0 0 3px rgba(196,98,45,0.15)  !important;
+    outline:      none                             !important;
   }
 
-  /* ── Text ───────────────────────────────────────────────── */
-  & .text-zinc-100 { color: var(--lt-text-1)     !important; }
-  & .text-zinc-200 { color: var(--lt-text-1)     !important; }
-  & .text-zinc-300 { color: var(--lt-text-1)     !important; }
-  & .text-zinc-400 { color: var(--lt-text-2)     !important; }
-  & .text-zinc-500 { color: var(--lt-text-2)     !important; }
-  & .text-zinc-600 { color: var(--lt-text-muted) !important; }
-  & .text-zinc-700 { color: var(--lt-text-muted) !important; }
-  /* primary button text */
-  & .text-zinc-900 { color: var(--lt-btn-text)   !important; }
+  /* ══ Card hover (analogous warm shadow) ═════════════════════ */
+  & .rounded-2xl, & .rounded-xl {
+    transition: box-shadow 0.2s ease, border-color 0.2s ease !important;
+  }
+  & .rounded-2xl:hover, & .rounded-xl:hover {
+    box-shadow: 0 6px 20px rgba(180,100,40,0.10) !important;
+  }
 
-  /* ── Hover transitions ──────────────────────────────────── */
-  & .hover\:bg-zinc-800:hover  { background-color: var(--lt-bg-hover) !important; }
-  & .hover\:bg-zinc-700:hover  { background-color: var(--lt-bg-tint)  !important; }
-  & .hover\:text-zinc-200:hover { color: var(--lt-text-1) !important; }
-  & .hover\:text-zinc-300:hover { color: var(--lt-text-1) !important; }
-
-  /* ── Divide lines (divide-zinc-*) ───────────────────────── */
-  & .divide-zinc-800 > * + * { border-color: var(--lt-border) !important; }
-  & .divide-zinc-700 > * + * { border-color: var(--lt-border) !important; }
-
-  /* ── Scrollbar ──────────────────────────────────────────── */
+  /* ══ Scrollbar ══════════════════════════════════════════════ */
   &::-webkit-scrollbar-thumb       { background: var(--lt-border); }
   &::-webkit-scrollbar-thumb:hover { background: var(--lt-border-hover); }
 }

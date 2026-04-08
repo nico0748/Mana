@@ -859,8 +859,9 @@ const EventCard: React.FC<EventCardProps> = ({
     }, 0);
 
   const hasNavigable = circles.some(c => c.status === 'pending');
-  const budgetPct = event.budget ? Math.min(100, (pendingTotal / event.budget) * 100) : 0;
-  const overBudget = event.budget != null && pendingTotal > event.budget;
+  const spentPct   = event.budget ? Math.min(100, (spentTotal  / event.budget) * 100) : 0;
+  const pendingPct = event.budget ? Math.min(100 - spentPct, (pendingTotal / event.budget) * 100) : 0;
+  const overBudget = event.budget != null && (spentTotal + pendingTotal) > event.budget;
 
   return (
     <motion.div
@@ -951,10 +952,16 @@ const EventCard: React.FC<EventCardProps> = ({
 
         {event.budget != null && (
           <div className="mt-2">
-            <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+            <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden flex">
+              {/* 購入済: green */}
               <div
-                className={`h-full rounded-full transition-all duration-500 ${overBudget ? 'bg-red-500' : 'bg-green-400'}`}
-                style={{ width: `${budgetPct}%` }}
+                className="h-full bg-emerald-500 flex-shrink-0 transition-all duration-500"
+                style={{ width: `${spentPct}%` }}
+              />
+              {/* 未購入: yellow / over budget: red */}
+              <div
+                className={`h-full flex-shrink-0 rounded-full transition-all duration-500 ${overBudget ? 'bg-red-500' : 'bg-yellow-400 rounded-full'}`}
+                style={{ width: `${pendingPct}%` }}
               />
             </div>
           </div>

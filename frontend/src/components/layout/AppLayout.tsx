@@ -9,7 +9,7 @@ const tabs = [
   { label: '本棚',   path: '/',         icon: BookOpen   },
   { label: '買い物', path: '/shopping', icon: ShoppingBag },
   { label: 'MAP',    path: '/map',      icon: Map        },
-  { label: 'ツール', path: '/tools',    icon: Settings   },
+  { label: '設定', path: '/tools',    icon: Settings   },
 ];
 
 export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {

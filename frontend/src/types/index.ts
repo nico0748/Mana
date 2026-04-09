@@ -1,3 +1,12 @@
+export interface User {
+  id: string;
+  displayName: string;
+  avatarUrl?: string;
+  token: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
 export interface Book {
   id: string;
   title: string;

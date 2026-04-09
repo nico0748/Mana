@@ -9,6 +9,7 @@ import NavModePage from "./pages/NavModePage";
 import ToolsPage from "./pages/ToolsPage";
 import MapPage from "./pages/MapPage";
 import Onboarding, { ONBOARDING_KEY } from "./components/Onboarding";
+import { AuthProvider } from "./context/AuthContext";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -71,12 +72,14 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Router>
-        {showOnboarding && <Onboarding onComplete={handleOnboardingComplete} />}
-        <AppLayout>
-          <AnimatedRoutes />
-        </AppLayout>
-      </Router>
+      <AuthProvider>
+        <Router>
+          {showOnboarding && <Onboarding onComplete={handleOnboardingComplete} />}
+          <AppLayout>
+            <AnimatedRoutes />
+          </AppLayout>
+        </Router>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

@@ -1,22 +1,21 @@
-import type { Book, Circle, CircleItem, Distribution, DoujinEvent, VenueMap } from '../types';
+import type { Book, Circle, CircleItem, Distribution, DoujinEvent, User, VenueMap } from '../types';
 
 const BASE = '/api';
+const TOKEN_KEY = 'mana-user-token';
 
-/**
- * Send an HTTP request to the API base and return the parsed JSON response.
- *
- * Sends a request to `${BASE}${path}` with a default `Content-Type: application/json`
- * header merged with `options`. If the response status is 204, returns `undefined`.
- *
- * @param path - Path appended to the API base (e.g., `/books`)
- * @param options - Additional fetch options to merge with defaults
- * @returns The parsed JSON response as type `T`, or `undefined` when the response status is 204
- * @throws Error when the response has a non-OK status; error message includes the HTTP status and response text
- */
+function getAuthHeaders(): Record<string, string> {
+  const token = localStorage.getItem(TOKEN_KEY);
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 async function req<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
     ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeaders(),
+      ...options?.headers,
+    },
   });
   if (!res.ok) {
     const text = await res.text().catch(() => '');
@@ -25,6 +24,17 @@ async function req<T>(path: string, options?: RequestInit): Promise<T> {
   if (res.status === 204) return undefined as T;
   return res.json();
 }
+
+// ── Auth ──────────────────────────────────────────────────────────────────
+export const authApi = {
+  register: (displayName: string) =>
+    req<User>('/auth/register', { method: 'POST', body: JSON.stringify({ displayName }) }),
+  login: (token: string) =>
+    req<User>('/auth/login', { method: 'POST', body: JSON.stringify({ token }) }),
+  me: () => req<User>('/auth/me'),
+  updateMe: (data: { displayName?: string }) =>
+    req<User>('/auth/me', { method: 'PUT', body: JSON.stringify(data) }),
+};
 
 // ── Books ──────────────────────────────────────────────────────────────────
 export const booksApi = {

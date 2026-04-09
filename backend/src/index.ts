@@ -8,13 +8,17 @@ import circleItemsRouter from './routes/circleItems';
 import venueMapsRouter from './routes/venueMaps';
 import distributionsRouter from './routes/distributions';
 import syncRouter from './routes/sync';
+import authRouter from './routes/auth';
+import { optionalAuth } from './middleware/auth';
 
 const app = express();
 const PORT = process.env.PORT ?? 3000;
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' })); // large for image data URLs
+app.use(optionalAuth);
 
+app.use('/api/auth', authRouter);
 app.use('/api/books', booksRouter);
 app.use('/api/events', eventsRouter);
 app.use('/api/circles', circlesRouter);

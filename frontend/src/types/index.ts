@@ -29,8 +29,9 @@ export type BookType = Book['type'];
 export interface DoujinEvent {
   id: string;
   name: string;
-  date?: string;   // ISO date string e.g. "2024-12-30"
+  date?: string;
   budget?: number;
+  shareCode?: string;
   createdAt: number;
   updatedAt: number;
 }

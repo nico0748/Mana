@@ -5,13 +5,16 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   Plus, Trash2, Navigation, ChevronDown, ChevronUp,
   BookPlus, Check, Calendar, Pencil, FileSpreadsheet, FileDown, PanelLeft,
+  Share2, Copy,
 } from 'lucide-react';
+
 import type { Circle, CircleItem, DoujinEvent } from '../types';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { PageSidebar } from '../components/layout/PageSidebar';
 import { parseCirclesFile, downloadCirclesTemplate } from '../lib/circlesCsv';
 import { eventsApi, circlesApi, circleItemsApi, booksApi } from '../lib/api';
+
 
 // ─── status helpers ────────────────────────────────────────────────────────
 
@@ -559,6 +562,9 @@ const EventCard: React.FC<EventCardProps> = ({
   onAddItem, onDeleteItem, onDeleteEvent, onEditEvent,
 }) => {
   const [expanded, setExpanded] = useState(true);
+  const [showSharePanel, setShowSharePanel] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const shareQueryClient = useQueryClient();
 
   const pendingTotal = circles
     .filter(c => c.status === 'pending')
@@ -613,6 +619,13 @@ const EventCard: React.FC<EventCardProps> = ({
                 ナビ
               </span>
             )}
+            <button
+              onClick={() => setShowSharePanel(v => !v)}
+              className={`p-2 rounded-lg transition-colors ${event.shareCode ? 'text-emerald-400 hover:bg-emerald-500/10' : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'}`}
+              title="共有"
+            >
+              <Share2 className="w-4 h-4" />
+            </button>
             <button
               onClick={() => onEditEvent(event)}
               className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-lg transition-colors"
@@ -672,6 +685,55 @@ const EventCard: React.FC<EventCardProps> = ({
             {circles.length} サークル ·{' '}
             {circles.filter(c => c.status === 'bought').length} 購入済 ·{' '}
             {circles.filter(c => c.status === 'pending').length} 未購入
+          </div>
+        )}
+
+        {/* 共有パネル */}
+        {showSharePanel && (
+          <div className="mt-3 bg-zinc-800/50 border border-zinc-700 rounded-lg p-3 space-y-2">
+            {event.shareCode ? (
+              <>
+                <p className="text-sm text-zinc-400">共有リンク:</p>
+                <div className="flex gap-2">
+                  <input
+                    readOnly
+                    value={`${window.location.origin}/shared/${event.shareCode}`}
+                    className="flex-1 bg-zinc-900 border border-zinc-700 rounded-md px-3 py-1.5 text-sm text-zinc-100"
+                  />
+                  <button
+                    onClick={async () => {
+                      await navigator.clipboard.writeText(
+                        `${window.location.origin}/shared/${event.shareCode}`
+                      );
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }}
+                    className="px-2 py-1.5 rounded-md border border-zinc-700 hover:bg-zinc-800 text-zinc-300"
+                  >
+                    {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                  </button>
+                </div>
+                <button
+                  onClick={async () => {
+                    await eventsApi.deleteShareCode(event.id);
+                    shareQueryClient.invalidateQueries({ queryKey: ['events'] });
+                  }}
+                  className="text-xs text-red-400 hover:text-red-300"
+                >
+                  共有を停止する
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={async () => {
+                  await eventsApi.createShareCode(event.id);
+                  shareQueryClient.invalidateQueries({ queryKey: ['events'] });
+                }}
+                className="w-full py-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-sm text-zinc-100 font-medium transition-colors"
+              >
+                共有リンクを生成
+              </button>
+            )}
           </div>
         )}
       </div>

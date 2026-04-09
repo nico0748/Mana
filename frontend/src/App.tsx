@@ -10,6 +10,7 @@ import ToolsPage from "./pages/ToolsPage";
 import MapPage from "./pages/MapPage";
 import Onboarding, { ONBOARDING_KEY } from "./components/Onboarding";
 import { AuthProvider } from "./context/AuthContext";
+import SharedEventPage from "./pages/SharedEventPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,6 +47,7 @@ function AnimatedRoutes() {
         <Route path="/shopping/nav" element={<motion.div {...pageVariants}><NavModePage /></motion.div>} />
         <Route path="/tools" element={<motion.div {...pageVariants}><ToolsPage /></motion.div>} />
         <Route path="/map" element={<motion.div {...pageVariants}><MapPage /></motion.div>} />
+        <Route path="/shared/:code" element={<motion.div {...pageVariants}><SharedEventPage /></motion.div>} />
       </Routes>
     </AnimatePresence>
   );

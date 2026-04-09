@@ -54,6 +54,18 @@ export const eventsApi = {
   update: (id: string, data: Partial<Pick<DoujinEvent, 'name' | 'date' | 'budget'>>) =>
     req<DoujinEvent>(`/events/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id: string) => req<void>(`/events/${id}`, { method: 'DELETE' }),
+  // 共有
+  createShareCode: (id: string) =>
+    req<DoujinEvent>(`/events/${id}/share`, { method: 'POST' }),
+  deleteShareCode: (id: string) =>
+    req<void>(`/events/${id}/share`, { method: 'DELETE' }),
+};
+
+// ── Shared (shareCode経由) ────────────────────────────────────────────────
+export const sharedApi = {
+  getEvent: (code: string) => req<DoujinEvent>(`/events/shared/${code}`),
+  getCircles: (code: string) => req<Circle[]>(`/events/shared/${code}/circles`),
+  getCircleItems: (code: string) => req<CircleItem[]>(`/events/shared/${code}/circle-items`),
 };
 
 // ── Circles ────────────────────────────────────────────────────────────────

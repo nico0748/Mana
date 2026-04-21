@@ -23,9 +23,6 @@ const FEATURES = [
     desc: '商業誌・同人誌をまとめて一元管理。ISBN スキャンで冊子情報を自動取得、タグ・サークル名での絞り込み、所持・貸出・欲しいリストなど5つのステータスで状態を管理できます。CSV・Excel でのインポート/エクスポートにも対応。',
     imageSide: 'right',
     image: '/feature-books.png',
-    accentColor: 'from-violet-500/20 to-violet-500/5',
-    iconColor: 'text-violet-400',
-    iconBg: 'bg-violet-500/10',
   },
   {
     icon: ShoppingCart,
@@ -34,9 +31,6 @@ const FEATURES = [
     desc: '即売会ごとにサークルとアイテムを登録。予算管理・購入ステータスのリアルタイム更新はもちろん、サークルの Twitter/X リンクやメニュー画像も一緒に保存できます。CSV/Excel でのサークルリスト取り込みにも対応。',
     imageSide: 'left',
     image: '/feature-list-to-navi.png',
-    accentColor: 'from-emerald-500/20 to-emerald-500/5',
-    iconColor: 'text-emerald-400',
-    iconBg: 'bg-emerald-500/10',
   },
   {
     icon: Map,
@@ -45,9 +39,6 @@ const FEATURES = [
     desc: '公式配布のマップ PDF・画像をアップロードして、サークルの場所にピンを立てられます。ナビモードでは効率的な巡回ルートを計画。ホールごとにマップを管理でき、公式テンプレートを読み込めばセットアップは数秒で完了。',
     imageSide: 'right',
     image: '/feature-map.png',
-    accentColor: 'from-sky-500/20 to-sky-500/5',
-    iconColor: 'text-sky-400',
-    iconBg: 'bg-sky-500/10',
   },
   {
     icon: Settings,
@@ -56,9 +47,6 @@ const FEATURES = [
     desc: 'CSV・Excel・JSON でのインポート/エクスポートに全機能で対応。長年使い続けてきたスプレッドシートのデータをそのまま取り込めます。公式テンプレートを使えば、イベント名・会場・ホール一覧が一発で作成されます。',
     imageSide: 'left',
     image: '/feature-data-to-list.png',
-    accentColor: 'from-amber-500/20 to-amber-500/5',
-    iconColor: 'text-amber-400',
-    iconBg: 'bg-amber-500/10',
   },
 ];
 
@@ -81,10 +69,10 @@ const FeatureSection: React.FC<{ feature: typeof FEATURES[0]; index: number }> =
         {/* テキスト */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-4">
-            <div className={`p-1.5 rounded-lg ${feature.iconBg}`}>
-              <Icon size={16} className={feature.iconColor} />
+            <div className="p-1.5 rounded-lg bg-zinc-800/70 border border-zinc-700/50">
+              <Icon size={16} className="text-zinc-300" />
             </div>
-            <span className={`text-xs font-semibold tracking-widest uppercase ${feature.iconColor}`}>
+            <span className="text-xs font-semibold tracking-widest uppercase text-zinc-400">
               {feature.tag}
             </span>
           </div>

@@ -16,6 +16,7 @@ import {
   exportCirclesJson, exportCirclesCsv, exportCirclesExcel,
 } from '../lib/circlesCsv';
 import { eventsApi, circlesApi, circleItemsApi, booksApi } from '../lib/api';
+import { useUpgradeModal, isPlanLimitError } from '../contexts/UpgradeModalContext';
 
 // ─── status helpers ────────────────────────────────────────────────────────
 
@@ -1018,6 +1019,7 @@ const EventCard: React.FC<EventCardProps> = ({
 
 const ShoppingListPage: React.FC = () => {
   const queryClient = useQueryClient();
+  const { open: openUpgrade } = useUpgradeModal();
   const { data: events, isLoading: eventsLoading } = useQuery({ queryKey: ['events'], queryFn: eventsApi.list });
   const { data: circles, isLoading: circlesLoading } = useQuery({ queryKey: ['circles'], queryFn: circlesApi.list });
   const { data: circleItems } = useQuery({ queryKey: ['circleItems'], queryFn: circleItemsApi.list });
@@ -1045,8 +1047,16 @@ const ShoppingListPage: React.FC = () => {
   // ── handlers ──
 
   const handleAddEvent = async (data: Omit<DoujinEvent, 'id' | 'createdAt' | 'updatedAt'>) => {
-    await eventsApi.create(data);
-    queryClient.invalidateQueries({ queryKey: ['events'] });
+    try {
+      await eventsApi.create(data);
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+    } catch (err) {
+      if (isPlanLimitError(err)) {
+        openUpgrade({ resource: 'events', limit: err.payload?.limit ?? null, current: err.payload?.current });
+        return;
+      }
+      throw err;
+    }
   };
 
   const handleEditEvent = async (id: string, data: Partial<Pick<DoujinEvent, 'name' | 'date' | 'budget'>>) => {
@@ -1065,8 +1075,16 @@ const ShoppingListPage: React.FC = () => {
   const handleAddCircle = async (data: Omit<Circle, 'id' | 'eventId' | 'order' | 'status' | 'createdAt' | 'updatedAt'>) => {
     if (!addCircleForEvent) return;
     const maxOrder = Math.max(0, ...(circles ?? []).map(c => c.order));
-    await circlesApi.create({ ...data, eventId: addCircleForEvent, order: maxOrder + 1, status: 'pending' });
-    queryClient.invalidateQueries({ queryKey: ['circles'] });
+    try {
+      await circlesApi.create({ ...data, eventId: addCircleForEvent, order: maxOrder + 1, status: 'pending' });
+      queryClient.invalidateQueries({ queryKey: ['circles'] });
+    } catch (err) {
+      if (isPlanLimitError(err)) {
+        openUpgrade({ resource: 'circles', limit: err.payload?.limit ?? null, current: err.payload?.current });
+        return;
+      }
+      throw err;
+    }
   };
 
   const handleEditCircle = async (id: string, data: Partial<Omit<Circle, 'id' | 'createdAt' | 'updatedAt'>>) => {
@@ -1144,8 +1162,12 @@ const ShoppingListPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['circles'] });
       alert(`${rows.length}件のサークルをインポートしました。`);
     } catch (err) {
-      console.error(err);
-      alert(`インポートに失敗しました。\n${err instanceof Error ? err.message : ''}`);
+      if (isPlanLimitError(err)) {
+        openUpgrade({ resource: 'circles', limit: err.payload?.limit ?? null, current: err.payload?.current });
+      } else {
+        console.error(err);
+        alert(`インポートに失敗しました。\n${err instanceof Error ? err.message : ''}`);
+      }
     } finally {
       e.target.value = '';
     }
@@ -1168,8 +1190,12 @@ const ShoppingListPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['circles'] });
       alert(`${rows.length}件のサークルをインポートしました。`);
     } catch (err) {
-      console.error(err);
-      alert(`インポートに失敗しました。\n${err instanceof Error ? err.message : ''}`);
+      if (isPlanLimitError(err)) {
+        openUpgrade({ resource: 'circles', limit: err.payload?.limit ?? null, current: err.payload?.current });
+      } else {
+        console.error(err);
+        alert(`インポートに失敗しました。\n${err instanceof Error ? err.message : ''}`);
+      }
     } finally {
       e.target.value = '';
     }

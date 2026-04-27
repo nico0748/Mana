@@ -8,6 +8,7 @@ import circleItemsRouter from './routes/circleItems';
 import venueMapsRouter from './routes/venueMaps';
 import distributionsRouter from './routes/distributions';
 import syncRouter from './routes/sync';
+import meRouter from './routes/me';
 import { authenticate } from './middleware/auth';
 
 const app = express();
@@ -27,6 +28,7 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' })); // large for image data URLs
 
 app.use('/api', authenticate);
+app.use('/api/me', meRouter);
 app.use('/api/books', booksRouter);
 app.use('/api/events', eventsRouter);
 app.use('/api/circles', circlesRouter);

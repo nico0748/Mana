@@ -14,6 +14,7 @@ import TemplatesPage from "./pages/TemplatesPage";
 import Onboarding, { ONBOARDING_KEY } from "./components/Onboarding";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AppSettingsProvider } from "./contexts/AppSettingsContext";
+import { UpgradeModalProvider } from "./contexts/UpgradeModalContext";
 import { LoginPage, SocialTermsModal } from "./pages/LoginPage";
 
 const queryClient = new QueryClient({
@@ -169,9 +170,11 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <AppSettingsProvider>
-          <Router>
-            <AppRoot />
-          </Router>
+          <UpgradeModalProvider>
+            <Router>
+              <AppRoot />
+            </Router>
+          </UpgradeModalProvider>
         </AppSettingsProvider>
       </AuthProvider>
     </QueryClientProvider>

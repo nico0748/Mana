@@ -92,3 +92,24 @@ model Distribution {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model User {
+  firebaseUid          String    @id
+  email                String?
+  displayName          String?
+
+  plan                 String    @default("free")
+  planStatus           String    @default("inactive")
+  planInterval         String?
+  planExpiresAt        DateTime?
+  cancelAtPeriodEnd    Boolean   @default(false)
+
+  stripeCustomerId     String?   @unique
+  stripeSubscriptionId String?   @unique
+  stripePriceId        String?
+
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([stripeCustomerId])
+}

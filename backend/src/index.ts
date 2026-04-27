@@ -10,6 +10,7 @@ import distributionsRouter from './routes/distributions';
 import syncRouter from './routes/sync';
 import meRouter from './routes/me';
 import billingRouter from './routes/billing';
+import webhookRouter from './routes/webhook';
 import { authenticate } from './middleware/auth';
 
 const app = express();
@@ -26,6 +27,11 @@ app.use(cors({
   origin: corsOrigin ?? '*',
   credentials: !!corsOrigin,
 }));
+
+// Stripe Webhook は raw body 必須かつ認証不要なので、
+// express.json と authenticate より前にマウントする。
+app.use('/api/webhook/stripe', webhookRouter);
+
 app.use(express.json({ limit: '50mb' })); // large for image data URLs
 
 app.use('/api', authenticate);

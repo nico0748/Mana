@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../prisma';
+import { guardLimit } from '../lib/enforceLimit';
 
 const router = Router();
 
@@ -23,6 +24,7 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   const uid = (req as any).uid as string;
+  if (!(await guardLimit(res, req.user!, 'circles'))) return;
   const { id, createdAt, updatedAt, userId, ...data } = req.body;
   const circle = await prisma.circle.create({ data: { ...data, userId: uid } });
   res.status(201).json(toCircle(circle));
@@ -32,6 +34,7 @@ router.post('/', async (req, res) => {
 router.post('/bulk', async (req, res) => {
   const uid = (req as any).uid as string;
   const rows: any[] = req.body;
+  if (!(await guardLimit(res, req.user!, 'circles', rows.length))) return;
   const circles = await prisma.$transaction(
     rows.map(({ id, createdAt, updatedAt, userId, ...data }) =>
       prisma.circle.create({ data: { ...data, userId: uid } })

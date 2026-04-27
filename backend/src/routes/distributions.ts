@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../prisma';
+import { guardLimit } from '../lib/enforceLimit';
 
 const router = Router();
 
@@ -21,6 +22,7 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   const uid = (req as any).uid as string;
+  if (!(await guardLimit(res, req.user!, 'distributions'))) return;
   const { id, createdAt, updatedAt, userId, ...data } = req.body;
   const dist = await prisma.distribution.create({ data: { ...data, userId: uid } });
   res.status(201).json(toDist(dist));

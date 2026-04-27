@@ -3,6 +3,17 @@ import { auth } from './firebase';
 
 const BASE = '/api';
 
+export class ApiError extends Error {
+  status: number;
+  payload: any;
+  constructor(status: number, message: string, payload: any) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.payload = payload;
+  }
+}
+
 async function req<T>(path: string, options?: RequestInit): Promise<T> {
   const token = await auth.currentUser?.getIdToken();
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -14,7 +25,9 @@ async function req<T>(path: string, options?: RequestInit): Promise<T> {
   });
   if (!res.ok) {
     const text = await res.text().catch(() => '');
-    throw new Error(`API ${res.status}: ${text}`);
+    let payload: any = null;
+    try { payload = text ? JSON.parse(text) : null; } catch { /* not JSON */ }
+    throw new ApiError(res.status, `API ${res.status}: ${text}`, payload);
   }
   if (res.status === 204) return undefined as T;
   return res.json();
@@ -87,4 +100,38 @@ export const syncApi = {
   exportBooks: () => req<{ books: Book[] }>('/sync/export'),
   importBooks: (books: Book[]) =>
     req<{ imported: number }>('/sync/import', { method: 'POST', body: JSON.stringify({ books }) }),
+};
+
+// ── Me / Plan ──────────────────────────────────────────────────────────────
+export type Plan = 'free' | 'pro';
+export type ResourceKey = 'books' | 'circles' | 'events' | 'distributions' | 'venueMaps';
+
+export interface MeResponse {
+  user: {
+    firebaseUid: string;
+    email: string | null;
+    plan: Plan;
+    planStatus: string;
+    planInterval: 'monthly' | 'yearly' | null;
+    planExpiresAt: number | null;
+    cancelAtPeriodEnd: boolean;
+    hasStripeCustomer: boolean;
+  };
+  limits: Record<ResourceKey, number | null>;
+  usage: Record<ResourceKey, number>;
+}
+
+export const meApi = {
+  get: () => req<MeResponse>('/me'),
+};
+
+// ── Billing ────────────────────────────────────────────────────────────────
+export const billingApi = {
+  checkout: (interval: 'monthly' | 'yearly') =>
+    req<{ url: string }>('/billing/checkout', {
+      method: 'POST',
+      body: JSON.stringify({ interval }),
+    }),
+  portal: () =>
+    req<{ url: string }>('/billing/portal', { method: 'POST' }),
 };

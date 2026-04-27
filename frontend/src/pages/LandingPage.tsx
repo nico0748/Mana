@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion, type Variants } from 'framer-motion';
 import {
   BookOpen, Map, ShoppingCart, Settings,
-  ChevronDown, ChevronUp, LogIn, ArrowRight, FileJson,
+  ChevronDown, ChevronUp, LogIn, ArrowRight, FileJson, Crown, Check,
 } from 'lucide-react';
 
 // ─── アニメーション設定 ────────────────────────────────────────────────────────
@@ -120,6 +120,14 @@ const FAQ_ITEMS = [
   {
     q: '既存の Excel データは使えますか？',
     a: 'はい。CSV・Excel・JSON 形式でのインポートに対応しています。テンプレートファイルをダウンロードして書式を確認できます。',
+  },
+  {
+    q: '無料プランの上限は？',
+    a: '蔵書 200 冊、サークル 50、イベント 3 までを無料でご利用いただけます。それ以上は Pro プラン（月額 ¥480 / 年額 ¥4,800）で無制限になります。',
+  },
+  {
+    q: '解約はいつでも可能ですか？',
+    a: 'はい。アカウントページからいつでもキャンセルできます。期間終了まで Pro 機能をご利用いただけ、それ以降は自動で Free プランに戻ります。',
   },
 ];
 
@@ -282,6 +290,92 @@ const LandingPage: React.FC = () => {
               </div>
             </Link>
           </motion.div>
+        </div>
+      </section>
+
+      {/* ── 料金プラン ── */}
+      <section className="border-t border-zinc-800/60 bg-zinc-900/40">
+        <div className="max-w-5xl mx-auto px-6 py-16 sm:py-24">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeUp}
+            className="text-center mb-10"
+          >
+            <p className="text-xs font-semibold text-violet-400 uppercase tracking-widest mb-2">Pricing</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-zinc-100 mb-3">料金プラン</h2>
+            <p className="text-sm text-zinc-400">
+              まずは無料で。本気で活用したくなったら Pro へ。
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeUp}
+            className="grid sm:grid-cols-2 gap-5 max-w-3xl mx-auto"
+          >
+            {/* Free */}
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6 flex flex-col">
+              <div className="mb-4">
+                <h3 className="text-lg font-bold text-zinc-100 mb-1">Free</h3>
+                <p className="text-xs text-zinc-500">まず試してみる</p>
+              </div>
+              <div className="mb-6">
+                <span className="text-3xl font-bold text-zinc-100">¥0</span>
+              </div>
+              <ul className="space-y-2 text-sm text-zinc-300 mb-6 flex-1">
+                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-zinc-500 mt-0.5" />蔵書 200 冊まで</li>
+                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-zinc-500 mt-0.5" />サークル 50 まで</li>
+                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-zinc-500 mt-0.5" />イベント 3 まで</li>
+                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-zinc-500 mt-0.5" />会場マップ・買い物リスト</li>
+                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-zinc-500 mt-0.5" />インポート / エクスポート</li>
+              </ul>
+              <Link
+                to="/"
+                className="text-center py-2.5 rounded-xl border border-zinc-700 text-sm font-semibold text-zinc-200 hover:bg-zinc-800 transition-colors"
+              >
+                無料で始める
+              </Link>
+            </div>
+
+            {/* Pro */}
+            <div className="rounded-2xl border border-violet-500/40 bg-gradient-to-br from-violet-600/10 to-zinc-900 p-6 flex flex-col relative">
+              <div className="absolute -top-2.5 right-5 px-2.5 py-0.5 bg-violet-500 text-zinc-950 text-[10px] font-bold uppercase tracking-wider rounded-full">
+                おすすめ
+              </div>
+              <div className="mb-4">
+                <h3 className="text-lg font-bold text-zinc-100 mb-1 flex items-center gap-1.5">
+                  <Crown className="w-4 h-4 text-violet-300" />
+                  Pro
+                </h3>
+                <p className="text-xs text-zinc-500">本気で活用するなら</p>
+              </div>
+              <div className="mb-1">
+                <span className="text-3xl font-bold text-zinc-100">¥480</span>
+                <span className="text-sm text-zinc-500"> / 月</span>
+              </div>
+              <p className="text-xs text-zinc-500 mb-6">または年額 ¥4,800（2ヶ月分お得）</p>
+              <ul className="space-y-2 text-sm text-zinc-200 mb-6 flex-1">
+                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-violet-400 mt-0.5" />蔵書 <strong>無制限</strong></li>
+                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-violet-400 mt-0.5" />サークル <strong>無制限</strong></li>
+                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-violet-400 mt-0.5" />イベント <strong>無制限</strong></li>
+                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-violet-400 mt-0.5" />頒布物・会場マップも無制限</li>
+                <li className="flex items-start gap-2"><Check className="w-4 h-4 text-violet-400 mt-0.5" />今後追加される Pro 限定機能</li>
+              </ul>
+              <Link
+                to="/account"
+                className="text-center py-2.5 rounded-xl bg-violet-500 hover:bg-violet-400 text-zinc-950 text-sm font-bold transition-colors"
+              >
+                Pro を試す
+              </Link>
+            </div>
+          </motion.div>
+          <p className="text-center text-xs text-zinc-500 mt-6">
+            いつでもキャンセル可能。期間終了まで Pro 機能をご利用いただけます。
+          </p>
         </div>
       </section>
 

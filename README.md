@@ -100,14 +100,56 @@ cp .env.example .env
 # 必要に応じて .env を編集（デフォルトのままでも動作する）
 ```
 
-`.env.example` の内容：
+`.env.example` の主要項目：
 
 ```
 DATABASE_URL=postgresql://doujin:doujin_password@db:5432/doujin_pp
 PORT=3000
+
+# Stripe (Pro プラン) — 開発時は test mode を使用
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_PRICE_MONTHLY=price_...
+STRIPE_PRICE_YEARLY=price_...
+APP_URL=http://localhost:5173
 ```
 
+Stripe を未設定でもアプリは起動できる（決済導線のみ無効化される）。
+
 > **注意**: `.env` はリポジトリにコミットしないこと。`.gitignore` に追加しておくこと。
+
+### Stripe（Pro プラン）のセットアップ
+
+1. **Stripe Dashboard で Product / Price を作成**
+   - Products → 「同人++ Pro」を新規作成
+   - Recurring price 1: `¥480 / month` (JPY) → `STRIPE_PRICE_MONTHLY`
+   - Recurring price 2: `¥4,800 / year` (JPY) → `STRIPE_PRICE_YEARLY`
+2. **Customer Portal を有効化**
+   - Settings → Billing → Customer Portal
+   - 「Cancel subscription」「Update payment method」を許可
+3. **Webhook endpoint を登録（本番のみ）**
+   - URL: `https://yourdomain.com/api/webhook/stripe`
+   - Events: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`
+   - 表示される signing secret を `STRIPE_WEBHOOK_SECRET` に設定
+
+### ローカル開発で Webhook を受ける
+
+Stripe CLI を別ターミナルで起動して、Webhook をローカルにフォワードする：
+
+```bash
+brew install stripe/stripe-cli/stripe
+stripe login
+stripe listen --forward-to http://localhost:3000/api/webhook/stripe
+# 表示される whsec_... を .env の STRIPE_WEBHOOK_SECRET に貼って backend を再起動
+```
+
+別ターミナルで動作確認：
+
+```bash
+stripe trigger checkout.session.completed
+stripe trigger customer.subscription.deleted
+stripe trigger invoice.payment_failed
+```
 
 ### 起動・停止
 

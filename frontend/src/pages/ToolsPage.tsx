@@ -1,13 +1,15 @@
 import React, { useState, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Settings, Database, Palette, MessageSquare,
   Briefcase, HelpCircle, User,
   ChevronRight, ChevronLeft,
   Sun, Moon, ImageIcon, Trash2, Type, Zap, ZapOff,
-  Mail, Calendar, Shield, FileText, ExternalLink, LogOut, MapPin,
+  Mail, Calendar, Shield, FileText, ExternalLink, LogOut, MapPin, Crown,
 } from 'lucide-react';
 import { useAppSettings } from '../contexts/AppSettingsContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useCurrentUser } from '../hooks/useCurrentUser';
 
 // ── 法的情報テキスト ────────────────────────────────────────────────────────
 
@@ -421,6 +423,7 @@ const HelpContent: React.FC = () => (
 
 const AccountContent: React.FC<{ user: ReturnType<typeof useAuth>['user']; logout: ReturnType<typeof useAuth>['logout'] }> = ({ user, logout }) => {
   const { refreshUser } = useAuth();
+  const { data: me } = useCurrentUser();
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(user?.displayName ?? '');
   const [nameSaving, setNameSaving] = useState(false);
@@ -450,8 +453,29 @@ const AccountContent: React.FC<{ user: ReturnType<typeof useAuth>['user']; logou
     return p.providerId;
   }) ?? [];
 
+  const isPro = me?.user.plan === 'pro';
+
   return (
     <div className="pb-6">
+      <SectionTitle>プラン</SectionTitle>
+      <Link
+        to="/account"
+        className="mx-4 rounded-xl border border-zinc-800 hover:border-zinc-700 bg-zinc-900/40 p-4 flex items-center justify-between gap-3 transition-colors"
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isPro ? 'bg-violet-500/15' : 'bg-zinc-800'}`}>
+            <Crown className={`w-4 h-4 ${isPro ? 'text-violet-300' : 'text-zinc-500'}`} />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-zinc-100">{isPro ? 'Pro プラン' : 'Free プラン'}</p>
+            <p className="text-xs text-zinc-500 truncate">
+              {isPro ? '次回更新日や解約はこちら' : 'Pro にアップグレードして無制限に利用'}
+            </p>
+          </div>
+        </div>
+        <ChevronRight className="w-4 h-4 text-zinc-600 flex-shrink-0" />
+      </Link>
+
       <SectionTitle>プロフィール</SectionTitle>
       <div className="mx-4 rounded-xl border border-zinc-800 p-4 flex items-center gap-3">
         {user?.photoURL ? (

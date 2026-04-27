@@ -1,6 +1,8 @@
 import React, { useState, useRef, useMemo } from "react";
 import { useBooks, type SortField, type SortDirection } from "../../hooks/useBooks";
 import { useSync } from "../../hooks/useSync";
+import { useResourceLimit } from "../../hooks/useCurrentUser";
+import { useUpgradeModal, isPlanLimitError } from "../../contexts/UpgradeModalContext";
 import { type Book } from "../../types";
 import { BookItem } from "./BookItem";
 import { BookForm } from "./BookForm";
@@ -9,7 +11,7 @@ import { PageSidebar } from "../layout/PageSidebar";
 import { Button } from "../ui/Button";
 import {
   Plus, ArrowUpAZ, ArrowDownAZ, Download, Upload, PanelLeft,
-  BookOpen, BookMarked, ChevronDown, FileJson, FileSpreadsheet,
+  BookOpen, BookMarked, ChevronDown, FileJson, FileSpreadsheet, Crown,
 } from "lucide-react";
 import { Input } from "../ui/Input";
 import { AnimatePresence, motion } from "framer-motion";
@@ -81,6 +83,8 @@ export const BookList: React.FC = () => {
   const [sortField, setSortField] = useState<SortField>('createdAt');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const { books, loading, error, addBook, updateBook, deleteBook, uploadImage } = useBooks(sortField, sortDirection);
+  const booksLimit = useResourceLimit('books');
+  const { open: openUpgrade } = useUpgradeModal();
   const [isAdding, setIsAdding] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
@@ -102,8 +106,16 @@ export const BookList: React.FC = () => {
       await importBooks(file);
       alert('データをインポートしました。');
     } catch (err) {
-      console.error(err);
-      alert('インポートに失敗しました。');
+      if (isPlanLimitError(err)) {
+        openUpgrade({
+          resource: 'books',
+          limit: err.payload?.limit ?? null,
+          current: err.payload?.current,
+        });
+      } else {
+        console.error(err);
+        alert('インポートに失敗しました。');
+      }
     } finally {
       e.target.value = '';
     }
@@ -372,9 +384,23 @@ export const BookList: React.FC = () => {
               <div />
             )}
             <div className="flex items-center gap-2">
-              <Button onClick={() => setIsAdding(true)} disabled={isAdding}>
-                <Plus className="mr-2 h-4 w-4" /> 本を追加
-              </Button>
+              {booksLimit.atLimit ? (
+                <Button
+                  onClick={() => openUpgrade({ resource: 'books', limit: booksLimit.limit, current: booksLimit.usage })}
+                  className="bg-violet-500 hover:bg-violet-400 text-zinc-950 shadow-md shadow-violet-900/40"
+                >
+                  <Crown className="mr-2 h-4 w-4" /> Pro で無制限に
+                </Button>
+              ) : (
+                <Button onClick={() => setIsAdding(true)} disabled={isAdding}>
+                  <Plus className="mr-2 h-4 w-4" /> 本を追加
+                </Button>
+              )}
+              {booksLimit.plan === 'free' && booksLimit.limit != null && (
+                <span className="hidden sm:inline text-xs text-zinc-500">
+                  {booksLimit.usage} / {booksLimit.limit}
+                </span>
+              )}
               <button
                 onClick={() => setSidebarOpen(true)}
                 className="lg:hidden p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-md transition-colors"
@@ -492,8 +518,21 @@ export const BookList: React.FC = () => {
                 initialData={{ type: selectedType }}
                 existingBooks={books}
                 onSubmit={async (data) => {
-                  await addBook(data);
-                  setIsAdding(false);
+                  try {
+                    await addBook(data);
+                    setIsAdding(false);
+                  } catch (err) {
+                    if (isPlanLimitError(err)) {
+                      setIsAdding(false);
+                      openUpgrade({
+                        resource: 'books',
+                        limit: err.payload?.limit ?? null,
+                        current: err.payload?.current,
+                      });
+                    } else {
+                      throw err;
+                    }
+                  }
                 }}
                 onCancel={() => setIsAdding(false)}
                 onUploadImage={uploadImage}

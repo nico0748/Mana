@@ -11,9 +11,11 @@ import ToolsPage from "./pages/ToolsPage";
 import MapPage from "./pages/MapPage";
 import LandingPage from "./pages/LandingPage";
 import TemplatesPage from "./pages/TemplatesPage";
+import AccountPage from "./pages/AccountPage";
 import Onboarding, { ONBOARDING_KEY } from "./components/Onboarding";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AppSettingsProvider } from "./contexts/AppSettingsContext";
+import { UpgradeModalProvider } from "./contexts/UpgradeModalContext";
 import { LoginPage, SocialTermsModal } from "./pages/LoginPage";
 
 const queryClient = new QueryClient({
@@ -43,6 +45,7 @@ function AnimatedRoutes() {
         <Route path="/shopping/nav" element={<motion.div {...pageVariants}><NavModePage /></motion.div>} />
         <Route path="/tools" element={<motion.div {...pageVariants}><ToolsPage /></motion.div>} />
         <Route path="/map" element={<motion.div {...pageVariants}><MapPage /></motion.div>} />
+        <Route path="/account" element={<motion.div {...pageVariants}><AccountPage /></motion.div>} />
       </Routes>
     </AnimatePresence>
   );
@@ -169,9 +172,11 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <AppSettingsProvider>
-          <Router>
-            <AppRoot />
-          </Router>
+          <UpgradeModalProvider>
+            <Router>
+              <AppRoot />
+            </Router>
+          </UpgradeModalProvider>
         </AppSettingsProvider>
       </AuthProvider>
     </QueryClientProvider>

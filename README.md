@@ -120,35 +120,15 @@ Stripe を未設定でもアプリは起動できる（決済導線のみ無効�
 
 ### Stripe（Pro プラン）のセットアップ
 
-1. **Stripe Dashboard で Product / Price を作成**
-   - Products → 「同人++ Pro」を新規作成
-   - Recurring price 1: `¥480 / month` (JPY) → `STRIPE_PRICE_MONTHLY`
-   - Recurring price 2: `¥4,800 / year` (JPY) → `STRIPE_PRICE_YEARLY`
-2. **Customer Portal を有効化**
-   - Settings → Billing → Customer Portal
-   - 「Cancel subscription」「Update payment method」を許可
-3. **Webhook endpoint を登録（本番のみ）**
-   - URL: `https://yourdomain.com/api/webhook/stripe`
-   - Events: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`
-   - 表示される signing secret を `STRIPE_WEBHOOK_SECRET` に設定
+詳細な手順 (Product/Price 作成、Customer Portal、Webhook、ローカル開発、本番チェックリスト、トラブルシュート) は **[docs/stripe-setup.md](./docs/stripe-setup.md)** を参照。
 
-### ローカル開発で Webhook を受ける
-
-Stripe CLI を別ターミナルで起動して、Webhook をローカルにフォワードする：
+クイックスタート (ローカル開発):
 
 ```bash
 brew install stripe/stripe-cli/stripe
 stripe login
 stripe listen --forward-to http://localhost:3000/api/webhook/stripe
 # 表示される whsec_... を .env の STRIPE_WEBHOOK_SECRET に貼って backend を再起動
-```
-
-別ターミナルで動作確認：
-
-```bash
-stripe trigger checkout.session.completed
-stripe trigger customer.subscription.deleted
-stripe trigger invoice.payment_failed
 ```
 
 ### 起動・停止

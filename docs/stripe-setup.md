@@ -58,7 +58,8 @@ Pro プランの月額・年額の 2 つの Recurring Price を作る。
 1. **Product catalog → Add a product**
 2. Product:
    - Name: `同人++ Pro`
-   - Description (任意): `蔵書・サークル・イベント無制限`
+   - Description: `同人誌・即売会の管理を無制限に。蔵書 / サークル / イベント / 頒布物 / 会場マップの登録上限が解除され、今後追加される Pro 限定機能もご利用いただけます。`
+   - (Description は Checkout 画面・Customer Portal・請求書 PDF に表示される顧客向け文言)
 3. Pricing 設定:
    - **Price 1 (月額)**:
      - `Standard pricing` / `Recurring`

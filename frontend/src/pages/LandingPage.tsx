@@ -123,11 +123,11 @@ const FAQ_ITEMS = [
   },
   {
     q: '無料プランの上限は？',
-    a: '蔵書 200 冊、サークル 50、イベント 3 までを無料でご利用いただけます。それ以上は Pro プラン（月額 ¥480 / 年額 ¥4,800）で無制限になります。',
+    a: '蔵書 200 冊、サークル 50、イベント 3 までを無料でご利用いただけます。Pro プラン（月額 ¥480 / 年額 ¥4,800 予定）で無制限になる予定ですが、現在準備中です。',
   },
   {
-    q: '解約はいつでも可能ですか？',
-    a: 'はい。アカウントページからいつでもキャンセルできます。期間終了まで Pro 機能をご利用いただけ、それ以降は自動で Free プランに戻ります。',
+    q: 'Pro プランはいつ使えるようになりますか？',
+    a: 'Pro プランは現在準備中です。リリース時期が決まり次第、お知らせします。それまではすべての方に Free プランの上限内でご利用いただけます。',
   },
 ];
 
@@ -343,8 +343,8 @@ const LandingPage: React.FC = () => {
 
             {/* Pro */}
             <div className="rounded-2xl border border-violet-500/40 bg-gradient-to-br from-violet-600/10 to-zinc-900 p-6 flex flex-col relative">
-              <div className="absolute -top-2.5 right-5 px-2.5 py-0.5 bg-violet-500 text-zinc-950 text-[10px] font-bold uppercase tracking-wider rounded-full">
-                おすすめ
+              <div className="absolute -top-2.5 right-5 px-2.5 py-0.5 bg-amber-400 text-zinc-950 text-[10px] font-bold uppercase tracking-wider rounded-full">
+                Coming Soon
               </div>
               <div className="mb-4">
                 <h3 className="text-lg font-bold text-zinc-100 mb-1 flex items-center gap-1.5">
@@ -355,7 +355,7 @@ const LandingPage: React.FC = () => {
               </div>
               <div className="mb-1">
                 <span className="text-3xl font-bold text-zinc-100">¥480</span>
-                <span className="text-sm text-zinc-500"> / 月</span>
+                <span className="text-sm text-zinc-500"> / 月（予定）</span>
               </div>
               <p className="text-xs text-zinc-500 mb-6">または年額 ¥4,800（2ヶ月分お得）</p>
               <ul className="space-y-2 text-sm text-zinc-200 mb-6 flex-1">
@@ -365,16 +365,16 @@ const LandingPage: React.FC = () => {
                 <li className="flex items-start gap-2"><Check className="w-4 h-4 text-violet-400 mt-0.5" />頒布物・会場マップも無制限</li>
                 <li className="flex items-start gap-2"><Check className="w-4 h-4 text-violet-400 mt-0.5" />今後追加される Pro 限定機能</li>
               </ul>
-              <Link
-                to="/account"
-                className="text-center py-2.5 rounded-xl bg-violet-500 hover:bg-violet-400 text-zinc-950 text-sm font-bold transition-colors"
+              <div
+                aria-disabled="true"
+                className="text-center py-2.5 rounded-xl bg-zinc-800 text-zinc-500 text-sm font-bold cursor-not-allowed select-none"
               >
-                Pro を試す
-              </Link>
+                近日公開
+              </div>
             </div>
           </motion.div>
           <p className="text-center text-xs text-zinc-500 mt-6">
-            いつでもキャンセル可能。期間終了まで Pro 機能をご利用いただけます。
+            Pro プランは現在準備中です。リリースまでもう少々お待ちください。
           </p>
         </div>
       </section>

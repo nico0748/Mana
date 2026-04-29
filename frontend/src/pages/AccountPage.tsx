@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Crown, ExternalLink, Check } from 'lucide-react';
 import { useCurrentUser } from '../hooks/useCurrentUser';
-import { useUpgradeModal } from '../contexts/UpgradeModalContext';
 import { billingApi, type ResourceKey } from '../lib/api';
 import { Button } from '../components/ui/Button';
 
@@ -47,7 +46,6 @@ const UsageBar: React.FC<{ resource: ResourceKey; usage: number; limit: number |
 
 const AccountPage: React.FC = () => {
   const { data, isLoading } = useCurrentUser();
-  const { open: openUpgrade } = useUpgradeModal();
   const queryClient = useQueryClient();
   const location = useLocation();
   const navigate = useNavigate();
@@ -153,7 +151,7 @@ const AccountPage: React.FC = () => {
                 </div>
               ) : (
                 <p className="text-sm text-zinc-400">
-                  Pro にアップグレードすると、すべての機能が無制限になります。
+                  Pro プランは現在準備中です。リリースまでもう少々お待ちください。
                 </p>
               )}
             </div>
@@ -172,11 +170,11 @@ const AccountPage: React.FC = () => {
               </Button>
             ) : (
               <Button
-                onClick={() => openUpgrade()}
-                className="flex-1 bg-violet-500 hover:bg-violet-400 text-zinc-950"
+                disabled
+                className="flex-1 bg-zinc-800 text-zinc-500 cursor-not-allowed"
               >
                 <Crown className="w-4 h-4 mr-2" />
-                Pro にアップグレード
+                Pro プラン（近日公開）
               </Button>
             )}
           </div>
@@ -198,6 +196,9 @@ const AccountPage: React.FC = () => {
             <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
               <Crown className="w-5 h-5 text-violet-300" />
               Pro プランの特典
+              <span className="ml-1 px-2 py-0.5 rounded-full bg-amber-400/15 text-amber-300 text-[10px] font-bold uppercase tracking-wider">
+                Coming Soon
+              </span>
             </h2>
             <ul className="space-y-2 text-sm text-zinc-300">
               <li className="flex items-start gap-2"><Check className="w-4 h-4 text-violet-400 mt-0.5" />蔵書・サークル・イベントすべて無制限</li>

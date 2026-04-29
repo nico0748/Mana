@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Crown, X, Check } from 'lucide-react';
-import { billingApi, type ResourceKey } from '../../lib/api';
+import { type ResourceKey } from '../../lib/api';
 import { Button } from '../ui/Button';
 
 interface Props {
@@ -29,22 +29,8 @@ const PRO_FEATURES = [
 
 export const UpgradeModal: React.FC<Props> = ({ open, onClose, resource, limit, current }) => {
   const [interval, setInterval] = useState<'monthly' | 'yearly'>('monthly');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   if (!open) return null;
-
-  const handleCheckout = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const { url } = await billingApi.checkout(interval);
-      window.location.href = url;
-    } catch (e: any) {
-      setError(e?.message ?? '決済ページの作成に失敗しました');
-      setLoading(false);
-    }
-  };
 
   return (
     <div
@@ -66,6 +52,9 @@ export const UpgradeModal: React.FC<Props> = ({ open, onClose, resource, limit, 
           <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-violet-500/15 text-violet-300 text-xs font-medium mb-3">
             <Crown className="w-3.5 h-3.5" />
             Pro プラン
+            <span className="ml-1 px-1.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 text-[9px] font-bold uppercase tracking-wider">
+              Coming Soon
+            </span>
           </div>
           <h2 className="text-xl font-bold text-zinc-100">
             {resource
@@ -133,26 +122,23 @@ export const UpgradeModal: React.FC<Props> = ({ open, onClose, resource, limit, 
             ))}
           </ul>
 
-          {error && (
-            <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/30 rounded-lg p-2">
-              {error}
-            </div>
-          )}
+          <div className="rounded-lg border border-amber-400/30 bg-amber-400/5 p-3 text-xs text-amber-200/90 leading-relaxed">
+            Pro プランは現在準備中です。リリースまでもう少々お待ちください。
+          </div>
 
           <div className="space-y-2">
             <Button
-              onClick={handleCheckout}
-              isLoading={loading}
-              className="w-full bg-violet-500 hover:bg-violet-400 text-zinc-950 shadow-md shadow-violet-900/40"
+              disabled
+              className="w-full bg-zinc-800 text-zinc-500 cursor-not-allowed"
             >
               <Crown className="w-4 h-4 mr-2" />
-              Pro にアップグレード
+              近日公開
             </Button>
             <button
               onClick={onClose}
               className="w-full py-2 text-xs text-zinc-500 hover:text-zinc-300"
             >
-              あとで
+              閉じる
             </button>
           </div>
         </div>

@@ -469,7 +469,7 @@ const AccountContent: React.FC<{ user: ReturnType<typeof useAuth>['user']; logou
           <div className="min-w-0">
             <p className="text-sm font-medium text-zinc-100">{isPro ? 'Pro プラン' : 'Free プラン'}</p>
             <p className="text-xs text-zinc-500 truncate">
-              {isPro ? '次回更新日や解約はこちら' : 'Pro にアップグレードして無制限に利用'}
+              {isPro ? '次回更新日や解約はこちら' : 'Pro プランは近日公開予定'}
             </p>
           </div>
         </div>

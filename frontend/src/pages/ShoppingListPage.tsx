@@ -17,6 +17,7 @@ import {
 } from '../lib/circlesCsv';
 import { eventsApi, circlesApi, circleItemsApi, booksApi } from '../lib/api';
 import { useUpgradeModal, isPlanLimitError } from '../contexts/UpgradeModalContext';
+import { ShoppingTabs } from '../components/shopping/ShoppingTabs';
 
 // ─── status helpers ────────────────────────────────────────────────────────
 
@@ -559,7 +560,7 @@ const EditCircleModal: React.FC<EditCircleModalProps> = ({ circle, onSave, onClo
 
 interface AddItemModalProps {
   circleId: string;
-  onAdd: (data: Omit<CircleItem, 'id' | 'status'>) => void;
+  onAdd: (data: Omit<CircleItem, 'id' | 'status' | 'onlineStatus' | 'addedToLibraryBookId'>) => void;
   onClose: () => void;
 }
 
@@ -1130,7 +1131,7 @@ const ShoppingListPage: React.FC = () => {
     queryClient.invalidateQueries({ queryKey: ['circles'] });
   };
 
-  const handleAddItem = async (data: Omit<CircleItem, 'id' | 'status'>) => {
+  const handleAddItem = async (data: Omit<CircleItem, 'id' | 'status' | 'onlineStatus' | 'addedToLibraryBookId'>) => {
     await circleItemsApi.create(data);
     queryClient.invalidateQueries({ queryKey: ['circleItems'] });
   };
@@ -1348,7 +1349,7 @@ const ShoppingListPage: React.FC = () => {
       <div className="flex-1 overflow-y-auto min-w-0">
       <div className="max-w-2xl mx-auto px-4 py-4">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3">
         <h1 className="text-lg font-bold text-zinc-100">買い物リスト</h1>
         <div className="flex items-center gap-2">
           <Button onClick={() => setShowAddEvent(true)}>
@@ -1362,6 +1363,9 @@ const ShoppingListPage: React.FC = () => {
             <PanelLeft className="w-4 h-4" />
           </button>
         </div>
+      </div>
+      <div className="mb-4">
+        <ShoppingTabs />
       </div>
 
       {eventsList.length === 0 && orphanCircles.length === 0 ? (

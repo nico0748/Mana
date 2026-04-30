@@ -56,6 +56,8 @@ export interface VenueMap {
   updatedAt: number;
 }
 
+export type CircleItemOnlineStatus = 'unchecked' | 'available_online' | 'unavailable';
+
 export interface CircleItem {
   id: string;
   circleId: string;
@@ -65,6 +67,8 @@ export interface CircleItem {
   quantity: number;
   coverUrl?: string;
   status: 'pending' | 'bought' | 'soldout';
+  onlineStatus: CircleItemOnlineStatus;
+  addedToLibraryBookId?: string | null;
 }
 
 export interface Distribution {

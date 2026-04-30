@@ -59,15 +59,17 @@ model Circle {
 }
 
 model CircleItem {
-  id       String @id @default(uuid())
-  circle   Circle @relation(fields: [circleId], references: [id], onDelete: Cascade)
-  circleId String
-  title    String
-  type     String
-  price    Int
-  quantity Int
-  coverUrl String?
-  status   String @default("pending")
+  id                   String  @id @default(uuid())
+  circle               Circle  @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  circleId             String
+  title                String
+  type                 String
+  price                Int
+  quantity             Int
+  coverUrl             String?
+  status               String  @default("pending")
+  onlineStatus         String  @default("unchecked")
+  addedToLibraryBookId String?
 }
 
 model VenueMap {

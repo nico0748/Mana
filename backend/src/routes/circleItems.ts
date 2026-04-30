@@ -28,7 +28,6 @@ router.post('/', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   const uid = (req as any).uid as string;
-  const { status } = req.body;
   const item = await prisma.circleItem.findFirst({
     where: { id: req.params.id, circle: { userId: uid } },
   });
@@ -36,9 +35,17 @@ router.put('/:id', async (req, res) => {
     res.status(404).json({ error: 'Not found' });
     return;
   }
+  const allowed = [
+    'title', 'type', 'price', 'quantity', 'coverUrl',
+    'status', 'onlineStatus', 'addedToLibraryBookId',
+  ] as const;
+  const data: Record<string, unknown> = {};
+  for (const key of allowed) {
+    if (key in req.body) data[key] = req.body[key];
+  }
   const updated = await prisma.circleItem.update({
     where: { id: req.params.id },
-    data: { status },
+    data,
   });
   res.json(updated);
 });

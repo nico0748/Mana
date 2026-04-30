@@ -6,6 +6,8 @@ import { updateProfile } from "firebase/auth";
 import { AppLayout } from "./components/layout/AppLayout";
 import { BookList } from "./components/books/BookList";
 import ShoppingListPage from "./pages/ShoppingListPage";
+import PurchasedListPage from "./pages/PurchasedListPage";
+import UnavailableListPage from "./pages/UnavailableListPage";
 import NavModePage from "./pages/NavModePage";
 import ToolsPage from "./pages/ToolsPage";
 import MapPage from "./pages/MapPage";
@@ -42,6 +44,8 @@ function AnimatedRoutes() {
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<motion.div {...pageVariants}><BookList /></motion.div>} />
         <Route path="/shopping" element={<motion.div {...pageVariants}><ShoppingListPage /></motion.div>} />
+        <Route path="/shopping/purchased" element={<motion.div {...pageVariants}><PurchasedListPage /></motion.div>} />
+        <Route path="/shopping/unavailable" element={<motion.div {...pageVariants}><UnavailableListPage /></motion.div>} />
         <Route path="/shopping/nav" element={<motion.div {...pageVariants}><NavModePage /></motion.div>} />
         <Route path="/tools" element={<motion.div {...pageVariants}><ToolsPage /></motion.div>} />
         <Route path="/map" element={<motion.div {...pageVariants}><MapPage /></motion.div>} />

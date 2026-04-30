@@ -104,12 +104,15 @@ export const syncApi = {
 
 // ── Me / Plan ──────────────────────────────────────────────────────────────
 export type Plan = 'free' | 'pro';
+export type Role = 'user' | 'admin';
 export type ResourceKey = 'books' | 'circles' | 'events' | 'distributions' | 'venueMaps';
 
 export interface MeResponse {
   user: {
     firebaseUid: string;
     email: string | null;
+    role: Role;
+    proOverride: boolean;
     plan: Plan;
     planStatus: string;
     planInterval: 'monthly' | 'yearly' | null;
@@ -134,4 +137,65 @@ export const billingApi = {
     }),
   portal: () =>
     req<{ url: string }>('/billing/portal', { method: 'POST' }),
+};
+
+// ── Admin ──────────────────────────────────────────────────────────────────
+export interface AdminUser {
+  firebaseUid: string;
+  email: string | null;
+  displayName: string | null;
+  role: Role;
+  proOverride: boolean;
+  effectivePlan: Plan;
+  planStatus: string;
+  planExpiresAt: number | null;
+  isInitialAdmin: boolean;
+  createdAt: number;
+}
+
+export interface AdminAuditLogEntry {
+  id: string;
+  actorUid: string;
+  action: string;
+  targetUid: string | null;
+  before: unknown;
+  after: unknown;
+  ip?: string | null;
+  createdAt: number;
+}
+
+export interface AdminStats {
+  totalUsers: number;
+  adminCount: number;
+  proOverrideCount: number;
+  paidProCount: number;
+  recentAuditLog: AdminAuditLogEntry[];
+}
+
+export const adminApi = {
+  stats: () => req<AdminStats>('/admin/stats'),
+  listUsers: (params: { q?: string; cursor?: string; limit?: number } = {}) => {
+    const search = new URLSearchParams();
+    if (params.q) search.set('q', params.q);
+    if (params.cursor) search.set('cursor', params.cursor);
+    if (params.limit) search.set('limit', String(params.limit));
+    const qs = search.toString();
+    return req<{ users: AdminUser[]; nextCursor: string | null }>(
+      `/admin/users${qs ? `?${qs}` : ''}`,
+    );
+  },
+  updateUser: (uid: string, data: { role?: Role; proOverride?: boolean }) =>
+    req<AdminUser>(`/admin/users/${encodeURIComponent(uid)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+  auditLog: (params: { cursor?: string; limit?: number } = {}) => {
+    const search = new URLSearchParams();
+    if (params.cursor) search.set('cursor', params.cursor);
+    if (params.limit) search.set('limit', String(params.limit));
+    const qs = search.toString();
+    return req<{ logs: AdminAuditLogEntry[]; nextCursor: string | null }>(
+      `/admin/audit-log${qs ? `?${qs}` : ''}`,
+    );
+  },
 };

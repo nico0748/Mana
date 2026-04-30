@@ -34,6 +34,7 @@ services:
       STRIPE_PRICE_MONTHLY: ${STRIPE_PRICE_MONTHLY}
       STRIPE_PRICE_YEARLY: ${STRIPE_PRICE_YEARLY}
       APP_URL: ${APP_URL}
+      INITIAL_ADMIN_UIDS: ${INITIAL_ADMIN_UIDS}
     depends_on:
       db:
         condition: service_healthy

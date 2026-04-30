@@ -29,7 +29,9 @@ export function effectivePlan(user: {
   plan: string;
   planStatus: string;
   planExpiresAt: Date | null;
+  proOverride?: boolean;
 }): Plan {
+  if (user.proOverride) return 'pro';
   if (user.plan === 'pro' && (user.planStatus === 'active' || user.planStatus === 'trialing')) {
     return 'pro';
   }

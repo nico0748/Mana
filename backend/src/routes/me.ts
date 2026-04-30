@@ -20,6 +20,8 @@ router.get('/', async (req, res) => {
     user: {
       firebaseUid: user.firebaseUid,
       email: user.email,
+      role: user.role,
+      proOverride: user.proOverride,
       plan,
       planStatus: user.planStatus,
       planInterval: user.planInterval,

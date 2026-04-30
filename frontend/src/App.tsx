@@ -14,6 +14,7 @@ import MapPage from "./pages/MapPage";
 import LandingPage from "./pages/LandingPage";
 import TemplatesPage from "./pages/TemplatesPage";
 import AccountPage from "./pages/AccountPage";
+import AdminPage from "./pages/AdminPage";
 import Onboarding, { ONBOARDING_KEY } from "./components/Onboarding";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AppSettingsProvider } from "./contexts/AppSettingsContext";
@@ -50,6 +51,7 @@ function AnimatedRoutes() {
         <Route path="/tools" element={<motion.div {...pageVariants}><ToolsPage /></motion.div>} />
         <Route path="/map" element={<motion.div {...pageVariants}><MapPage /></motion.div>} />
         <Route path="/account" element={<motion.div {...pageVariants}><AccountPage /></motion.div>} />
+        <Route path="/admin" element={<motion.div {...pageVariants}><AdminPage /></motion.div>} />
       </Routes>
     </AnimatePresence>
   );

@@ -11,7 +11,9 @@ import syncRouter from './routes/sync';
 import meRouter from './routes/me';
 import billingRouter from './routes/billing';
 import webhookRouter from './routes/webhook';
+import adminRouter from './routes/admin';
 import { authenticate } from './middleware/auth';
+import { requireAdmin, adminRateLimit } from './middleware/requireAdmin';
 
 const app = express();
 const PORT = process.env.PORT ?? 3000;
@@ -35,6 +37,7 @@ app.use('/api/webhook/stripe', webhookRouter);
 app.use(express.json({ limit: '50mb' })); // large for image data URLs
 
 app.use('/api', authenticate);
+app.use('/api/admin', adminRateLimit, requireAdmin, adminRouter);
 app.use('/api/me', meRouter);
 app.use('/api/billing', billingRouter);
 app.use('/api/books', booksRouter);

@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Crown, ExternalLink, Check } from 'lucide-react';
+import { ArrowLeft, Crown, ExternalLink, Check, ShieldCheck } from 'lucide-react';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { billingApi, type ResourceKey } from '../lib/api';
 import { Button } from '../components/ui/Button';
@@ -117,6 +117,24 @@ const AccountPage: React.FC = () => {
           <h1 className="text-2xl font-bold mb-1">アカウント・プラン</h1>
           <p className="text-sm text-zinc-500">{user.email ?? 'メール未設定'}</p>
         </div>
+
+        {user.role === 'admin' && (
+          <Link
+            to="/admin"
+            className="flex items-center justify-between gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/5 px-5 py-4 hover:bg-amber-500/10 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-amber-500/15 ring-1 ring-amber-500/40 flex items-center justify-center">
+                <ShieldCheck className="w-4 h-4 text-amber-300" />
+              </div>
+              <div>
+                <div className="text-sm font-semibold text-amber-200">管理者画面</div>
+                <div className="text-xs text-zinc-500">ユーザー管理・Pro付与・監査ログ</div>
+              </div>
+            </div>
+            <ArrowLeft className="w-4 h-4 text-zinc-500 rotate-180" />
+          </Link>
+        )}
 
         {/* プラン状態カード */}
         <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-6 space-y-5">

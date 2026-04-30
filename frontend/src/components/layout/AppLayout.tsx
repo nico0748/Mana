@@ -4,6 +4,7 @@ import { BookOpen, ShoppingBag, Map, Settings } from 'lucide-react';
 import { clsx } from 'clsx';
 import { motion } from 'framer-motion';
 import { useAppSettings } from '../../contexts/AppSettingsContext';
+import { HeaderUserMenu } from './HeaderUserMenu';
 
 const tabs = [
   { label: '本棚',   path: '/',         icon: BookOpen   },
@@ -103,34 +104,39 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
             </div>
           </div>
 
-          {/* Desktop navigation — subtle tonal pills, NOT emerald */}
-          <nav className="hidden sm:flex items-center gap-0.5 p-1 rounded-full bg-zinc-900 border border-zinc-800/80">
-            {tabs.map((tab) => {
-              const active = isActive(tab.path);
-              return (
-                <Link
-                  key={tab.path}
-                  to={tab.path}
-                  className={clsx(
-                    'relative flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-medium transition-all duration-200',
-                    active
-                      ? 'text-zinc-100'
-                      : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'
-                  )}
-                >
-                  {active && (
-                    <motion.div
-                      layoutId="activeNavPill"
-                      className="absolute inset-0 rounded-full bg-zinc-700"
-                      transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-                    />
-                  )}
-                  <tab.icon className="relative h-4 w-4 flex-shrink-0" />
-                  <span className="relative hidden md:inline">{tab.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
+          {/* Right side — desktop nav pills + user avatar */}
+          <div className="flex items-center gap-3">
+            {/* Desktop navigation — subtle tonal pills, NOT emerald */}
+            <nav className="hidden sm:flex items-center gap-0.5 p-1 rounded-full bg-zinc-900 border border-zinc-800/80">
+              {tabs.map((tab) => {
+                const active = isActive(tab.path);
+                return (
+                  <Link
+                    key={tab.path}
+                    to={tab.path}
+                    className={clsx(
+                      'relative flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-medium transition-all duration-200',
+                      active
+                        ? 'text-zinc-100'
+                        : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800'
+                    )}
+                  >
+                    {active && (
+                      <motion.div
+                        layoutId="activeNavPill"
+                        className="absolute inset-0 rounded-full bg-zinc-700"
+                        transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+                      />
+                    )}
+                    <tab.icon className="relative h-4 w-4 flex-shrink-0" />
+                    <span className="relative hidden md:inline">{tab.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+
+            <HeaderUserMenu />
+          </div>
         </div>
       </header>
 

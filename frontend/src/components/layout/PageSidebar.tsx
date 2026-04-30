@@ -1,7 +1,6 @@
 import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, LogOut, User } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { X } from 'lucide-react';
 
 interface PageSidebarProps {
   /** モバイルでの開閉状態 */
@@ -14,35 +13,6 @@ interface PageSidebarProps {
 }
 
 export const PageSidebar: React.FC<PageSidebarProps> = ({ open, onClose, footer, children }) => {
-  const { user, logout } = useAuth();
-
-  const accountInfo = (
-    <div className="border-t border-zinc-800 pt-3 mt-1">
-      <div className="flex items-center gap-2.5 px-1 mb-2">
-        {user?.photoURL ? (
-          <img src={user.photoURL} alt="avatar" className="w-7 h-7 rounded-full flex-shrink-0" />
-        ) : (
-          <div className="w-7 h-7 rounded-full bg-zinc-700 flex items-center justify-center flex-shrink-0">
-            <User className="w-3.5 h-3.5 text-zinc-400" />
-          </div>
-        )}
-        <div className="min-w-0">
-          {user?.displayName && (
-            <p className="text-xs font-medium text-zinc-300 truncate">{user.displayName}</p>
-          )}
-          <p className="text-xs text-zinc-500 truncate">{user?.email ?? ''}</p>
-        </div>
-      </div>
-      <button
-        onClick={logout}
-        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
-      >
-        <LogOut className="w-3.5 h-3.5" />
-        ログアウト
-      </button>
-    </div>
-  );
-
   const inner = (
     <>
       <div className="flex-1 overflow-y-auto p-4">
@@ -50,7 +20,6 @@ export const PageSidebar: React.FC<PageSidebarProps> = ({ open, onClose, footer,
       </div>
       <div className="p-4 border-t border-zinc-800">
         {footer}
-        {accountInfo}
       </div>
     </>
   );
@@ -95,7 +64,6 @@ export const PageSidebar: React.FC<PageSidebarProps> = ({ open, onClose, footer,
               </div>
               <div className="p-4 border-t border-zinc-800">
                 {footer}
-                {accountInfo}
               </div>
             </motion.aside>
           </>

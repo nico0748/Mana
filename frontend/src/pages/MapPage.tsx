@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -37,37 +38,44 @@ const MapPage: React.FC = () => {
   const [pdfPage, setPdfPage] = useState(1);
   const [pdfTotalPages, setPdfTotalPages] = useState(0);
 
-  // Zoom + pin popup state
+  // Zoom state
   const [zoom, setZoom] = useState(1);
-  const [activePinId, setActivePinId] = useState<string | null>(null);
-  const [pinPlacement, setPinPlacement] = useState<{
-    vertical: 'above' | 'below';
-    horizontal: 'left' | 'center' | 'right';
-  }>({ vertical: 'above', horizontal: 'center' });
   const [imgNaturalSize, setImgNaturalSize] = useState<{ w: number; h: number } | null>(null);
   const [outerSize, setOuterSize] = useState<{ w: number; h: number } | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
 
-  // Esc で全画面解除
+  // クリックで開くポップアップ。マップコンテナの overflow-hidden / scale 影響を受けない
+  // よう、document.body に portal でレンダリングする。座標はクリック時の viewport 値。
+  type Placement = {
+    vertical: 'above' | 'below';
+    horizontal: 'left' | 'center' | 'right';
+  };
+  const [clickedPopup, setClickedPopup] = useState<{
+    circleId: string;
+    pinX: number;
+    pinY: number;
+    pinR: number; // ピンの半径(viewport px)
+    placement: Placement;
+  } | null>(null);
+
+  // Esc で全画面解除 / popup クローズ
   useEffect(() => {
-    if (!fullscreen) return;
+    if (!fullscreen && !clickedPopup) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setFullscreen(false);
+      if (e.key !== 'Escape') return;
+      if (clickedPopup) setClickedPopup(null);
+      else if (fullscreen) setFullscreen(false);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [fullscreen]);
+  }, [fullscreen, clickedPopup]);
 
   // ピンクリック時に viewport との位置関係から見切れない popup の置き場所を決める
-  const computePlacement = (pinEl: HTMLElement): {
-    vertical: 'above' | 'below';
-    horizontal: 'left' | 'center' | 'right';
-  } => {
-    const rect = pinEl.getBoundingClientRect();
+  const computePlacement = (rect: DOMRect): Placement => {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    const POPUP_W = 220; // max-w-[220px]
-    const POPUP_H = 220; // worst-case (header + 3 status + items list)
+    const POPUP_W = 220;   // max-w-[220px]
+    const POPUP_H = 280;   // header(50) + status(40) + items(max 160) + padding 余裕
     const M = 8;
 
     const spaceAbove = rect.top;
@@ -194,7 +202,7 @@ const MapPage: React.FC = () => {
   useEffect(() => {
     setImgNaturalSize(null);
     setZoom(1);
-    setActivePinId(null);
+    setClickedPopup(null);
   }, [currentMap?.id]);
 
   // Compute image content box within outer container (eliminates letterbox coordinate mismatch)
@@ -383,7 +391,7 @@ const MapPage: React.FC = () => {
   // Click on the image container to place a pin
   // getBoundingClientRect() accounts for CSS transforms, so zoom is handled correctly
   const handleMapClick = useCallback(async (e: React.MouseEvent<HTMLDivElement>) => {
-    setActivePinId(null);
+    setClickedPopup(null);
     if (cropMode || !editMode || !selectedCircleId) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
@@ -423,6 +431,14 @@ const MapPage: React.FC = () => {
     await queryClient.invalidateQueries({ queryKey: ['venueMaps'] });
     setSelectedEventId(event.id);
   };
+
+  // クリック popup の対象サークル
+  const clickedCircle = clickedPopup
+    ? pinnedCircles.find(c => c.id === clickedPopup.circleId) ?? null
+    : null;
+  const clickedItems = clickedCircle
+    ? (circleItems ?? []).filter(i => i.circleId === clickedCircle.id)
+    : [];
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -681,12 +697,18 @@ const MapPage: React.FC = () => {
                           setSelectedCircleId(id => id === circle.id ? null : circle.id);
                           return;
                         }
-                        if (activePinId === circle.id) {
-                          setActivePinId(null);
+                        if (clickedPopup?.circleId === circle.id) {
+                          setClickedPopup(null);
                           return;
                         }
-                        setPinPlacement(computePlacement(e.currentTarget));
-                        setActivePinId(circle.id);
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setClickedPopup({
+                          circleId: circle.id,
+                          pinX: rect.left + rect.width / 2,
+                          pinY: rect.top + rect.height / 2,
+                          pinR: Math.max(rect.width, rect.height) / 2,
+                          placement: computePlacement(rect),
+                        });
                       }}
                     >
                       {circle.id === highlightId && (
@@ -712,117 +734,20 @@ const MapPage: React.FC = () => {
                         statusColor[circle.status] ?? 'bg-zinc-600 border-zinc-500'
                       )} />
 
-                      {/* Popup: hover on desktop, tap on mobile */}
-                      {(() => {
-                        const pinItems = (circleItems ?? []).filter(i => i.circleId === circle.id);
-                        const isActive = activePinId === circle.id;
-                        // active のときのみ動的配置。hover popup はデフォルト (上中央)
-                        const v: 'above' | 'below' = isActive ? pinPlacement.vertical : 'above';
-                        const h: 'left' | 'center' | 'right' = isActive ? pinPlacement.horizontal : 'center';
-                        const horizClass =
-                          h === 'center' ? 'left-1/2 -translate-x-1/2' :
-                          h === 'left'   ? 'left-0' :
-                                           'right-0';
-                        const arrowAlignClass =
-                          h === 'center' ? 'mx-auto' :
-                          h === 'left'   ? 'ml-1.5' :
-                                           'ml-auto mr-1.5';
-                        const arrowDown =
-                          <div className={clsx(
-                            'w-2 h-2 bg-zinc-800 border-b border-r border-zinc-700 rotate-45 -mt-1',
-                            arrowAlignClass,
-                          )} />;
-                        const arrowUp =
-                          <div className={clsx(
-                            'w-2 h-2 bg-zinc-800 border-t border-l border-zinc-700 rotate-45 -mb-1',
-                            arrowAlignClass,
-                          )} />;
-                        return (
-                          <div className={clsx(
-                            'absolute z-20 transition-opacity duration-150',
-                            v === 'above' ? 'bottom-6' : 'top-6',
-                            horizClass,
-                            isActive
-                              ? 'opacity-100 pointer-events-auto'
-                              : 'opacity-0 group-hover:opacity-100 pointer-events-none'
-                          )}>
-                            {v === 'below' && arrowUp}
-                            <div
-                              className="bg-zinc-800 text-zinc-100 text-xs rounded-lg shadow-xl border border-zinc-700 text-left min-w-[160px] max-w-[220px]"
-                              onClick={e => e.stopPropagation()}
-                            >
-                              <div className="px-2.5 py-2 border-b border-zinc-700/60">
-                                <div className="font-mono text-zinc-500 text-[10px]">{circle.block}-{circle.number}</div>
-                                <div className="text-zinc-200 font-medium truncate">{circle.name}</div>
-                              </div>
-                              {/* サークルレベルのステータス */}
-                              <div className="flex gap-1 p-1.5 border-b border-zinc-700/40">
-                                {([
-                                  { s: 'pending',  label: '未購入', active: 'bg-zinc-600 text-zinc-200'        },
-                                  { s: 'bought',   label: '購入済', active: 'bg-emerald-500/20 text-emerald-400' },
-                                  { s: 'soldout',  label: '完売',   active: 'bg-red-500/20 text-red-400'        },
-                                ] as const).map(({ s, label, active }) => (
-                                  <button
-                                    key={s}
-                                    onClick={async (e) => {
-                                      e.stopPropagation();
-                                      await circlesApi.update(circle.id, { status: s, updatedAt: Date.now() });
-                                      queryClient.invalidateQueries({ queryKey: ['circles'] });
-                                    }}
-                                    className={clsx(
-                                      'flex-1 py-1 rounded text-[10px] font-medium transition-colors',
-                                      circle.status === s
-                                        ? active
-                                        : 'text-zinc-600 hover:text-zinc-300 hover:bg-zinc-700'
-                                    )}
-                                  >
-                                    {label}
-                                  </button>
-                                ))}
-                              </div>
-                              {/* アイテムごとのステータス（複数アイテム時） */}
-                              {pinItems.length > 1 && (
-                                <div className="px-2 py-1.5 space-y-1.5 max-h-40 overflow-y-auto">
-                                  {pinItems.map(item => {
-                                    const s = item.status ?? 'pending';
-                                    const itemStatusActive: Record<CircleItem['status'], string> = {
-                                      pending: 'bg-zinc-600 text-zinc-200',
-                                      bought: 'bg-emerald-500/20 text-emerald-400',
-                                      soldout: 'bg-red-500/20 text-red-400',
-                                    };
-                                    return (
-                                      <div key={item.id} className="space-y-0.5">
-                                        <div className="text-[10px] text-zinc-400 truncate">{item.title}</div>
-                                        <div className="flex gap-1">
-                                          {(['pending', 'bought', 'soldout'] as CircleItem['status'][]).map(st => (
-                                            <button
-                                              key={st}
-                                              onClick={async (e) => {
-                                                e.stopPropagation();
-                                                await circleItemsApi.update(item.id, { status: st });
-                                                queryClient.invalidateQueries({ queryKey: ['circleItems'] });
-                                              }}
-                                              className={clsx(
-                                                'flex-1 py-0.5 rounded text-[9px] font-medium transition-colors',
-                                                s === st
-                                                  ? itemStatusActive[st]
-                                                  : 'text-zinc-600 hover:text-zinc-300 hover:bg-zinc-700'
-                                              )}
-                                            >
-                                              {st === 'pending' ? '未' : st === 'bought' ? '済' : '完売'}
-                                            </button>
-                                          ))}
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              )}
+                      {/* Hover preview (desktop): block・name のみのコンパクト tooltip。
+                          クリック時の本ポップアップは createPortal で外側に描画される。
+                          このピンの click popup が開いている間は隠す（重複防止） */}
+                      {clickedPopup?.circleId !== circle.id && (
+                        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150">
+                          <div className="bg-zinc-800 text-zinc-100 text-xs rounded-lg shadow-xl border border-zinc-700 text-left min-w-[140px] max-w-[200px]">
+                            <div className="px-2.5 py-1.5">
+                              <div className="font-mono text-zinc-500 text-[10px]">{circle.block}-{circle.number}</div>
+                              <div className="text-zinc-200 font-medium truncate">{circle.name}</div>
                             </div>
-                            {v === 'above' && arrowDown}
                           </div>
-                        );
-                      })()}
+                          <div className="w-2 h-2 bg-zinc-800 border-b border-r border-zinc-700 rotate-45 mx-auto -mt-1" />
+                        </div>
+                      )}
 
                       {editMode && (
                         <button
@@ -1084,6 +1009,138 @@ const MapPage: React.FC = () => {
           />
         )}
       </AnimatePresence>
+
+      {/* ── Click popup (portal): map のコンテナ外にレンダリングして
+            overflow-hidden / scale 影響を回避し、画面端でも見切れない ───── */}
+      {clickedPopup && clickedCircle && createPortal(
+        (() => {
+          const { pinX, pinY, pinR, placement } = clickedPopup;
+          const M = 8;          // viewport 端からの最低マージン
+          const GAP = 6;        // ピンとポップアップの隙間
+          const ARROW_HALF = 4; // 矢印の半幅
+          const vw = window.innerWidth;
+
+          // popup card 本体の位置
+          const cardStyle: React.CSSProperties = { position: 'fixed', zIndex: 50 };
+          const transforms: string[] = [];
+          if (placement.vertical === 'above') {
+            cardStyle.top = pinY - pinR - GAP;
+            transforms.push('translateY(-100%)');
+          } else {
+            cardStyle.top = pinY + pinR + GAP;
+          }
+          if (placement.horizontal === 'center') {
+            cardStyle.left = pinX;
+            transforms.push('translateX(-50%)');
+          } else if (placement.horizontal === 'left') {
+            cardStyle.left = M;
+          } else {
+            cardStyle.right = M;
+          }
+          if (transforms.length) cardStyle.transform = transforms.join(' ');
+
+          // 矢印は常にピンの真上/真下を指すよう popup 内で位置調整
+          const arrowStyle: React.CSSProperties = {
+            position: 'absolute',
+            width: 8,
+            height: 8,
+            backgroundColor: 'rgb(39 39 42)', // bg-zinc-800
+            transform: 'rotate(45deg)',
+          };
+          if (placement.horizontal === 'center') {
+            arrowStyle.left = '50%';
+            arrowStyle.marginLeft = -ARROW_HALF;
+          } else if (placement.horizontal === 'left') {
+            arrowStyle.left = pinX - M - ARROW_HALF;
+          } else {
+            arrowStyle.right = (vw - M) - pinX - ARROW_HALF;
+          }
+          if (placement.vertical === 'above') {
+            arrowStyle.bottom = -ARROW_HALF;
+            arrowStyle.borderRight = '1px solid rgb(63 63 70)';   // border-zinc-700
+            arrowStyle.borderBottom = '1px solid rgb(63 63 70)';
+          } else {
+            arrowStyle.top = -ARROW_HALF;
+            arrowStyle.borderLeft = '1px solid rgb(63 63 70)';
+            arrowStyle.borderTop = '1px solid rgb(63 63 70)';
+          }
+
+          const itemStatusActive: Record<CircleItem['status'], string> = {
+            pending: 'bg-zinc-600 text-zinc-200',
+            bought: 'bg-emerald-500/20 text-emerald-400',
+            soldout: 'bg-red-500/20 text-red-400',
+          };
+
+          return (
+            <div style={cardStyle} onClick={e => e.stopPropagation()}>
+              <div className="bg-zinc-800 text-zinc-100 text-xs rounded-lg shadow-xl border border-zinc-700 text-left min-w-[160px] max-w-[220px]">
+                <div className="px-2.5 py-2 border-b border-zinc-700/60">
+                  <div className="font-mono text-zinc-500 text-[10px]">{clickedCircle.block}-{clickedCircle.number}</div>
+                  <div className="text-zinc-200 font-medium truncate">{clickedCircle.name}</div>
+                </div>
+                <div className="flex gap-1 p-1.5 border-b border-zinc-700/40">
+                  {([
+                    { s: 'pending',  label: '未購入', active: 'bg-zinc-600 text-zinc-200'        },
+                    { s: 'bought',   label: '購入済', active: 'bg-emerald-500/20 text-emerald-400' },
+                    { s: 'soldout',  label: '完売',   active: 'bg-red-500/20 text-red-400'        },
+                  ] as const).map(({ s, label, active }) => (
+                    <button
+                      key={s}
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        await circlesApi.update(clickedCircle.id, { status: s, updatedAt: Date.now() });
+                        queryClient.invalidateQueries({ queryKey: ['circles'] });
+                      }}
+                      className={clsx(
+                        'flex-1 py-1 rounded text-[10px] font-medium transition-colors',
+                        clickedCircle.status === s
+                          ? active
+                          : 'text-zinc-600 hover:text-zinc-300 hover:bg-zinc-700'
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                {clickedItems.length > 1 && (
+                  <div className="px-2 py-1.5 space-y-1.5 max-h-40 overflow-y-auto">
+                    {clickedItems.map(item => {
+                      const s = item.status ?? 'pending';
+                      return (
+                        <div key={item.id} className="space-y-0.5">
+                          <div className="text-[10px] text-zinc-400 truncate">{item.title}</div>
+                          <div className="flex gap-1">
+                            {(['pending', 'bought', 'soldout'] as CircleItem['status'][]).map(st => (
+                              <button
+                                key={st}
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  await circleItemsApi.update(item.id, { status: st });
+                                  queryClient.invalidateQueries({ queryKey: ['circleItems'] });
+                                }}
+                                className={clsx(
+                                  'flex-1 py-0.5 rounded text-[9px] font-medium transition-colors',
+                                  s === st
+                                    ? itemStatusActive[st]
+                                    : 'text-zinc-600 hover:text-zinc-300 hover:bg-zinc-700'
+                                )}
+                              >
+                                {st === 'pending' ? '未' : st === 'bought' ? '済' : '完売'}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+              <div style={arrowStyle} />
+            </div>
+          );
+        })(),
+        document.body,
+      )}
     </div>
   );
 };

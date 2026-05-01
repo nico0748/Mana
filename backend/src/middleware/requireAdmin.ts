@@ -21,3 +21,12 @@ export const adminRateLimit = rateLimit({
   legacyHeaders: false,
   message: { error: 'too_many_requests' },
 });
+
+// Firebase API quota / DB write 負荷 / DoS を抑制するため sync は厳しく制限
+export const adminSyncRateLimit = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 2,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'sync_rate_limited' },
+});

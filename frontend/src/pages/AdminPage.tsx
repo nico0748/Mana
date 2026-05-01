@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import {
   ArrowLeft, ShieldCheck, Users, ScrollText, Crown, Search, Loader2, Lock, AlertTriangle,
+  RefreshCw,
 } from 'lucide-react';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import {
@@ -163,6 +164,26 @@ const UsersTab: React.FC<{ currentUid: string }> = ({ currentUid }) => {
     },
   });
 
+  const [syncToast, setSyncToast] = React.useState<string | null>(null);
+  const syncMutation = useMutation({
+    mutationFn: () => adminApi.syncFirebase(),
+    onSuccess: (r) => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
+      setSyncToast(
+        `同期完了: 新規 ${r.created} / 更新 ${r.updated} / 計 ${r.total}件 (${(r.durationMs / 1000).toFixed(1)}秒)`,
+      );
+      window.setTimeout(() => setSyncToast(null), 5000);
+    },
+    onError: (err) => {
+      const msg = err instanceof ApiError && err.payload?.error
+        ? `同期に失敗しました: ${err.payload.error}`
+        : '同期に失敗しました';
+      setSyncToast(msg);
+      window.setTimeout(() => setSyncToast(null), 6000);
+    },
+  });
+
   const confirmChange = async () => {
     if (!pendingChange) return;
     const body =
@@ -182,16 +203,35 @@ const UsersTab: React.FC<{ currentUid: string }> = ({ currentUid }) => {
 
   return (
     <div className="space-y-4">
-      <div className="relative">
-        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
-        <input
-          type="text"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="UID / メール / 表示名で検索"
-          className="w-full pl-9 pr-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-100 text-sm placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
-        />
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+          <input
+            type="text"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="UID / メール / 表示名で検索"
+            className="w-full pl-9 pr-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-100 text-sm placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+          />
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => syncMutation.mutate()}
+          isLoading={syncMutation.isPending}
+          title="Firebase に登録された全ユーザーを DB に取り込みます"
+          className="shrink-0"
+        >
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Firebase から同期
+        </Button>
       </div>
+
+      {syncToast && (
+        <div className="px-4 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-200 text-sm">
+          {syncToast}
+        </div>
+      )}
 
       {isLoading && (
         <div className="text-zinc-500 text-sm flex items-center gap-2">

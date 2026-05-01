@@ -198,4 +198,9 @@ export const adminApi = {
       `/admin/audit-log${qs ? `?${qs}` : ''}`,
     );
   },
+  syncFirebase: () =>
+    req<{ created: number; updated: number; total: number; durationMs: number }>(
+      '/admin/sync-firebase',
+      { method: 'POST' },
+    ),
 };

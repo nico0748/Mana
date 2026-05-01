@@ -1,4 +1,5 @@
 import { Router, type Request } from 'express';
+import admin from 'firebase-admin';
 import { Prisma } from '@prisma/client';
 import { prisma } from '../prisma';
 import { effectivePlan } from '../lib/plans';
@@ -183,6 +184,58 @@ router.patch('/users/:uid', async (req, res) => {
   );
 
   res.json(toUserView(updated));
+});
+
+// ── POST /api/admin/sync-firebase ────────────────────────────────────────────
+router.post('/sync-firebase', async (req, res) => {
+  const startedAt = Date.now();
+  let created = 0;
+  let updated = 0;
+  let total = 0;
+  let pageToken: string | undefined;
+
+  try {
+    do {
+      const result = await admin.auth().listUsers(1000, pageToken);
+      for (const u of result.users) {
+        const existing = await prisma.user.findUnique({
+          where: { firebaseUid: u.uid },
+          select: { firebaseUid: true },
+        });
+        await prisma.user.upsert({
+          where: { firebaseUid: u.uid },
+          create: {
+            firebaseUid: u.uid,
+            email: u.email ?? null,
+            displayName: u.displayName ?? null,
+          },
+          update: {
+            email: u.email ?? null,
+            displayName: u.displayName ?? null,
+          },
+        });
+        if (existing) updated++;
+        else created++;
+        total++;
+      }
+      pageToken = result.pageToken;
+    } while (pageToken);
+
+    const duration = Date.now() - startedAt;
+
+    await writeAudit(
+      req,
+      'sync_firebase',
+      null,
+      null,
+      { created, updated, total, durationMs: duration },
+    );
+
+    res.json({ created, updated, total, durationMs: duration });
+  } catch (err) {
+    console.error('[sync-firebase] failed', err);
+    res.status(500).json({ error: 'sync_failed', message: String(err) });
+  }
 });
 
 // ── GET /api/admin/audit-log ─────────────────────────────────────────────────

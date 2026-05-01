@@ -39,8 +39,40 @@ const MapPage: React.FC = () => {
   // Zoom + pin popup state
   const [zoom, setZoom] = useState(1);
   const [activePinId, setActivePinId] = useState<string | null>(null);
+  const [pinPlacement, setPinPlacement] = useState<{
+    vertical: 'above' | 'below';
+    horizontal: 'left' | 'center' | 'right';
+  }>({ vertical: 'above', horizontal: 'center' });
   const [imgNaturalSize, setImgNaturalSize] = useState<{ w: number; h: number } | null>(null);
   const [outerSize, setOuterSize] = useState<{ w: number; h: number } | null>(null);
+
+  // ピンクリック時に viewport との位置関係から見切れない popup の置き場所を決める
+  const computePlacement = (pinEl: HTMLElement): {
+    vertical: 'above' | 'below';
+    horizontal: 'left' | 'center' | 'right';
+  } => {
+    const rect = pinEl.getBoundingClientRect();
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const POPUP_W = 220; // max-w-[220px]
+    const POPUP_H = 220; // worst-case (header + 3 status + items list)
+    const M = 8;
+
+    const spaceAbove = rect.top;
+    const spaceBelow = vh - rect.bottom;
+    const vertical: 'above' | 'below' =
+      spaceAbove >= POPUP_H + M ? 'above' :
+      spaceBelow >= POPUP_H + M ? 'below' :
+      spaceAbove >= spaceBelow ? 'above' : 'below';
+
+    const cx = rect.left + rect.width / 2;
+    const horizontal: 'left' | 'center' | 'right' =
+      cx - POPUP_W / 2 < M ? 'left' :
+      cx + POPUP_W / 2 > vw - M ? 'right' :
+      'center';
+
+    return { vertical, horizontal };
+  };
 
   // Crop mode
   const [cropMode, setCropMode] = useState(false);
@@ -628,9 +660,14 @@ const MapPage: React.FC = () => {
                         e.stopPropagation();
                         if (editMode) {
                           setSelectedCircleId(id => id === circle.id ? null : circle.id);
-                        } else {
-                          setActivePinId(id => id === circle.id ? null : circle.id);
+                          return;
                         }
+                        if (activePinId === circle.id) {
+                          setActivePinId(null);
+                          return;
+                        }
+                        setPinPlacement(computePlacement(e.currentTarget));
+                        setActivePinId(circle.id);
                       }}
                     >
                       {circle.id === highlightId && (
@@ -659,13 +696,38 @@ const MapPage: React.FC = () => {
                       {/* Popup: hover on desktop, tap on mobile */}
                       {(() => {
                         const pinItems = (circleItems ?? []).filter(i => i.circleId === circle.id);
+                        const isActive = activePinId === circle.id;
+                        // active のときのみ動的配置。hover popup はデフォルト (上中央)
+                        const v: 'above' | 'below' = isActive ? pinPlacement.vertical : 'above';
+                        const h: 'left' | 'center' | 'right' = isActive ? pinPlacement.horizontal : 'center';
+                        const horizClass =
+                          h === 'center' ? 'left-1/2 -translate-x-1/2' :
+                          h === 'left'   ? 'left-0' :
+                                           'right-0';
+                        const arrowAlignClass =
+                          h === 'center' ? 'mx-auto' :
+                          h === 'left'   ? 'ml-1.5' :
+                                           'ml-auto mr-1.5';
+                        const arrowDown =
+                          <div className={clsx(
+                            'w-2 h-2 bg-zinc-800 border-b border-r border-zinc-700 rotate-45 -mt-1',
+                            arrowAlignClass,
+                          )} />;
+                        const arrowUp =
+                          <div className={clsx(
+                            'w-2 h-2 bg-zinc-800 border-t border-l border-zinc-700 rotate-45 -mb-1',
+                            arrowAlignClass,
+                          )} />;
                         return (
                           <div className={clsx(
-                            'absolute bottom-6 left-1/2 -translate-x-1/2 z-20 transition-opacity duration-150',
-                            activePinId === circle.id
+                            'absolute z-20 transition-opacity duration-150',
+                            v === 'above' ? 'bottom-6' : 'top-6',
+                            horizClass,
+                            isActive
                               ? 'opacity-100 pointer-events-auto'
                               : 'opacity-0 group-hover:opacity-100 pointer-events-none'
                           )}>
+                            {v === 'below' && arrowUp}
                             <div
                               className="bg-zinc-800 text-zinc-100 text-xs rounded-lg shadow-xl border border-zinc-700 text-left min-w-[160px] max-w-[220px]"
                               onClick={e => e.stopPropagation()}
@@ -738,7 +800,7 @@ const MapPage: React.FC = () => {
                                 </div>
                               )}
                             </div>
-                            <div className="w-2 h-2 bg-zinc-800 border-b border-r border-zinc-700 rotate-45 mx-auto -mt-1" />
+                            {v === 'above' && arrowDown}
                           </div>
                         );
                       })()}

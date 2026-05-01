@@ -4,11 +4,31 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '../prisma';
 import { effectivePlan } from '../lib/plans';
 import { isInitialAdmin } from '../middleware/auth';
+import { adminSyncRateLimit } from '../middleware/requireAdmin';
 
 const router = Router();
 
 const ALLOWED_ROLES = new Set(['user', 'admin']);
 
+function buildAuditData(
+  req: Request,
+  action: string,
+  targetUid: string | null,
+  before: unknown,
+  after: unknown,
+): Prisma.AdminAuditLogCreateInput {
+  return {
+    actorUid: req.user!.firebaseUid,
+    action,
+    targetUid,
+    before: (before ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+    after: (after ?? Prisma.JsonNull) as Prisma.InputJsonValue,
+    ip: req.ip ?? null,
+    userAgent: req.headers['user-agent'] ?? null,
+  };
+}
+
+// 監査ログ単独書き込み（mutation を伴わない sync など用）
 async function writeAudit(
   req: Request,
   action: string,
@@ -16,17 +36,7 @@ async function writeAudit(
   before: unknown,
   after: unknown,
 ) {
-  await prisma.adminAuditLog.create({
-    data: {
-      actorUid: req.user!.firebaseUid,
-      action,
-      targetUid,
-      before: (before ?? Prisma.JsonNull) as Prisma.InputJsonValue,
-      after: (after ?? Prisma.JsonNull) as Prisma.InputJsonValue,
-      ip: req.ip ?? null,
-      userAgent: req.headers['user-agent'] ?? null,
-    },
-  });
+  await prisma.adminAuditLog.create({ data: buildAuditData(req, action, targetUid, before, after) });
 }
 
 const toUserView = (u: {
@@ -170,24 +180,29 @@ router.patch('/users/:uid', async (req, res) => {
     return;
   }
 
-  const updated = await prisma.user.update({
-    where: { firebaseUid: targetUid },
-    data,
+  // user.update と監査ログ書き込みを 1 トランザクションで原子化
+  const updated = await prisma.$transaction(async (tx) => {
+    const u = await tx.user.update({
+      where: { firebaseUid: targetUid },
+      data,
+    });
+    await tx.adminAuditLog.create({
+      data: buildAuditData(
+        req,
+        'user.update',
+        targetUid,
+        { role: before.role, proOverride: before.proOverride },
+        { role: u.role, proOverride: u.proOverride },
+      ),
+    });
+    return u;
   });
-
-  await writeAudit(
-    req,
-    'user.update',
-    targetUid,
-    { role: before.role, proOverride: before.proOverride },
-    { role: updated.role, proOverride: updated.proOverride },
-  );
 
   res.json(toUserView(updated));
 });
 
 // ── POST /api/admin/sync-firebase ────────────────────────────────────────────
-router.post('/sync-firebase', async (req, res) => {
+router.post('/sync-firebase', adminSyncRateLimit, async (req, res) => {
   const startedAt = Date.now();
   let created = 0;
   let updated = 0;
@@ -233,8 +248,9 @@ router.post('/sync-firebase', async (req, res) => {
 
     res.json({ created, updated, total, durationMs: duration });
   } catch (err) {
+    // 内部詳細をクライアントに漏らさず、サーバーログにのみ残す
     console.error('[sync-firebase] failed', err);
-    res.status(500).json({ error: 'sync_failed', message: String(err) });
+    res.status(500).json({ error: 'sync_failed' });
   }
 });
 

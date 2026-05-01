@@ -6,6 +6,7 @@ import {
   Upload, MapPin, Edit2, Check, X, History,
   Trash2, ChevronLeft, ChevronRight, Plus,
   RotateCcw, RotateCw, Crop, FileJson,
+  Maximize2, Minimize2,
 } from 'lucide-react';
 import { eventsApi, circlesApi, venueMapsApi, circleItemsApi } from '../lib/api';
 import { renderPdfPageToDataUrl } from '../lib/pdfUtils';
@@ -41,6 +42,17 @@ const MapPage: React.FC = () => {
   const [activePinId, setActivePinId] = useState<string | null>(null);
   const [imgNaturalSize, setImgNaturalSize] = useState<{ w: number; h: number } | null>(null);
   const [outerSize, setOuterSize] = useState<{ w: number; h: number } | null>(null);
+  const [fullscreen, setFullscreen] = useState(false);
+
+  // Esc で全画面解除
+  useEffect(() => {
+    if (!fullscreen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setFullscreen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [fullscreen]);
 
   // Crop mode
   const [cropMode, setCropMode] = useState(false);
@@ -567,7 +579,14 @@ const MapPage: React.FC = () => {
       </div>
 
       {/* ── Map area ────────────────────────────────────────────────────────── */}
-      <div className="flex-1 relative overflow-hidden bg-zinc-950 min-h-0">
+      <div
+        className={clsx(
+          'overflow-hidden bg-zinc-950',
+          fullscreen
+            ? 'fixed inset-0 z-50'
+            : 'flex-1 relative min-h-0',
+        )}
+      >
         {currentMap ? (
           <div ref={mapOuterRef} className={clsx('w-full h-full bg-zinc-950 overflow-hidden relative', (editMode && selectedCircleId) || cropMode ? 'cursor-crosshair' : '')}>
             {/* Fallback image shown before imageBox is computed (object-contain, no letterbox correction) */}
@@ -816,8 +835,18 @@ const MapPage: React.FC = () => {
               </div>
             )}
 
-            {/* Zoom controls */}
+            {/* Zoom + fullscreen controls */}
             <div className="absolute top-2 right-2 z-10 flex flex-col gap-1">
+              <button
+                onClick={() => setFullscreen(f => !f)}
+                className="w-7 h-7 bg-zinc-800/90 text-zinc-300 hover:text-zinc-100 hover:bg-zinc-700 rounded flex items-center justify-center shadow border border-zinc-700"
+                title={fullscreen ? '全画面解除 (Esc)' : '全画面表示'}
+                aria-label={fullscreen ? '全画面解除' : '全画面表示'}
+              >
+                {fullscreen
+                  ? <Minimize2 className="w-3.5 h-3.5" />
+                  : <Maximize2 className="w-3.5 h-3.5" />}
+              </button>
               <button
                 onClick={() => setZoom(z => Math.min(4, parseFloat((z + 0.5).toFixed(1))))}
                 className="w-7 h-7 bg-zinc-800/90 text-zinc-300 hover:text-zinc-100 hover:bg-zinc-700 rounded text-base font-bold flex items-center justify-center shadow border border-zinc-700 leading-none"

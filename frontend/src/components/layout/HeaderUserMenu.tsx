@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { LogOut, User } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -64,7 +65,12 @@ export const HeaderUserMenu: React.FC = () => {
             />
 
             <div className="rounded-2xl bg-zinc-900 border border-zinc-800 shadow-2xl shadow-black/40 overflow-hidden">
-              <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-800">
+              <Link
+                to="/account"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 border-b border-zinc-800 hover:bg-zinc-800/60 transition-colors text-left"
+                aria-label="アカウント設定を開く"
+              >
                 {user.photoURL ? (
                   <img src={user.photoURL} alt="" className="w-10 h-10 rounded-full flex-shrink-0" />
                 ) : (
@@ -80,7 +86,7 @@ export const HeaderUserMenu: React.FC = () => {
                   )}
                   <p className="text-xs text-zinc-500 truncate">{user.email ?? ''}</p>
                 </div>
-              </div>
+              </Link>
 
               <button
                 onClick={handleLogout}

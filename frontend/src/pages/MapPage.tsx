@@ -956,75 +956,78 @@ const MapPage: React.FC = () => {
               </div>
             )}
 
-            {/* Zoom + fullscreen controls */}
-            <div className="absolute top-2 right-2 z-10 flex flex-col gap-1">
+            {/* Zoom + fullscreen controls — 統一スタイル: 40px / 高コントラスト / 半透明背景 */}
+            <div className="absolute top-3 right-3 z-10 flex flex-col gap-1.5">
               <button
                 onClick={() => setFullscreen(f => !f)}
-                className="w-7 h-7 bg-zinc-800/90 text-zinc-300 hover:text-zinc-100 hover:bg-zinc-700 rounded flex items-center justify-center shadow border border-zinc-700"
+                className="w-10 h-10 bg-zinc-900/90 text-zinc-50 hover:bg-zinc-800 rounded-lg flex items-center justify-center shadow-lg border border-zinc-600/80 backdrop-blur-sm transition-colors"
                 title={fullscreen ? '全画面解除 (Esc)' : '全画面表示'}
                 aria-label={fullscreen ? '全画面解除' : '全画面表示'}
               >
                 {fullscreen
-                  ? <Minimize2 className="w-3.5 h-3.5" />
-                  : <Maximize2 className="w-3.5 h-3.5" />}
+                  ? <Minimize2 className="w-5 h-5" />
+                  : <Maximize2 className="w-5 h-5" />}
               </button>
               <button
                 onClick={() => setZoom(z => Math.min(4, parseFloat((z + 0.5).toFixed(1))))}
-                className="w-7 h-7 bg-zinc-800/90 text-zinc-300 hover:text-zinc-100 hover:bg-zinc-700 rounded text-base font-bold flex items-center justify-center shadow border border-zinc-700 leading-none"
+                className="w-10 h-10 bg-zinc-900/90 text-zinc-50 hover:bg-zinc-800 rounded-lg flex items-center justify-center shadow-lg border border-zinc-600/80 backdrop-blur-sm transition-colors text-2xl font-bold leading-none"
                 title="ズームイン"
+                aria-label="ズームイン"
               >+</button>
               {zoom !== 1 && (
                 <button
                   onClick={() => setZoom(1)}
-                  className="w-7 h-7 bg-zinc-800/90 text-zinc-500 hover:text-zinc-300 rounded text-xs font-mono flex items-center justify-center shadow border border-zinc-700"
+                  className="w-10 h-10 bg-zinc-900/90 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-50 rounded-lg flex items-center justify-center shadow-lg border border-zinc-600/80 backdrop-blur-sm transition-colors text-xs font-mono"
                   title="ズームリセット"
+                  aria-label="ズームリセット"
                 >1×</button>
               )}
               <button
                 onClick={() => setZoom(z => Math.max(1, parseFloat((z - 0.5).toFixed(1))))}
-                className="w-7 h-7 bg-zinc-800/90 text-zinc-300 hover:text-zinc-100 hover:bg-zinc-700 rounded text-base font-bold flex items-center justify-center shadow border border-zinc-700 leading-none"
+                className="w-10 h-10 bg-zinc-900/90 text-zinc-50 hover:bg-zinc-800 rounded-lg flex items-center justify-center shadow-lg border border-zinc-600/80 backdrop-blur-sm transition-colors text-2xl font-bold leading-none"
                 title="ズームアウト"
+                aria-label="ズームアウト"
               >−</button>
             </div>
 
-            {/* Pan controls — zoom > 1 のときだけ薄く表示 */}
+            {/* Pan controls — zoom > 1 のとき表示。zoom/fullscreen ボタンと統一スタイル */}
             {zoom > 1 && panLimit && (
               <>
                 <button
                   onClick={handlePanUp}
                   disabled={pan.y >= panLimit.y}
-                  className="absolute top-2 left-1/2 -translate-x-1/2 z-10 w-9 h-9 bg-zinc-800/40 hover:bg-zinc-800/70 text-zinc-200 rounded-full flex items-center justify-center shadow border border-zinc-700/40 backdrop-blur-sm disabled:opacity-25 disabled:cursor-not-allowed transition-opacity"
+                  className="absolute top-3 left-1/2 -translate-x-1/2 z-10 w-10 h-10 bg-zinc-900/90 text-zinc-50 hover:bg-zinc-800 rounded-lg flex items-center justify-center shadow-lg border border-zinc-600/80 backdrop-blur-sm disabled:opacity-30 disabled:cursor-not-allowed transition-opacity"
                   title="上へ移動"
                   aria-label="上へ移動"
                 >
-                  <ChevronUp className="w-5 h-5" />
+                  <ChevronUp className="w-6 h-6" />
                 </button>
                 <button
                   onClick={handlePanDown}
                   disabled={pan.y <= -panLimit.y}
-                  className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 w-9 h-9 bg-zinc-800/40 hover:bg-zinc-800/70 text-zinc-200 rounded-full flex items-center justify-center shadow border border-zinc-700/40 backdrop-blur-sm disabled:opacity-25 disabled:cursor-not-allowed transition-opacity"
+                  className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 w-10 h-10 bg-zinc-900/90 text-zinc-50 hover:bg-zinc-800 rounded-lg flex items-center justify-center shadow-lg border border-zinc-600/80 backdrop-blur-sm disabled:opacity-30 disabled:cursor-not-allowed transition-opacity"
                   title="下へ移動"
                   aria-label="下へ移動"
                 >
-                  <ChevronDown className="w-5 h-5" />
+                  <ChevronDown className="w-6 h-6" />
                 </button>
                 <button
                   onClick={handlePanLeft}
                   disabled={pan.x >= panLimit.x}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 bg-zinc-800/40 hover:bg-zinc-800/70 text-zinc-200 rounded-full flex items-center justify-center shadow border border-zinc-700/40 backdrop-blur-sm disabled:opacity-25 disabled:cursor-not-allowed transition-opacity"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-zinc-900/90 text-zinc-50 hover:bg-zinc-800 rounded-lg flex items-center justify-center shadow-lg border border-zinc-600/80 backdrop-blur-sm disabled:opacity-30 disabled:cursor-not-allowed transition-opacity"
                   title="左へ移動"
                   aria-label="左へ移動"
                 >
-                  <ChevronLeft className="w-5 h-5" />
+                  <ChevronLeft className="w-6 h-6" />
                 </button>
                 <button
                   onClick={handlePanRight}
                   disabled={pan.x <= -panLimit.x}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 bg-zinc-800/40 hover:bg-zinc-800/70 text-zinc-200 rounded-full flex items-center justify-center shadow border border-zinc-700/40 backdrop-blur-sm disabled:opacity-25 disabled:cursor-not-allowed transition-opacity"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 bg-zinc-900/90 text-zinc-50 hover:bg-zinc-800 rounded-lg flex items-center justify-center shadow-lg border border-zinc-600/80 backdrop-blur-sm disabled:opacity-30 disabled:cursor-not-allowed transition-opacity"
                   title="右へ移動"
                   aria-label="右へ移動"
                 >
-                  <ChevronRight className="w-5 h-5" />
+                  <ChevronRight className="w-6 h-6" />
                 </button>
               </>
             )}

@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
 import {
-  createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
-  updateProfile,
+  sendSignInLinkToEmail,
   getAdditionalUserInfo,
   GoogleAuthProvider,
 } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { useAuth } from '../contexts/AuthContext';
+
+// メールリンク登録: 受信メール内のリンクのアクション URL
+export const SIGNUP_ACTION_URL_PATH = '/auth/complete-registration';
+// 登録途中のメールアドレスを保持して、リンククリック時に再入力を不要にする
+export const PENDING_SIGNUP_EMAIL_KEY = 'pendingSignupEmail';
 
 const TERMS_TEXT = `同人++ 利用規約
 
@@ -168,10 +172,9 @@ const GoogleIcon = () => (
 
 export const LoginPage: React.FC = () => {
   const { setPendingTerms } = useAuth();
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [mode, setMode] = useState<'login' | 'register' | 'register-sent'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [username, setUsername] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -181,7 +184,6 @@ export const LoginPage: React.FC = () => {
   const switchMode = (next: 'login' | 'register') => {
     setMode(next);
     setError('');
-    setUsername('');
     setTermsScrolled(false);
     setTermsAgreed(false);
   };
@@ -195,10 +197,14 @@ export const LoginPage: React.FC = () => {
       if (mode === 'login') {
         await signInWithEmailAndPassword(auth, email, password);
       } else {
-        const credential = await createUserWithEmailAndPassword(auth, email, password);
-        if (username.trim()) {
-          await updateProfile(credential.user, { displayName: username.trim() });
-        }
+        // メールアドレスへ確認リンクを送信。リンク先 (/auth/complete-registration)
+        // でユーザー名 + パスワードを設定する 2 段階フロー。
+        await sendSignInLinkToEmail(auth, email, {
+          url: window.location.origin + SIGNUP_ACTION_URL_PATH,
+          handleCodeInApp: true,
+        });
+        window.localStorage.setItem(PENDING_SIGNUP_EMAIL_KEY, email);
+        setMode('register-sent');
       }
     } catch (err: any) {
       const msg: Record<string, string> = {
@@ -208,6 +214,8 @@ export const LoginPage: React.FC = () => {
         'auth/email-already-in-use': 'このメールアドレスは既に使われています',
         'auth/weak-password':        'パスワードは6文字以上にしてください',
         'auth/invalid-email':        'メールアドレスの形式が正しくありません',
+        'auth/missing-android-pkg-name':   'Firebase Console で承認済みドメインを確認してください',
+        'auth/unauthorized-continue-uri':  'Firebase Console で承認済みドメインを確認してください',
       };
       setError(msg[err.code] ?? `エラーが発生しました (${err.code})`);
     } finally {
@@ -252,10 +260,38 @@ export const LoginPage: React.FC = () => {
             </span>
           </div>
           <p className="text-sm text-zinc-500">
-            {mode === 'login' ? 'ログインして続ける' : 'アカウントを作成'}
+            {mode === 'login' ? 'ログインして続ける' :
+             mode === 'register' ? 'アカウントを作成' :
+             'メールを確認してください'}
           </p>
         </div>
 
+        {mode === 'register-sent' ? (
+          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-6 space-y-4 text-center">
+            <div className="w-12 h-12 mx-auto rounded-full bg-emerald-500/15 ring-1 ring-emerald-500/40 flex items-center justify-center">
+              <svg className="w-6 h-6 text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                <polyline points="22,6 12,13 2,6" />
+              </svg>
+            </div>
+            <div className="space-y-1">
+              <h2 className="text-base font-semibold text-zinc-100">確認メールを送信しました</h2>
+              <p className="text-sm text-zinc-400 break-all">
+                <span className="text-zinc-200">{email}</span> 宛に登録用リンクを送信しました
+              </p>
+              <p className="text-xs text-zinc-500 mt-3 leading-relaxed">
+                受信メール内のリンクをクリックすると、ユーザー名・パスワード設定画面に進みます。
+                メールが届かない場合は迷惑メールフォルダもご確認ください。
+              </p>
+            </div>
+            <button
+              onClick={() => { setMode('register'); setEmail(''); }}
+              className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors"
+            >
+              別のメールアドレスで再送信する
+            </button>
+          </div>
+        ) : (
         <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-6 space-y-4">
           {/* ─ ソーシャルログイン ─ */}
           <SocialButton
@@ -275,22 +311,8 @@ export const LoginPage: React.FC = () => {
             <div className="flex-1 h-px bg-zinc-800" />
           </div>
 
-          {/* ─ Email / Password フォーム ─ */}
+          {/* ─ Email フォーム ─ */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* ユーザー名（新規登録時のみ） */}
-            {mode === 'register' && (
-              <div>
-                <label className="block text-sm text-zinc-400 mb-1.5">ユーザー名</label>
-                <input
-                  type="text"
-                  value={username}
-                  onChange={e => setUsername(e.target.value)}
-                  maxLength={30}
-                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 text-sm placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-500"
-                  placeholder="アプリ内で表示される名前"
-                />
-              </div>
-            )}
             <div>
               <label className="block text-sm text-zinc-400 mb-1.5">メールアドレス</label>
               <input
@@ -302,41 +324,49 @@ export const LoginPage: React.FC = () => {
                 placeholder="you@example.com"
               />
             </div>
-            <div>
-              <label className="block text-sm text-zinc-400 mb-1.5">パスワード</label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 text-sm placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-500"
-                placeholder={mode === 'register' ? '6文字以上' : '••••••••'}
-              />
-            </div>
-
-            {/* 利用規約（登録時のみ） */}
-            {mode === 'register' && (
-              <div className="space-y-2">
-                <label className="block text-sm text-zinc-400">
-                  利用規約
-                  {!termsScrolled && (
-                    <span className="ml-2 text-xs text-zinc-600">（最後までスクロールしてください）</span>
-                  )}
-                </label>
-                <TermsBox onScrolled={() => setTermsScrolled(true)} scrolled={termsScrolled} />
-                <label className={`flex items-center gap-2.5 ${termsScrolled ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}>
-                  <input
-                    type="checkbox"
-                    checked={termsAgreed}
-                    disabled={!termsScrolled}
-                    onChange={e => setTermsAgreed(e.target.checked)}
-                    className="w-4 h-4 rounded accent-zinc-400"
-                  />
-                  <span className="text-sm text-zinc-300">
-                    利用規約に同意する
-                  </span>
-                </label>
+            {/* パスワード（ログイン時のみ。登録は受信メールのリンク先で設定する） */}
+            {mode === 'login' && (
+              <div>
+                <label className="block text-sm text-zinc-400 mb-1.5">パスワード</label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  required
+                  className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 text-sm placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-zinc-500"
+                  placeholder="••••••••"
+                />
               </div>
+            )}
+
+            {/* 登録時の説明 + 利用規約 */}
+            {mode === 'register' && (
+              <>
+                <p className="text-xs text-zinc-500 leading-relaxed">
+                  入力したメールアドレス宛に登録用リンクをお送りします。リンクから次の画面でユーザー名・パスワードを設定して登録完了となります。
+                </p>
+                <div className="space-y-2">
+                  <label className="block text-sm text-zinc-400">
+                    利用規約
+                    {!termsScrolled && (
+                      <span className="ml-2 text-xs text-zinc-600">（最後までスクロールしてください）</span>
+                    )}
+                  </label>
+                  <TermsBox onScrolled={() => setTermsScrolled(true)} scrolled={termsScrolled} />
+                  <label className={`flex items-center gap-2.5 ${termsScrolled ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'}`}>
+                    <input
+                      type="checkbox"
+                      checked={termsAgreed}
+                      disabled={!termsScrolled}
+                      onChange={e => setTermsAgreed(e.target.checked)}
+                      className="w-4 h-4 rounded accent-zinc-400"
+                    />
+                    <span className="text-sm text-zinc-300">
+                      利用規約に同意する
+                    </span>
+                  </label>
+                </div>
+              </>
             )}
 
             {error && (
@@ -350,7 +380,7 @@ export const LoginPage: React.FC = () => {
               disabled={loading || googleLoading || !canSubmit}
               className="w-full py-2.5 bg-zinc-100 hover:bg-white text-zinc-900 font-semibold text-sm rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? '処理中...' : mode === 'login' ? 'ログイン' : '登録'}
+              {loading ? '処理中...' : mode === 'login' ? 'ログイン' : '確認メールを送信'}
             </button>
           </form>
 
@@ -365,6 +395,7 @@ export const LoginPage: React.FC = () => {
             </button>
           </div>
         </div>
+        )}
       </div>
     </div>
   );

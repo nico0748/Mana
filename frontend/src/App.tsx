@@ -15,6 +15,7 @@ import LandingPage from "./pages/LandingPage";
 import TemplatesPage from "./pages/TemplatesPage";
 import AccountPage from "./pages/AccountPage";
 import AdminPage from "./pages/AdminPage";
+import CompleteRegistrationPage from "./pages/CompleteRegistrationPage";
 import Onboarding, { ONBOARDING_KEY } from "./components/Onboarding";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AppSettingsProvider } from "./contexts/AppSettingsContext";
@@ -168,6 +169,7 @@ function AppRoot() {
     <Routes>
       <Route path="/about" element={<LandingPage />} />
       <Route path="/templates" element={<TemplatesPage />} />
+      <Route path="/auth/complete-registration" element={<CompleteRegistrationPage />} />
       <Route path="/*" element={<AuthGate />} />
     </Routes>
   );

@@ -113,12 +113,14 @@ const MapPage: React.FC = () => {
   const [newHallName, setNewHallName] = useState('');
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapOuterElRef = useRef<HTMLDivElement | null>(null);
   const roRef = useRef<ResizeObserver | null>(null);
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
 
   // Track outer map area size for aspect-ratio coordinate fix (callback ref)
   const mapOuterRef = useCallback((el: HTMLDivElement | null) => {
+    mapOuterElRef.current = el;
     if (roRef.current) { roRef.current.disconnect(); roRef.current = null; }
     if (!el) return;
     const ro = new ResizeObserver(([entry]) => {
@@ -127,6 +129,23 @@ const MapPage: React.FC = () => {
     });
     ro.observe(el);
     roRef.current = ro;
+  }, []);
+
+  // iOS Safari は orientation change で ResizeObserver の発火が遅れるケースが
+  // あるため、window resize / orientationchange でも outerSize を強制再読取り
+  useEffect(() => {
+    const onResize = () => {
+      if (mapOuterElRef.current) {
+        const rect = mapOuterElRef.current.getBoundingClientRect();
+        setOuterSize({ w: rect.width, h: rect.height });
+      }
+    };
+    window.addEventListener('resize', onResize);
+    window.addEventListener('orientationchange', onResize);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      window.removeEventListener('orientationchange', onResize);
+    };
   }, []);
 
   const { data: events } = useQuery({ queryKey: ['events'], queryFn: eventsApi.list });
@@ -198,12 +217,35 @@ const MapPage: React.FC = () => {
     m => m.hall === selectedHall && m.eventId === (selectedEventId ?? undefined)
   );
 
-  // Reset zoom/pins when map changes
+  // Reset zoom/popup when map changes
   useEffect(() => {
-    setImgNaturalSize(null);
     setZoom(1);
     setClickedPopup(null);
   }, [currentMap?.id]);
+
+  // 画像の自然サイズを programmatic に取得。React の <img onLoad> は data URL や
+  // キャッシュヒット時に発火しないことがあり、初回ロードでピンが見えない原因に
+  // なっていた。new Image() で確実に取得する。
+  useEffect(() => {
+    if (!currentMap?.imageDataUrl) {
+      setImgNaturalSize(null);
+      return;
+    }
+    setImgNaturalSize(null);
+    let cancelled = false;
+    const img = new Image();
+    img.onload = () => {
+      if (!cancelled && mountedRef.current) {
+        setImgNaturalSize({ w: img.naturalWidth, h: img.naturalHeight });
+      }
+    };
+    img.src = currentMap.imageDataUrl;
+    // 同期的にデコード可能なケース（小さい data URL 等）
+    if (img.complete && img.naturalWidth > 0) {
+      setImgNaturalSize({ w: img.naturalWidth, h: img.naturalHeight });
+    }
+    return () => { cancelled = true; };
+  }, [currentMap?.imageDataUrl]);
 
   // Compute image content box within outer container (eliminates letterbox coordinate mismatch)
   const imageBox = useMemo(() => {
@@ -217,6 +259,29 @@ const MapPage: React.FC = () => {
     else { h = ch; w = ch * ir; }
     return { w, h, cx: cw / 2, cy: ch / 2 };
   }, [outerSize, imgNaturalSize]);
+
+  // ズーム/全画面切替/コンテナサイズ変化(回転含む) で popup の位置を DOM から再測定。
+  // 古い viewport 座標で popup が表示され続けてズレるのを防ぐ。
+  useEffect(() => {
+    if (!clickedPopup) return;
+    const pinEl = document.querySelector<HTMLElement>(
+      `[data-pin-id="${clickedPopup.circleId}"]`,
+    );
+    if (!pinEl) {
+      setClickedPopup(null);
+      return;
+    }
+    const rect = pinEl.getBoundingClientRect();
+    setClickedPopup({
+      circleId: clickedPopup.circleId,
+      pinX: rect.left + rect.width / 2,
+      pinY: rect.top + rect.height / 2,
+      pinR: Math.max(rect.width, rect.height) / 2,
+      placement: computePlacement(rect),
+    });
+    // clickedPopup を deps に入れると無限ループになるため除外（closure で参照）
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zoom, fullscreen, outerSize]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -691,6 +756,7 @@ const MapPage: React.FC = () => {
                   >
                     <div
                       className="relative group"
+                      data-pin-id={circle.id}
                       onClick={e => {
                         e.stopPropagation();
                         if (editMode) {

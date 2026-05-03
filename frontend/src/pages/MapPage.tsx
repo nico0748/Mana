@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Upload, MapPin, Edit2, Check, X, History,
-  Trash2, ChevronLeft, ChevronRight, Plus,
+  Trash2, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus,
   RotateCcw, RotateCw, Crop, FileJson,
   Maximize2, Minimize2,
 } from 'lucide-react';
@@ -38,8 +38,9 @@ const MapPage: React.FC = () => {
   const [pdfPage, setPdfPage] = useState(1);
   const [pdfTotalPages, setPdfTotalPages] = useState(0);
 
-  // Zoom state
+  // Zoom + pan state (pan は zoom > 1 のときに非表示領域にスライドできる)
   const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [imgNaturalSize, setImgNaturalSize] = useState<{ w: number; h: number } | null>(null);
   const [outerSize, setOuterSize] = useState<{ w: number; h: number } | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
@@ -236,11 +237,17 @@ const MapPage: React.FC = () => {
     m => m.hall === selectedHall && m.eventId === (selectedEventId ?? undefined)
   );
 
-  // Reset zoom/popup when map changes
+  // Reset zoom/pan/popup when map changes
   useEffect(() => {
     setZoom(1);
+    setPan({ x: 0, y: 0 });
     setClickedPopup(null);
   }, [currentMap?.id]);
+
+  // zoom = 1 のとき pan は意味がないので 0 にリセット
+  useEffect(() => {
+    if (zoom === 1) setPan({ x: 0, y: 0 });
+  }, [zoom]);
 
   // 画像の自然サイズを programmatic に取得。React の <img onLoad> は data URL や
   // キャッシュヒット時に発火しないことがあり、初回ロードでピンが見えない原因に
@@ -278,6 +285,35 @@ const MapPage: React.FC = () => {
     else { h = ch; w = ch * ir; }
     return { w, h, cx: cw / 2, cy: ch / 2 };
   }, [outerSize, imgNaturalSize]);
+
+  // pan の最大値: 画像が viewport からはみ出す半分の量
+  const panLimit = imageBox && zoom > 1
+    ? { x: (imageBox.w * (zoom - 1)) / 2, y: (imageBox.h * (zoom - 1)) / 2 }
+    : null;
+
+  // zoom 変化で pan が新しい上限を超えていたら clamp
+  useEffect(() => {
+    if (!panLimit) return;
+    setPan(p => ({
+      x: Math.max(-panLimit.x, Math.min(panLimit.x, p.x)),
+      y: Math.max(-panLimit.y, Math.min(panLimit.y, p.y)),
+    }));
+    // panLimit object identity でなく実数で比較
+  }, [panLimit?.x, panLimit?.y]);
+
+  const panStep = imageBox ? Math.min(imageBox.w, imageBox.h) * 0.25 : 100;
+  const clampPan = (x: number, y: number) => {
+    if (!panLimit) return { x: 0, y: 0 };
+    return {
+      x: Math.max(-panLimit.x, Math.min(panLimit.x, x)),
+      y: Math.max(-panLimit.y, Math.min(panLimit.y, y)),
+    };
+  };
+  // ボタン: 矢印の向きが「見たい方向」。画像はその逆方向に動く
+  const handlePanLeft  = () => setPan(p => clampPan(p.x + panStep, p.y));
+  const handlePanRight = () => setPan(p => clampPan(p.x - panStep, p.y));
+  const handlePanUp    = () => setPan(p => clampPan(p.x, p.y + panStep));
+  const handlePanDown  = () => setPan(p => clampPan(p.x, p.y - panStep));
 
   // ズーム/全画面切替/コンテナサイズ変化(回転含む) で popup の位置を DOM から再測定。
   // 古い viewport 座標で popup が表示され続けてズレるのを防ぐ。
@@ -726,7 +762,14 @@ const MapPage: React.FC = () => {
         )}
       >
         {currentMap ? (
-          <div ref={mapOuterRef} className={clsx('w-full h-full bg-zinc-950 overflow-hidden relative', (editMode && selectedCircleId) || cropMode ? 'cursor-crosshair' : '')}>
+          <div
+            ref={mapOuterRef}
+            className={clsx('w-full h-full bg-zinc-950 overflow-hidden relative', (editMode && selectedCircleId) || cropMode ? 'cursor-crosshair' : '')}
+            // ネイティブ pinch-zoom を無効化 (iOS Safari でピン位置がズレる原因のため)。
+            // ズームは右上の +/- ボタン、移動は zoom>1 時に出る方向ボタンで操作。
+            // タップは touch-action の影響を受けない。
+            style={{ touchAction: 'none' }}
+          >
             {/* Fallback image shown before imageBox is computed (object-contain, no letterbox correction) */}
             <img
               ref={imgCallbackRef}
@@ -753,7 +796,7 @@ const MapPage: React.FC = () => {
                   top: `${imageBox.cy}px`,
                   width: `${imageBox.w}px`,
                   height: `${imageBox.h}px`,
-                  transform: `translate(-50%, -50%) scale(${zoom})`,
+                  transform: `translate(calc(-50% + ${pan.x}px), calc(-50% + ${pan.y}px)) scale(${zoom})`,
                   transformOrigin: 'center center',
                 }}
                 onClick={handleMapClick}
@@ -943,6 +986,48 @@ const MapPage: React.FC = () => {
                 title="ズームアウト"
               >−</button>
             </div>
+
+            {/* Pan controls — zoom > 1 のときだけ薄く表示 */}
+            {zoom > 1 && panLimit && (
+              <>
+                <button
+                  onClick={handlePanUp}
+                  disabled={pan.y >= panLimit.y}
+                  className="absolute top-2 left-1/2 -translate-x-1/2 z-10 w-9 h-9 bg-zinc-800/40 hover:bg-zinc-800/70 text-zinc-200 rounded-full flex items-center justify-center shadow border border-zinc-700/40 backdrop-blur-sm disabled:opacity-25 disabled:cursor-not-allowed transition-opacity"
+                  title="上へ移動"
+                  aria-label="上へ移動"
+                >
+                  <ChevronUp className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={handlePanDown}
+                  disabled={pan.y <= -panLimit.y}
+                  className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 w-9 h-9 bg-zinc-800/40 hover:bg-zinc-800/70 text-zinc-200 rounded-full flex items-center justify-center shadow border border-zinc-700/40 backdrop-blur-sm disabled:opacity-25 disabled:cursor-not-allowed transition-opacity"
+                  title="下へ移動"
+                  aria-label="下へ移動"
+                >
+                  <ChevronDown className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={handlePanLeft}
+                  disabled={pan.x >= panLimit.x}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 bg-zinc-800/40 hover:bg-zinc-800/70 text-zinc-200 rounded-full flex items-center justify-center shadow border border-zinc-700/40 backdrop-blur-sm disabled:opacity-25 disabled:cursor-not-allowed transition-opacity"
+                  title="左へ移動"
+                  aria-label="左へ移動"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={handlePanRight}
+                  disabled={pan.x <= -panLimit.x}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 bg-zinc-800/40 hover:bg-zinc-800/70 text-zinc-200 rounded-full flex items-center justify-center shadow border border-zinc-700/40 backdrop-blur-sm disabled:opacity-25 disabled:cursor-not-allowed transition-opacity"
+                  title="右へ移動"
+                  aria-label="右へ移動"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </>
+            )}
           </div>
         ) : (
           /* No map yet: upload prompt */

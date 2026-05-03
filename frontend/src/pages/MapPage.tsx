@@ -131,20 +131,32 @@ const MapPage: React.FC = () => {
     roRef.current = ro;
   }, []);
 
-  // iOS Safari は orientation change で ResizeObserver の発火が遅れるケースが
-  // あるため、window resize / orientationchange でも outerSize を強制再読取り
+  // iOS Safari は orientation change 後にレイアウトが何段階かに分けて確定する
+  // (browser chrome の伸縮、safe area、visualViewport 更新など)。
+  // 1 回の getBoundingClientRect では捉えきれないため、複数のタイミングで
+  // 再測定する。ResizeObserver はサイズ未変化なら何もしないので冗長でも害なし。
   useEffect(() => {
-    const onResize = () => {
+    const updateSize = () => {
       if (mapOuterElRef.current) {
         const rect = mapOuterElRef.current.getBoundingClientRect();
         setOuterSize({ w: rect.width, h: rect.height });
       }
     };
+    const onResize = () => {
+      updateSize();
+      // 100/300/600ms で再測定 — iOS の遅延レイアウト確定をカバー
+      window.setTimeout(updateSize, 100);
+      window.setTimeout(updateSize, 300);
+      window.setTimeout(updateSize, 600);
+    };
     window.addEventListener('resize', onResize);
     window.addEventListener('orientationchange', onResize);
+    // visualViewport は iOS Safari でアドレスバー伸縮時の本命イベント
+    window.visualViewport?.addEventListener('resize', onResize);
     return () => {
       window.removeEventListener('resize', onResize);
       window.removeEventListener('orientationchange', onResize);
+      window.visualViewport?.removeEventListener('resize', onResize);
     };
   }, []);
 
@@ -322,9 +334,15 @@ const MapPage: React.FC = () => {
       }
       ctx.drawImage(img, 0, 0);
       const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
-      // Clear pin positions — coordinate axes swap after rotation
-      const pinned = hallCircles.filter(c => c.mapX != null);
-      await Promise.all(pinned.map(c => circlesApi.update(c.id, { mapX: undefined, mapY: undefined })));
+      // 90° 回転で X/Y 軸が入れ替わるので、ピン座標を変換する
+      // CW  (時計回り): (x, y) → (100 - y, x)
+      // CCW (反時計回り): (x, y) → (y, 100 - x)
+      const pinned = hallCircles.filter(c => c.mapX != null && c.mapY != null);
+      await Promise.all(pinned.map(c => {
+        const newX = dir === 'cw' ? 100 - (c.mapY as number) : (c.mapY as number);
+        const newY = dir === 'cw' ? (c.mapX as number) : 100 - (c.mapX as number);
+        return circlesApi.update(c.id, { mapX: newX, mapY: newY });
+      }));
       await saveMapDataUrl(selectedHall, dataUrl);
       setImgNaturalSize(null);
       queryClient.invalidateQueries({ queryKey: ['circles'] });

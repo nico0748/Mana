@@ -135,6 +135,9 @@ const MapPage: React.FC = () => {
   // (browser chrome の伸縮、safe area、visualViewport 更新など)。
   // 1 回の getBoundingClientRect では捉えきれないため、複数のタイミングで
   // 再測定する。ResizeObserver はサイズ未変化なら何もしないので冗長でも害なし。
+  // 加えて visualViewport.scroll/resize でも再描画 → popup の live-measure を
+  // 走らせて URL bar の動的伸縮に追従させる。
+  const [, bumpRerender] = useState(0);
   useEffect(() => {
     const updateSize = () => {
       if (mapOuterElRef.current) {
@@ -142,21 +145,25 @@ const MapPage: React.FC = () => {
         setOuterSize({ w: rect.width, h: rect.height });
       }
     };
+    const forceRerender = () => bumpRerender(v => v + 1);
     const onResize = () => {
       updateSize();
+      forceRerender();
       // 100/300/600ms で再測定 — iOS の遅延レイアウト確定をカバー
-      window.setTimeout(updateSize, 100);
-      window.setTimeout(updateSize, 300);
-      window.setTimeout(updateSize, 600);
+      window.setTimeout(() => { updateSize(); forceRerender(); }, 100);
+      window.setTimeout(() => { updateSize(); forceRerender(); }, 300);
+      window.setTimeout(() => { updateSize(); forceRerender(); }, 600);
     };
     window.addEventListener('resize', onResize);
     window.addEventListener('orientationchange', onResize);
     // visualViewport は iOS Safari でアドレスバー伸縮時の本命イベント
     window.visualViewport?.addEventListener('resize', onResize);
+    window.visualViewport?.addEventListener('scroll', forceRerender);
     return () => {
       window.removeEventListener('resize', onResize);
       window.removeEventListener('orientationchange', onResize);
       window.visualViewport?.removeEventListener('resize', onResize);
+      window.visualViewport?.removeEventListener('scroll', forceRerender);
     };
   }, []);
 
@@ -1098,7 +1105,24 @@ const MapPage: React.FC = () => {
             overflow-hidden / scale 影響を回避し、画面端でも見切れない ───── */}
       {clickedPopup && clickedCircle && createPortal(
         (() => {
-          const { pinX, pinY, pinR, placement } = clickedPopup;
+          // ライブ測定: クリック時の保存座標ではなく、レンダリング時に DOM から
+          // 実際のピン位置を取得する。iOS Safari の URL bar 動的伸縮や、orientation
+          // 変更の遅延レイアウト確定の影響を popup が常に追従できる。
+          const pinEl = document.querySelector<HTMLElement>(
+            `[data-pin-id="${clickedPopup.circleId}"]`,
+          );
+          let pinX = clickedPopup.pinX;
+          let pinY = clickedPopup.pinY;
+          let pinR = clickedPopup.pinR;
+          let placement = clickedPopup.placement;
+          if (pinEl) {
+            const rect = pinEl.getBoundingClientRect();
+            pinX = rect.left + rect.width / 2;
+            pinY = rect.top + rect.height / 2;
+            pinR = Math.max(rect.width, rect.height) / 2;
+            placement = computePlacement(rect);
+          }
+
           const M = 8;          // viewport 端からの最低マージン
           const GAP = 6;        // ピンとポップアップの隙間
           const ARROW_HALF = 4; // 矢印の半幅

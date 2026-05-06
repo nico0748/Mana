@@ -954,7 +954,7 @@ const EventCard: React.FC<EventCardProps> = ({
 
         {event.budget != null && (
           <div className="mt-2">
-            <div className="h-1.5 bg-zinc-800 rounded-full overflow-hidden flex">
+            <div className="h-2 bg-zinc-800 rounded-full overflow-hidden flex">
               {/* 購入済: green */}
               <div
                 className="h-full bg-emerald-500 flex-shrink-0 transition-all duration-500"

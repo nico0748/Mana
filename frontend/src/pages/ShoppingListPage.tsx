@@ -205,6 +205,16 @@ const CircleCard: React.FC<CircleCardProps> = ({
       >
         <div className="p-4">
           <div className="flex items-start justify-between gap-2">
+            {/* 優先順位バッジ: 即売会配下のサークルのみ表示（並び順 = order に連動） */}
+            {circleIndex !== undefined && (
+              <div
+                className="flex-shrink-0 w-8 h-8 rounded-lg bg-violet-500/15 border border-violet-500/30 flex items-center justify-center font-mono text-sm font-bold text-violet-300 mt-0.5 tabular-nums"
+                title={`優先順位 ${circleIndex + 1}`}
+                aria-label={`優先順位 ${circleIndex + 1}`}
+              >
+                {circleIndex + 1}
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <div className="text-xs text-zinc-500 font-mono mb-0.5">
                 {circle.hall} {circle.block}-{circle.number}

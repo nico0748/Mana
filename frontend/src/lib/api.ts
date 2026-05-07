@@ -1,4 +1,8 @@
-import type { Announcement, AnnouncementCategory, Book, Circle, CircleItem, Distribution, DoujinEvent, VenueMap } from '../types';
+import type {
+  Announcement, AnnouncementCategory,
+  Book, Circle, CircleItem, Distribution, DoujinEvent, VenueMap,
+  EventTemplate, EventTemplateSummary, EventTemplateAdminView, EventTemplateStatus,
+} from '../types';
 import { auth } from './firebase';
 
 const BASE = '/api';
@@ -114,6 +118,27 @@ export const announcementsApi = {
     req<Announcement>(`/admin/announcements/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   delete: (id: string) =>
     req<void>(`/admin/announcements/${id}`, { method: 'DELETE' }),
+};
+
+// ── Event templates ────────────────────────────────────────────────────────
+export const eventTemplatesApi = {
+  // 公開: 承認済み一覧（画像なし summary）
+  listPublic: () => req<EventTemplateSummary[]>('/public/event-templates'),
+  // 公開: 詳細（imageDataUrl 含む）
+  getPublic: (id: string) => req<EventTemplate>(`/public/event-templates/${id}`),
+  // ログインユーザー: 自分のイベントを申請
+  submit: (eventId: string) =>
+    req<EventTemplateAdminView>('/event-templates', { method: 'POST', body: JSON.stringify({ eventId }) }),
+  listMine: () => req<EventTemplateAdminView[]>('/event-templates/mine'),
+  // 管理者
+  adminList: (status?: EventTemplateStatus) => {
+    const qs = status ? `?status=${status}` : '';
+    return req<EventTemplateAdminView[]>(`/admin/event-templates${qs}`);
+  },
+  adminUpdate: (id: string, data: { status: EventTemplateStatus; rejectionReason?: string | null }) =>
+    req<EventTemplateAdminView>(`/admin/event-templates/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  adminDelete: (id: string) =>
+    req<void>(`/admin/event-templates/${id}`, { method: 'DELETE' }),
 };
 
 // ── Sync ───────────────────────────────────────────────────────────────────

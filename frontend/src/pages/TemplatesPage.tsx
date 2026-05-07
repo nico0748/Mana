@@ -1,51 +1,54 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Download, FileJson, Star, ArrowLeft } from 'lucide-react';
-import { OFFICIAL_TEMPLATES, downloadTemplate } from '../data/templates';
-import type { EventTemplate } from '../types/template';
+import { useQuery } from '@tanstack/react-query';
+import { FileJson, Star, ArrowLeft, Calendar, MapPin, Loader2, LogIn } from 'lucide-react';
+import { eventTemplatesApi } from '../lib/api';
+import type { EventTemplateSummary } from '../types';
 
-// ─── テンプレートカード ────────────────────────────────────────────────────────
+const formatDate = (s?: string) => {
+  if (!s) return null;
+  // 投稿時に保存されている "YYYY-MM-DD" 想定。それ以外は素のまま表示。
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[1]}年${Number(m[2])}月${Number(m[3])}日` : s;
+};
 
-const TemplateCard: React.FC<{ template: EventTemplate }> = ({ template }) => {
-  const [downloaded, setDownloaded] = useState(false);
-
-  const handleDownload = () => {
-    downloadTemplate(template);
-    setDownloaded(true);
-    setTimeout(() => setDownloaded(false), 2000);
-  };
-
+const TemplateCard: React.FC<{ template: EventTemplateSummary }> = ({ template }) => {
+  const date = formatDate(template.date);
   return (
-    <div className="flex items-center justify-between gap-4 px-5 py-4 bg-zinc-800/60 rounded-xl border border-zinc-700/50 hover:border-zinc-600 transition-colors">
-      <div className="min-w-0">
-        <div className="flex items-center gap-2 mb-1">
-          <FileJson size={15} className="text-violet-400 flex-shrink-0" />
-          <span className="text-sm font-semibold text-zinc-200 truncate">{template.name}</span>
+    <div className="px-5 py-4 bg-zinc-800/60 rounded-xl border border-zinc-700/50 hover:border-zinc-600 transition-colors">
+      <div className="flex items-start gap-2 mb-2">
+        <FileJson size={15} className="text-violet-400 flex-shrink-0 mt-0.5" />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-zinc-100 truncate">{template.name}</p>
+          {date && (
+            <div className="flex items-center gap-1 mt-0.5 text-xs text-zinc-500">
+              <Calendar size={11} />
+              <span>{date}</span>
+            </div>
+          )}
         </div>
-        {template.description && (
-          <p className="text-xs text-zinc-500 pl-[23px]">{template.description}</p>
-        )}
-        <p className="text-xs text-zinc-600 mt-0.5 pl-[23px]">{template.halls.length} ホール構成</p>
       </div>
-      <button
-        onClick={handleDownload}
-        className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-colors ${
-          downloaded
-            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-            : 'bg-violet-600 hover:bg-violet-500 text-white'
-        }`}
-      >
-        <Download size={13} />
-        {downloaded ? '完了' : 'ダウンロード'}
-      </button>
+      <div className="flex items-center gap-1 text-xs text-zinc-500 pl-[23px]">
+        <MapPin size={11} />
+        <span>{template.hallCount} ホール</span>
+        {template.halls.length > 0 && (
+          <span className="text-zinc-600 truncate">
+            （{template.halls.slice(0, 6).join(' / ')}{template.halls.length > 6 ? ' …' : ''}）
+          </span>
+        )}
+      </div>
     </div>
   );
 };
 
-// ─── TemplatesPage ─────────────────────────────────────────────────────────────
-
 const TemplatesPage: React.FC = () => {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['eventTemplates', 'public'],
+    queryFn: eventTemplatesApi.listPublic,
+    staleTime: 60_000,
+  });
+
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
 
@@ -81,10 +84,11 @@ const TemplatesPage: React.FC = () => {
             </div>
             <span className="text-xs font-semibold tracking-widest uppercase text-violet-400">Templates</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-bold text-zinc-100 mb-4">公式テンプレート</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold text-zinc-100 mb-4">テンプレート</h1>
           <p className="text-zinc-400 text-base sm:text-lg leading-relaxed max-w-2xl">
-            ダウンロードしたテンプレートをアプリのマップページから読み込むだけで、即売会名・ホール一覧が自動で作成されます。
-            マップ画像は各即売会の公式サイトからご用意ください。
+            ユーザーが作成し、運営が承認した即売会テンプレートを掲載しています。
+            アプリのマップページから「テンプレートから読み込む」を選ぶと、
+            イベント名・日程・会場マップ画像が一括で取り込まれます。
           </p>
         </motion.div>
       </header>
@@ -100,10 +104,34 @@ const TemplatesPage: React.FC = () => {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="space-y-2"
           >
-            <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">テンプレート一覧</h2>
-            {OFFICIAL_TEMPLATES.map(t => (
-              <TemplateCard key={t.templateId} template={t} />
-            ))}
+            <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">
+              テンプレート一覧
+            </h2>
+
+            {isLoading && (
+              <div className="flex items-center gap-2 text-zinc-500 text-sm py-6">
+                <Loader2 size={14} className="animate-spin" />
+                読み込み中…
+              </div>
+            )}
+
+            {error && (
+              <div className="px-4 py-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm">
+                テンプレート一覧の取得に失敗しました。
+              </div>
+            )}
+
+            {data && data.length === 0 && (
+              <div className="px-5 py-8 text-center rounded-xl border border-dashed border-zinc-800 text-sm text-zinc-500">
+                まだ承認済みのテンプレートがありません。
+                <br />
+                <span className="text-xs text-zinc-600">
+                  ユーザーから申請があり、運営が承認するとここに掲載されます。
+                </span>
+              </div>
+            )}
+
+            {data && data.length > 0 && data.map(t => <TemplateCard key={t.id} template={t} />)}
           </motion.div>
 
           {/* 使い方 */}
@@ -116,10 +144,10 @@ const TemplatesPage: React.FC = () => {
             <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-6">
               <ol className="space-y-5">
                 {[
-                  { step: '01', title: 'ダウンロード', text: 'テンプレート JSON をダウンロードします。' },
-                  { step: '02', title: 'アプリを開く', text: 'アプリにログインしてマップページへ移動します。' },
-                  { step: '03', title: '読み込む', text: '「テンプレートから読み込む」ボタンをタップし、JSON ファイルを選択します。' },
-                  { step: '04', title: '完了', text: '即売会・ホールが自動で作成されます。あとはマップ画像をアップロードするだけです。' },
+                  { step: '01', title: 'アプリにログイン', text: '同人++ にログインしてマップページを開きます。' },
+                  { step: '02', title: '読み込む', text: '「テンプレートから読み込む」を選び、利用したいテンプレートをタップします。' },
+                  { step: '03', title: '完了', text: '即売会・ホール一覧・マップ画像が自動で作成されます。' },
+                  { step: '04', title: '自分の即売会も申請できます', text: '作成したイベントの編集メニューから「テンプレート申請」を選ぶと、運営の承認後にここに掲載されます。' },
                 ].map(({ step, title, text }) => (
                   <li key={step} className="flex items-start gap-4">
                     <span className="flex-shrink-0 w-9 h-9 rounded-xl bg-violet-500/10 text-violet-400 text-xs font-bold flex items-center justify-center">
@@ -134,13 +162,13 @@ const TemplatesPage: React.FC = () => {
               </ol>
             </div>
 
-            {/* 注意書き */}
-            <div className="mt-4 px-4 py-3 rounded-xl bg-zinc-900 border border-zinc-800">
-              <p className="text-xs text-zinc-500 leading-relaxed">
-                テンプレートには即売会名・日程・ホール名のみが含まれます。
-                マップ画像は含まれないため、各即売会の公式サイトから別途ご用意ください。
-              </p>
-            </div>
+            <Link
+              to="/"
+              className="mt-4 inline-flex items-center justify-center gap-2 w-full px-5 py-3 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold transition-colors"
+            >
+              <LogIn size={14} />
+              アプリにログイン
+            </Link>
           </motion.div>
         </div>
       </main>

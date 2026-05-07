@@ -1,13 +1,13 @@
 import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Plus, Trash2, Navigation, ChevronDown, ChevronUp, ChevronsUp,
   BookPlus, Check, Calendar, Pencil, FileSpreadsheet, FileDown, PanelLeft, ExternalLink,
-  Download, Upload, FileJson, Share2,
+  Download, Upload, FileJson, Share2, UploadCloud, AlertTriangle, MapPin, Loader2,
 } from 'lucide-react';
-import type { Circle, CircleItem, DoujinEvent } from '../types';
+import type { Circle, CircleItem, DoujinEvent, VenueMap } from '../types';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { PageSidebar } from '../components/layout/PageSidebar';
@@ -15,7 +15,7 @@ import {
   parseCirclesFile, parseCirclesJson, downloadCirclesTemplate,
   exportCirclesJson, exportCirclesCsv, exportCirclesExcel,
 } from '../lib/circlesCsv';
-import { eventsApi, circlesApi, circleItemsApi, booksApi } from '../lib/api';
+import { eventsApi, circlesApi, circleItemsApi, booksApi, venueMapsApi, eventTemplatesApi, ApiError } from '../lib/api';
 import { useUpgradeModal, isPlanLimitError } from '../contexts/UpgradeModalContext';
 import { ShoppingTabs } from '../components/shopping/ShoppingTabs';
 
@@ -821,6 +821,168 @@ const EditEventModal: React.FC<EditEventModalProps> = ({ event, onSave, onClose 
   );
 };
 
+// ─── SubmitTemplateModal ───────────────────────────────────────────────────
+
+interface SubmitTemplateModalProps {
+  event: DoujinEvent;
+  onClose: () => void;
+}
+
+const SubmitTemplateModal: React.FC<SubmitTemplateModalProps> = ({ event, onClose }) => {
+  const queryClient = useQueryClient();
+  const [stage, setStage] = useState<'confirm' | 'done'>('confirm');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // 自分の VenueMap 全件を取得して、対象イベント分を抽出してプレビュー表示する。
+  const { data: allMaps, isLoading: mapsLoading } = useQuery({
+    queryKey: ['venueMaps'],
+    queryFn: venueMapsApi.list,
+    staleTime: 30_000,
+  });
+  const eventMaps = (allMaps ?? []).filter(m => m.eventId === event.id);
+
+  const submit = useMutation({
+    mutationFn: () => eventTemplatesApi.submit(event.id),
+    onSuccess: () => {
+      setStage('done');
+      queryClient.invalidateQueries({ queryKey: ['eventTemplates', 'mine'] });
+    },
+    onError: (err: unknown) => {
+      if (err instanceof ApiError) {
+        if (err.status === 409 && err.payload?.error === 'already_pending') {
+          setErrorMsg('このイベントは既に申請中です。承認まで少々お待ちください。');
+          return;
+        }
+        if (err.status === 404) {
+          setErrorMsg('元のイベントが見つかりません。');
+          return;
+        }
+      }
+      setErrorMsg('申請に失敗しました。時間をおいて再試行してください。');
+    },
+  });
+
+  const totalImageBytes = eventMaps.reduce(
+    (sum, m: VenueMap) => sum + (m.imageDataUrl?.length ?? 0),
+    0,
+  );
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 16 }}
+        className="w-full max-w-md bg-zinc-900 rounded-2xl border border-zinc-800 p-6 space-y-4"
+      >
+        {stage === 'confirm' && (
+          <>
+            <div className="flex items-center gap-2 text-violet-300">
+              <UploadCloud className="w-5 h-5" />
+              <h2 className="text-base font-semibold">テンプレート申請</h2>
+            </div>
+
+            <p className="text-sm text-zinc-400 leading-relaxed">
+              この即売会を運営に申請して、承認されると公開テンプレート一覧（/templates）に掲載されます。
+              申請時点の<strong className="text-zinc-200">イベント名 / 日付 / 会場マップ</strong>がスナップショットとして保存されます。
+            </p>
+
+            <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3 space-y-2 text-sm">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-zinc-500 text-xs">イベント名</span>
+                <span className="text-zinc-100 font-medium truncate">{event.name}</span>
+              </div>
+              {event.date && (
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-zinc-500 text-xs">日付</span>
+                  <span className="text-zinc-300">{formatDate(event.date)}</span>
+                </div>
+              )}
+              <div className="border-t border-zinc-800 pt-2">
+                <div className="flex items-center gap-1.5 text-xs text-zinc-500 mb-1.5">
+                  <MapPin className="w-3.5 h-3.5" />
+                  会場マップ
+                </div>
+                {mapsLoading ? (
+                  <div className="text-xs text-zinc-500 flex items-center gap-1.5">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    読み込み中…
+                  </div>
+                ) : eventMaps.length === 0 ? (
+                  <div className="flex items-start gap-1.5 text-xs text-amber-400">
+                    <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                    <span>この即売会にはホールマップが登録されていません。空のテンプレートとして申請されます（先にマップを登録することを推奨）。</span>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-1.5">
+                    {eventMaps.map(m => (
+                      <span
+                        key={m.id}
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] ${
+                          m.imageDataUrl
+                            ? 'bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/30'
+                            : 'bg-zinc-800 text-zinc-500'
+                        }`}
+                      >
+                        {m.hall}
+                        {!m.imageDataUrl && <span className="text-[9px]">画像なし</span>}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {totalImageBytes > 0 && (
+                <div className="text-[10px] text-zinc-600 pt-1">
+                  申請データ概算: {(totalImageBytes / 1024 / 1024).toFixed(1)} MB
+                </div>
+              )}
+            </div>
+
+            {errorMsg && (
+              <div className="text-xs text-red-400 bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2">
+                {errorMsg}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="ghost" size="sm" onClick={onClose} disabled={submit.isPending}>
+                キャンセル
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => submit.mutate()}
+                isLoading={submit.isPending}
+              >
+                <UploadCloud className="w-4 h-4 mr-1.5" />
+                申請する
+              </Button>
+            </div>
+          </>
+        )}
+
+        {stage === 'done' && (
+          <>
+            <div className="flex items-center gap-2 text-emerald-300">
+              <Check className="w-5 h-5" />
+              <h2 className="text-base font-semibold">申請を受け付けました</h2>
+            </div>
+            <p className="text-sm text-zinc-400 leading-relaxed">
+              運営の承認後、/templates ページに掲載されます。
+              却下された場合や、申請状況の確認は後ほど対応予定です。
+            </p>
+            <div className="flex justify-end pt-1">
+              <Button variant="default" size="sm" onClick={onClose}>
+                閉じる
+              </Button>
+            </div>
+          </>
+        )}
+      </motion.div>
+    </div>
+  );
+};
+
 // ─── EventCard ─────────────────────────────────────────────────────────────
 
 interface EventCardProps {
@@ -837,12 +999,13 @@ interface EventCardProps {
   onDeleteItem: (itemId: string) => void;
   onDeleteEvent: (id: string) => void;
   onEditEvent: (event: DoujinEvent) => void;
+  onRequestTemplate: (event: DoujinEvent) => void;
 }
 
 const EventCard: React.FC<EventCardProps> = ({
   event, circles, circleItems,
   onAddCircle, onEditCircle, onDeleteCircle, onStatusChange, onItemStatusChange, onReorder,
-  onAddItem, onDeleteItem, onDeleteEvent, onEditEvent,
+  onAddItem, onDeleteItem, onDeleteEvent, onEditEvent, onRequestTemplate,
 }) => {
   const [expanded, setExpanded] = useState(true);
 
@@ -915,6 +1078,13 @@ const EventCard: React.FC<EventCardProps> = ({
               title="編集"
             >
               <Pencil className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => onRequestTemplate(event)}
+              className="p-2 text-zinc-500 hover:text-violet-400 hover:bg-zinc-800 rounded-lg transition-colors"
+              title="テンプレート申請"
+            >
+              <UploadCloud className="w-4 h-4" />
             </button>
             <button
               onClick={() => setExpanded(e => !e)}
@@ -1027,6 +1197,7 @@ const ShoppingListPage: React.FC = () => {
 
   const [showAddEvent, setShowAddEvent] = useState(false);
   const [editingEvent, setEditingEvent] = useState<DoujinEvent | null>(null);
+  const [submittingTemplateFor, setSubmittingTemplateFor] = useState<DoujinEvent | null>(null);
   const [addCircleForEvent, setAddCircleForEvent] = useState<string | null>(null);
   const [editingCircle, setEditingCircle] = useState<Circle | null>(null);
   const [addItemForCircle, setAddItemForCircle] = useState<string | null>(null);
@@ -1393,6 +1564,7 @@ const ShoppingListPage: React.FC = () => {
                 onDeleteItem={handleDeleteItem}
                 onDeleteEvent={handleDeleteEvent}
                 onEditEvent={setEditingEvent}
+                onRequestTemplate={setSubmittingTemplateFor}
               />
             ))}
           </AnimatePresence>
@@ -1453,6 +1625,12 @@ const ShoppingListPage: React.FC = () => {
             circleId={addItemForCircle}
             onAdd={handleAddItem}
             onClose={() => setAddItemForCircle(null)}
+          />
+        )}
+        {submittingTemplateFor && (
+          <SubmitTemplateModal
+            event={submittingTemplateFor}
+            onClose={() => setSubmittingTemplateFor(null)}
           />
         )}
       </AnimatePresence>

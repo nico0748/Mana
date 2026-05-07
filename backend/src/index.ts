@@ -13,6 +13,10 @@ import billingRouter from './routes/billing';
 import webhookRouter from './routes/webhook';
 import adminRouter from './routes/admin';
 import { publicAnnouncementsRouter } from './routes/announcements';
+import {
+  publicEventTemplatesRouter,
+  userEventTemplatesRouter,
+} from './routes/eventTemplates';
 import { authenticate } from './middleware/auth';
 import { requireAdmin, adminRateLimit } from './middleware/requireAdmin';
 
@@ -37,9 +41,9 @@ app.use('/api/webhook/stripe', webhookRouter);
 
 app.use(express.json({ limit: '50mb' })); // large for image data URLs
 
-// 公開お知らせ (/about ページから認証なしで取得)。
-// authenticate より前にマウントすることでログイン不要で読める。
+// 公開エンドポイント (認証不要)。authenticate より前にマウントする。
 app.use('/api/public/announcements', publicAnnouncementsRouter);
+app.use('/api/public/event-templates', publicEventTemplatesRouter);
 
 app.use('/api', authenticate);
 app.use('/api/admin', adminRateLimit, requireAdmin, adminRouter);
@@ -52,6 +56,7 @@ app.use('/api/circle-items', circleItemsRouter);
 app.use('/api/venue-maps', venueMapsRouter);
 app.use('/api/distributions', distributionsRouter);
 app.use('/api/sync', syncRouter);
+app.use('/api/event-templates', userEventTemplatesRouter);
 
 app.listen(PORT, () => {
   console.log(`Backend listening on port ${PORT}`);

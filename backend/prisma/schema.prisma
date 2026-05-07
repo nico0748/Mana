@@ -132,6 +132,28 @@ model Announcement {
   @@index([createdAt])
 }
 
+model EventTemplate {
+  id              String    @id @default(uuid())
+  // 申請時のスナップショット。元イベントが後で消されても残す。
+  name            String
+  date            String?
+  // [{ hall, imageDataUrl, generatedSvg? }]
+  venueMaps       Json
+  // 申請メタ
+  submittedByUid  String
+  sourceEventId   String?
+  // 承認状態
+  status          String    @default("pending")
+  reviewedByUid   String?
+  reviewedAt      DateTime?
+  rejectionReason String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([status, createdAt])
+  @@index([submittedByUid])
+}
+
 model AdminAuditLog {
   id         String   @id @default(uuid())
   actorUid   String

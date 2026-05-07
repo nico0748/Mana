@@ -1634,6 +1634,21 @@ const ShoppingListPage: React.FC = () => {
     queryClient.invalidateQueries({ queryKey: ['circleItems'] });
   };
 
+  const handleDeleteAllOrphans = async (orphans: Circle[]) => {
+    if (orphans.length === 0) return;
+    if (!confirm(`未分類のサークル ${orphans.length} 件をすべて削除します。\nこの操作は取り消せません。よろしいですか？`)) return;
+    try {
+      // 並列削除。バックエンドに bulk-delete エンドポイントは無いので個別に投げる。
+      await Promise.all(orphans.map(c => circlesApi.delete(c.id)));
+    } catch (err) {
+      console.error(err);
+      alert(`一括削除に失敗しました。\n${err instanceof Error ? err.message : ''}`);
+    } finally {
+      queryClient.invalidateQueries({ queryKey: ['circles'] });
+      queryClient.invalidateQueries({ queryKey: ['circleItems'] });
+    }
+  };
+
   const handleStatusChange = async (id: string, status: Circle['status']) => {
     await circlesApi.update(id, { status });
     queryClient.invalidateQueries({ queryKey: ['circles'] });
@@ -1961,7 +1976,19 @@ const ShoppingListPage: React.FC = () => {
           {/* Orphan circles (circles without an event) */}
           {orphanCircles.length > 0 && (
             <div className="bg-zinc-900 rounded-xl border border-zinc-800 p-4">
-              <h3 className="text-sm font-medium text-zinc-500 mb-3">未分類のサークル</h3>
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <h3 className="text-sm font-medium text-zinc-500">
+                  未分類のサークル <span className="text-xs text-zinc-600">({orphanCircles.length})</span>
+                </h3>
+                <button
+                  onClick={() => handleDeleteAllOrphans(orphanCircles)}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-zinc-500 hover:text-red-400 hover:bg-zinc-800 rounded-lg transition-colors"
+                  title="未分類のサークルをすべて削除"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  すべて削除
+                </button>
+              </div>
               <AnimatePresence mode="popLayout">
                 <div className="space-y-3">
                   {orphanCircles.map(circle => (

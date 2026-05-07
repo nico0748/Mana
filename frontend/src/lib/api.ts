@@ -1,4 +1,4 @@
-import type { Book, Circle, CircleItem, Distribution, DoujinEvent, VenueMap } from '../types';
+import type { Announcement, AnnouncementCategory, Book, Circle, CircleItem, Distribution, DoujinEvent, VenueMap } from '../types';
 import { auth } from './firebase';
 
 const BASE = '/api';
@@ -93,6 +93,23 @@ export const distributionsApi = {
   update: (id: string, data: Partial<Omit<Distribution, 'id' | 'createdAt'>>) =>
     req<Distribution>(`/distributions/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id: string) => req<void>(`/distributions/${id}`, { method: 'DELETE' }),
+};
+
+// ── Announcements ──────────────────────────────────────────────────────────
+export interface AnnouncementInput {
+  title: string;
+  body: string;
+  imageUrl?: string | null;
+  category: AnnouncementCategory;
+}
+
+export const announcementsApi = {
+  // /about ページから認証なしで取得する公開エンドポイント
+  list: () => req<Announcement[]>('/public/announcements'),
+  create: (data: AnnouncementInput) =>
+    req<Announcement>('/admin/announcements', { method: 'POST', body: JSON.stringify(data) }),
+  delete: (id: string) =>
+    req<void>(`/admin/announcements/${id}`, { method: 'DELETE' }),
 };
 
 // ── Sync ───────────────────────────────────────────────────────────────────

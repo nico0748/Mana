@@ -3,16 +3,18 @@ import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import {
   ArrowLeft, ShieldCheck, Users, ScrollText, Crown, Search, Loader2, Lock, AlertTriangle,
-  RefreshCw,
+  RefreshCw, Megaphone, ImagePlus, X, Send,
 } from 'lucide-react';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import {
-  adminApi, ApiError,
+  adminApi, announcementsApi, ApiError,
   type AdminUser, type AdminAuditLogEntry, type AdminStats, type Role,
 } from '../lib/api';
 import { Button } from '../components/ui/Button';
+import { AnnouncementItem } from '../components/AnnouncementItem';
+import type { Announcement, AnnouncementCategory } from '../types';
 
-type Tab = 'dashboard' | 'users' | 'audit';
+type Tab = 'dashboard' | 'users' | 'audit' | 'announcements';
 
 const formatDateTime = (ms: number) =>
   new Date(ms).toLocaleString('ja-JP', {
@@ -416,6 +418,240 @@ const AuditTab: React.FC = () => {
   );
 };
 
+// ── Announcements tab ────────────────────────────────────────────────────────
+const CATEGORY_OPTIONS: { value: AnnouncementCategory; label: string }[] = [
+  { value: 'feature', label: '機能追加' },
+  { value: 'fix',     label: '不具合修正' },
+  { value: 'event',   label: 'イベント' },
+  { value: 'info',    label: 'お知らせ' },
+];
+
+// 画像 1 枚あたりの上限。Express の JSON ペイロード上限 (50mb) と DB 行サイズを考慮した安全圏。
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+
+const AnnouncementsTab: React.FC = () => {
+  const queryClient = useQueryClient();
+  const [title, setTitle] = React.useState('');
+  const [body, setBody] = React.useState('');
+  const [category, setCategory] = React.useState<AnnouncementCategory>('info');
+  const [imageDataUrl, setImageDataUrl] = React.useState<string | null>(null);
+  const [imageError, setImageError] = React.useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = React.useState<Announcement | null>(null);
+  const fileRef = React.useRef<HTMLInputElement>(null);
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['announcements', 'public'],
+    queryFn: announcementsApi.list,
+    staleTime: 30_000,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: () => announcementsApi.create({
+      title: title.trim(),
+      body,
+      imageUrl: imageDataUrl,
+      category,
+    }),
+    onSuccess: () => {
+      setTitle('');
+      setBody('');
+      setCategory('info');
+      setImageDataUrl(null);
+      if (fileRef.current) fileRef.current.value = '';
+      queryClient.invalidateQueries({ queryKey: ['announcements', 'public'] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => announcementsApi.delete(id),
+    onSuccess: () => {
+      setConfirmDelete(null);
+      queryClient.invalidateQueries({ queryKey: ['announcements', 'public'] });
+    },
+  });
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setImageError(null);
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > MAX_IMAGE_BYTES) {
+      setImageError(`画像は ${(MAX_IMAGE_BYTES / 1024 / 1024).toFixed(0)}MB 以下にしてください`);
+      e.target.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImageDataUrl(typeof reader.result === 'string' ? reader.result : null);
+    };
+    reader.onerror = () => setImageError('画像の読み込みに失敗しました');
+    reader.readAsDataURL(file);
+  };
+
+  const canSubmit = title.trim().length > 0 && body.trim().length > 0 && !createMutation.isPending;
+
+  return (
+    <div className="space-y-6">
+      {/* ── 投稿フォーム ── */}
+      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 space-y-4">
+        <h3 className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
+          <Megaphone className="w-4 h-4" />
+          新規投稿
+        </h3>
+
+        <div className="grid sm:grid-cols-[1fr_auto] gap-3">
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="タイトル"
+            maxLength={200}
+            className="px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-100 text-sm placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+          />
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value as AnnouncementCategory)}
+            className="px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+          >
+            {CATEGORY_OPTIONS.map(o => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-xs text-zinc-500 mb-1.5">
+            本文（Markdown 対応・見出し / リスト / リンク / コード等）
+          </label>
+          <textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            placeholder={'## 見出し\n\n- 箇条書き\n- **強調**\n- [リンク](https://example.com)'}
+            rows={8}
+            maxLength={20000}
+            className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-100 text-sm font-mono placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs text-zinc-500 mb-1.5">画像（任意・1 枚まで・5MB 以下）</label>
+          <div className="flex items-center gap-3 flex-wrap">
+            <label className="inline-flex items-center gap-2 px-3 py-2 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-lg text-sm text-zinc-200 cursor-pointer transition-colors">
+              <ImagePlus className="w-4 h-4" />
+              {imageDataUrl ? '画像を変更' : '画像を追加'}
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFile}
+                className="hidden"
+              />
+            </label>
+            {imageDataUrl && (
+              <button
+                type="button"
+                onClick={() => {
+                  setImageDataUrl(null);
+                  if (fileRef.current) fileRef.current.value = '';
+                }}
+                className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-red-400 transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+                画像を取り除く
+              </button>
+            )}
+          </div>
+          {imageError && <p className="text-xs text-red-400 mt-1.5">{imageError}</p>}
+          {imageDataUrl && (
+            <img
+              src={imageDataUrl}
+              alt="プレビュー"
+              className="mt-3 max-h-48 rounded-lg border border-zinc-800"
+            />
+          )}
+        </div>
+
+        {createMutation.error && (
+          <div className="text-xs text-red-400 bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2">
+            投稿に失敗しました。
+          </div>
+        )}
+
+        <div className="flex justify-end">
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => createMutation.mutate()}
+            isLoading={createMutation.isPending}
+            disabled={!canSubmit}
+          >
+            <Send className="w-4 h-4 mr-2" />
+            投稿する
+          </Button>
+        </div>
+      </div>
+
+      {/* ── 既存お知らせ一覧 ── */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-zinc-200">投稿済みのお知らせ</h3>
+        {isLoading && (
+          <div className="text-zinc-500 text-sm flex items-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" />読み込み中…
+          </div>
+        )}
+        {error && <div className="text-red-400 text-sm">お知らせの取得に失敗しました。</div>}
+        {data && data.length === 0 && (
+          <div className="text-zinc-500 text-sm">まだ投稿はありません。</div>
+        )}
+        {data && data.length > 0 && (
+          <div className="space-y-4">
+            {data.map(a => (
+              <AnnouncementItem
+                key={a.id}
+                announcement={a}
+                onDelete={(id) => setConfirmDelete(data.find(x => x.id === id) ?? null)}
+                deleting={deleteMutation.isPending && confirmDelete?.id === a.id}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── 削除確認 ── */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="w-full max-w-sm bg-zinc-900 rounded-2xl border border-zinc-800 p-6 space-y-4">
+            <div className="flex items-center gap-2 text-red-400">
+              <AlertTriangle className="w-5 h-5" />
+              <h3 className="text-base font-semibold">お知らせを削除</h3>
+            </div>
+            <p className="text-sm text-zinc-400 leading-relaxed">
+              「<span className="text-zinc-200">{confirmDelete.title}</span>」を削除します。この操作は取り消せません。
+            </p>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setConfirmDelete(null)}
+                disabled={deleteMutation.isPending}
+              >
+                キャンセル
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => deleteMutation.mutate(confirmDelete.id)}
+                isLoading={deleteMutation.isPending}
+              >
+                削除する
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── Top page ─────────────────────────────────────────────────────────────────
 const AdminPage: React.FC = () => {
   const { data: me, isLoading } = useCurrentUser();
@@ -467,6 +703,12 @@ const AdminPage: React.FC = () => {
             label="ユーザー"
           />
           <TabButton
+            active={tab === 'announcements'}
+            onClick={() => setTab('announcements')}
+            icon={<Megaphone className="w-4 h-4" />}
+            label="お知らせ"
+          />
+          <TabButton
             active={tab === 'audit'}
             onClick={() => setTab('audit')}
             icon={<ScrollText className="w-4 h-4" />}
@@ -476,6 +718,7 @@ const AdminPage: React.FC = () => {
 
         {tab === 'dashboard' && <Dashboard />}
         {tab === 'users' && <UsersTab currentUid={me.user.firebaseUid} />}
+        {tab === 'announcements' && <AnnouncementsTab />}
         {tab === 'audit' && <AuditTab />}
       </div>
     </div>

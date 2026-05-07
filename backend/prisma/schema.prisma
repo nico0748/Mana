@@ -120,6 +120,18 @@ model User {
   @@index([role])
 }
 
+model Announcement {
+  id        String   @id @default(uuid())
+  title     String
+  body      String
+  imageUrl  String?
+  category  String   @default("info")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt])
+}
+
 model AdminAuditLog {
   id         String   @id @default(uuid())
   actorUid   String

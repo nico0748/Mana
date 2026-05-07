@@ -12,6 +12,7 @@ import meRouter from './routes/me';
 import billingRouter from './routes/billing';
 import webhookRouter from './routes/webhook';
 import adminRouter from './routes/admin';
+import { publicAnnouncementsRouter } from './routes/announcements';
 import { authenticate } from './middleware/auth';
 import { requireAdmin, adminRateLimit } from './middleware/requireAdmin';
 
@@ -35,6 +36,10 @@ app.use(cors({
 app.use('/api/webhook/stripe', webhookRouter);
 
 app.use(express.json({ limit: '50mb' })); // large for image data URLs
+
+// 公開お知らせ (/about ページから認証なしで取得)。
+// authenticate より前にマウントすることでログイン不要で読める。
+app.use('/api/public/announcements', publicAnnouncementsRouter);
 
 app.use('/api', authenticate);
 app.use('/api/admin', adminRateLimit, requireAdmin, adminRouter);

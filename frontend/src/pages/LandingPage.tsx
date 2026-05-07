@@ -19,14 +19,14 @@ import type { EventTemplateSummary } from '../types';
 // 実際のフォームができたらここを差し替える。
 const CONTACT_FORM_URL = 'https://docs.google.com/forms/d/e/REPLACE_WITH_FORM_ID/viewform';
 
-const SECTIONS = ['home', 'news', 'system', 'fankit', 'faq', 'contact'] as const;
+const SECTIONS = ['home', 'news', 'system', 'template', 'faq', 'contact'] as const;
 type Section = typeof SECTIONS[number];
 
 const SECTION_LABELS: Record<Section, string> = {
   home: 'HOME',
   news: 'NEWS',
   system: 'SYSTEM',
-  fankit: 'FANKIT',
+  template: 'TEMPLATE',
   faq: 'FAQ',
   contact: 'CONTACT',
 };
@@ -121,7 +121,7 @@ const SYSTEM_DETAILS = [
     points: [
       { icon: Database, label: '全機能で I/O 対応', desc: '蔵書・サークル・頒布物・会場マップすべてに CSV / Excel / JSON のインポート・エクスポートを搭載。' },
       { icon: FileJson, label: 'コミュニティテンプレート', desc: '他ユーザーが申請し運営が承認した即売会テンプレートを利用可能。イベント名・日程・マップ画像が一括で取り込まれます。' },
-      { icon: Tag, label: '自分のイベントも申請可能', desc: '買い物リストの即売会カードから申請ボタン → 運営承認後に FANKIT に掲載されます。' },
+      { icon: Tag, label: '自分のイベントも申請可能', desc: '買い物リストの即売会カードから申請ボタン → 運営承認後に TEMPLATE に掲載されます。' },
     ],
   },
 ];
@@ -129,11 +129,11 @@ const SYSTEM_DETAILS = [
 const FAQ_ITEMS = [
   {
     q: 'テンプレートデータとは？',
-    a: '即売会名・日程・ホール一覧と会場マップ画像を含んだデータです。アプリ内でインポートすると即売会・ホール一覧・マップ画像までまとめて自動作成されます。コミュニティ申請 → 運営承認の流れで FANKIT に掲載されます。',
+    a: '即売会名・日程・ホール一覧と会場マップ画像を含んだデータです。アプリ内でインポートすると即売会・ホール一覧・マップ画像までまとめて自動作成されます。コミュニティ申請 → 運営承認の流れで TEMPLATE に掲載されます。',
   },
   {
     q: 'マップ画像はどこから用意すればよいですか？',
-    a: '各即売会の公式サイトで配布されている PDF や画像をお使いください。PDF・JPG・PNG いずれも対応しています。FANKIT の承認済みテンプレートを使えば画像も同梱されています。',
+    a: '各即売会の公式サイトで配布されている PDF や画像をお使いください。PDF・JPG・PNG いずれも対応しています。TEMPLATE の承認済みテンプレートを使えば画像も同梱されています。',
   },
   {
     q: 'データはどこに保存されますか？',
@@ -637,9 +637,9 @@ const SystemSection: React.FC = () => (
   </section>
 );
 
-// ─── FANKIT セクション ─────────────────────────────────────────────────────────
+// ─── TEMPLATE セクション ───────────────────────────────────────────────────────
 
-const FankitCard: React.FC<{ template: EventTemplateSummary }> = ({ template }) => (
+const TemplateSummaryCard: React.FC<{ template: EventTemplateSummary }> = ({ template }) => (
   <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 sm:p-5 hover:border-zinc-600 transition-colors">
     <div className="flex items-start gap-2 mb-2">
       <FileJson size={15} className="text-violet-400 flex-shrink-0 mt-0.5" />
@@ -670,7 +670,7 @@ const FankitCard: React.FC<{ template: EventTemplateSummary }> = ({ template }) 
   </div>
 );
 
-const FankitSection: React.FC = () => {
+const TemplateSection: React.FC = () => {
   const { data, isLoading, error } = useQuery({
     queryKey: ['eventTemplates', 'public'],
     queryFn: eventTemplatesApi.listPublic,
@@ -680,7 +680,7 @@ const FankitSection: React.FC = () => {
   return (
     <section className="max-w-5xl mx-auto px-6 py-16 sm:py-20">
       <motion.div initial="hidden" animate="visible" variants={fadeUp} className="text-center mb-10">
-        <p className="text-xs font-semibold text-violet-400 uppercase tracking-widest mb-2">FanKit</p>
+        <p className="text-xs font-semibold text-violet-400 uppercase tracking-widest mb-2">Template</p>
         <h2 className="text-2xl sm:text-3xl font-bold text-zinc-100">公開テンプレート</h2>
         <p className="text-sm text-zinc-500 mt-2 max-w-2xl mx-auto">
           ユーザーが申請し運営が承認した即売会テンプレートです。
@@ -714,7 +714,7 @@ const FankitSection: React.FC = () => {
           variants={fadeUp}
           className="grid grid-cols-1 sm:grid-cols-2 gap-3"
         >
-          {data.map(t => <FankitCard key={t.id} template={t} />)}
+          {data.map(t => <TemplateSummaryCard key={t.id} template={t} />)}
         </motion.div>
       )}
 
@@ -881,7 +881,7 @@ const LandingPage: React.FC = () => {
             {section === 'home' && <HomeSection />}
             {section === 'news' && <NewsSection />}
             {section === 'system' && <SystemSection />}
-            {section === 'fankit' && <FankitSection />}
+            {section === 'template' && <TemplateSection />}
             {section === 'faq' && <FaqSection />}
             {section === 'contact' && <ContactSection />}
           </motion.div>

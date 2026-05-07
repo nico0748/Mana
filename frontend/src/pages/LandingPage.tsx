@@ -7,6 +7,7 @@ import {
   ChevronDown, ChevronUp, LogIn, ArrowRight, FileJson, Crown, Check,
   Megaphone, MapPin, Calendar, Mail, ExternalLink, Loader2,
   Camera, Tag, Database, Navigation, Layers, Image as ImageIcon,
+  Menu, X,
 } from 'lucide-react';
 import { announcementsApi, eventTemplatesApi } from '../lib/api';
 import { AnnouncementItem } from '../components/AnnouncementItem';
@@ -154,59 +155,195 @@ const FAQ_ITEMS = [
 
 // ─── 共通: トップナビ ──────────────────────────────────────────────────────────
 
-const TopNav: React.FC<{ section: Section; onChange: (s: Section) => void }> = ({ section, onChange }) => (
-  <nav className="sticky top-0 z-50 border-b border-zinc-800/60 bg-zinc-950/90 backdrop-blur-md">
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-4">
-      <button
-        onClick={() => onChange('home')}
-        className="flex items-center gap-2 flex-shrink-0 hover:opacity-80 transition-opacity"
-      >
-        <img src="/doujin-pp.png" alt="同人++" className="w-7 h-7 rounded-lg shadow" />
-        <span
-          className="text-zinc-100 hidden sm:inline"
-          style={{ fontFamily: '"Reggae One", system-ui', fontWeight: 400, fontSize: '1.2rem' }}
+const MobileDrawer: React.FC<{
+  open: boolean;
+  section: Section;
+  onChange: (s: Section) => void;
+  onClose: () => void;
+}> = ({ open, section, onChange, onClose }) => (
+  <AnimatePresence>
+    {open && (
+      <>
+        {/* backdrop */}
+        <motion.div
+          key="backdrop"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          onClick={onClose}
+          className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm md:hidden"
+        />
+        {/* drawer */}
+        <motion.aside
+          key="drawer"
+          initial={{ x: '-100%' }}
+          animate={{ x: 0 }}
+          exit={{ x: '-100%' }}
+          transition={{ type: 'tween', duration: 0.22, ease: 'easeOut' }}
+          className="fixed top-0 left-0 z-[70] h-full w-72 max-w-[80vw] bg-zinc-950 border-r border-zinc-800 shadow-2xl md:hidden flex flex-col"
         >
-          同人++
-        </span>
-      </button>
-
-      <div className="flex-1 min-w-0 overflow-x-auto scrollbar-none">
-        <ul className="flex items-center gap-1 sm:gap-2 px-1">
-          {SECTIONS.map(s => {
-            const active = s === section;
-            return (
-              <li key={s} className="flex-shrink-0">
-                <button
-                  onClick={() => onChange(s)}
-                  className={[
-                    'relative px-3 py-1.5 text-xs sm:text-sm font-semibold tracking-widest transition-colors',
-                    active ? 'text-violet-300' : 'text-zinc-500 hover:text-zinc-200',
-                  ].join(' ')}
-                >
-                  {SECTION_LABELS[s]}
-                  {active && (
-                    <motion.span
-                      layoutId="nav-underline"
-                      className="absolute -bottom-[1px] left-1 right-1 h-0.5 bg-violet-400 rounded-full"
-                    />
-                  )}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-
-      <Link
-        to="/"
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs sm:text-sm font-medium transition-colors flex-shrink-0"
-      >
-        <LogIn size={14} />
-        <span className="hidden sm:inline">ログイン</span>
-      </Link>
-    </div>
-  </nav>
+          <div className="flex items-center justify-between px-4 h-14 border-b border-zinc-800">
+            <div className="flex items-center gap-2">
+              <img src="/doujin-pp.png" alt="同人++" className="w-7 h-7 rounded-lg" />
+              <span
+                className="text-zinc-100"
+                style={{ fontFamily: '"Reggae One", system-ui', fontWeight: 400, fontSize: '1.1rem' }}
+              >
+                同人++
+              </span>
+            </div>
+            <button
+              onClick={onClose}
+              aria-label="メニューを閉じる"
+              className="p-2 -mr-2 text-zinc-500 hover:text-zinc-200 rounded-lg hover:bg-zinc-800/60 transition-colors"
+            >
+              <X size={18} />
+            </button>
+          </div>
+          <ul className="flex-1 overflow-y-auto py-2">
+            {SECTIONS.map(s => {
+              const active = s === section;
+              return (
+                <li key={s}>
+                  <button
+                    onClick={() => onChange(s)}
+                    className={[
+                      'w-full flex items-center gap-3 px-5 py-3 text-left text-sm font-semibold tracking-widest transition-colors',
+                      active
+                        ? 'text-violet-300 bg-violet-500/10 border-l-2 border-violet-400'
+                        : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 border-l-2 border-transparent',
+                    ].join(' ')}
+                  >
+                    {SECTION_LABELS[s]}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          <div className="border-t border-zinc-800 p-4">
+            <Link
+              to="/"
+              className="flex items-center justify-center gap-1.5 w-full px-3 py-2 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium transition-colors"
+            >
+              <LogIn size={14} />
+              ログイン
+            </Link>
+          </div>
+        </motion.aside>
+      </>
+    )}
+  </AnimatePresence>
 );
+
+const TopNav: React.FC<{ section: Section; onChange: (s: Section) => void }> = ({ section, onChange }) => {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // セクション切替時にドロワーを閉じる
+  const handleChange = (s: Section) => {
+    onChange(s);
+    setDrawerOpen(false);
+  };
+
+  // ドロワー表示中は背面のスクロールをロック
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [drawerOpen]);
+
+  return (
+    <>
+      <nav className="sticky top-0 z-50 border-b border-zinc-800/60 bg-zinc-950/90 backdrop-blur-md">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-4">
+
+          {/* ── モバイル: ハンバーガー（左） + 中央タイトル + ログイン（右） ── */}
+          <button
+            onClick={() => setDrawerOpen(true)}
+            aria-label="メニューを開く"
+            className="md:hidden p-2 -ml-2 text-zinc-300 hover:text-zinc-100 rounded-lg hover:bg-zinc-800/60 transition-colors"
+          >
+            <Menu size={20} />
+          </button>
+
+          <button
+            onClick={() => onChange('home')}
+            className="md:hidden absolute left-1/2 -translate-x-1/2 flex items-center gap-2 hover:opacity-80 transition-opacity"
+          >
+            <img src="/doujin-pp.png" alt="同人++" className="w-7 h-7 rounded-lg shadow" />
+            <span
+              className="text-zinc-100"
+              style={{ fontFamily: '"Reggae One", system-ui', fontWeight: 400, fontSize: '1.2rem' }}
+            >
+              同人++
+            </span>
+          </button>
+
+          {/* ── デスクトップ: 左ロゴ + タブ + 右ログイン ── */}
+          <button
+            onClick={() => onChange('home')}
+            className="hidden md:flex items-center gap-2 flex-shrink-0 hover:opacity-80 transition-opacity"
+          >
+            <img src="/doujin-pp.png" alt="同人++" className="w-7 h-7 rounded-lg shadow" />
+            <span
+              className="text-zinc-100"
+              style={{ fontFamily: '"Reggae One", system-ui', fontWeight: 400, fontSize: '1.2rem' }}
+            >
+              同人++
+            </span>
+          </button>
+
+          <div className="hidden md:flex flex-1 min-w-0 overflow-x-auto scrollbar-none">
+            <ul className="flex items-center gap-2 px-1">
+              {SECTIONS.map(s => {
+                const active = s === section;
+                return (
+                  <li key={s} className="flex-shrink-0">
+                    <button
+                      onClick={() => onChange(s)}
+                      className={[
+                        'relative px-3 py-1.5 text-sm font-semibold tracking-widest transition-colors',
+                        active ? 'text-violet-300' : 'text-zinc-500 hover:text-zinc-200',
+                      ].join(' ')}
+                    >
+                      {SECTION_LABELS[s]}
+                      {active && (
+                        <motion.span
+                          layoutId="nav-underline"
+                          className="absolute -bottom-[1px] left-1 right-1 h-0.5 bg-violet-400 rounded-full"
+                        />
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+
+          {/* ログインボタン: モバイルではアイコンのみで右端に固定 */}
+          <Link
+            to="/"
+            className="ml-auto md:ml-0 flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs sm:text-sm font-medium transition-colors flex-shrink-0"
+            aria-label="ログイン"
+          >
+            <LogIn size={14} />
+            <span className="hidden md:inline">ログイン</span>
+          </Link>
+        </div>
+      </nav>
+
+      <MobileDrawer
+        open={drawerOpen}
+        section={section}
+        onChange={handleChange}
+        onClose={() => setDrawerOpen(false)}
+      />
+    </>
+  );
+};
 
 // ─── HOME セクション ───────────────────────────────────────────────────────────
 

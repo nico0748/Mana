@@ -172,7 +172,7 @@ const MobileDrawer: React.FC<{
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
           onClick={onClose}
-          className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm lg:hidden"
         />
         {/* drawer */}
         <motion.aside
@@ -181,7 +181,7 @@ const MobileDrawer: React.FC<{
           animate={{ x: 0 }}
           exit={{ x: '-100%' }}
           transition={{ type: 'tween', duration: 0.22, ease: 'easeOut' }}
-          className="fixed top-0 left-0 z-[70] h-full w-72 max-w-[80vw] bg-zinc-950 border-r border-zinc-800 shadow-2xl md:hidden flex flex-col"
+          className="fixed top-0 left-0 z-[70] h-full w-72 max-w-[80vw] bg-zinc-950 border-r border-zinc-800 shadow-2xl lg:hidden flex flex-col"
         >
           <div className="flex items-center justify-between px-4 h-14 border-b border-zinc-800">
             <div className="flex items-center gap-2">
@@ -264,14 +264,14 @@ const TopNav: React.FC<{ section: Section; onChange: (s: Section) => void }> = (
           <button
             onClick={() => setDrawerOpen(true)}
             aria-label="メニューを開く"
-            className="md:hidden p-2 -ml-2 text-zinc-300 hover:text-zinc-100 rounded-lg hover:bg-zinc-800/60 transition-colors"
+            className="lg:hidden p-2 -ml-2 text-zinc-300 hover:text-zinc-100 rounded-lg hover:bg-zinc-800/60 transition-colors"
           >
             <Menu size={20} />
           </button>
 
           <button
             onClick={() => onChange('home')}
-            className="md:hidden absolute left-1/2 -translate-x-1/2 flex items-center gap-2 hover:opacity-80 transition-opacity"
+            className="lg:hidden absolute left-1/2 -translate-x-1/2 flex items-center gap-2 hover:opacity-80 transition-opacity"
           >
             <img src="/doujin-pp.png" alt="同人++" className="w-7 h-7 rounded-lg shadow" />
             <span
@@ -285,7 +285,7 @@ const TopNav: React.FC<{ section: Section; onChange: (s: Section) => void }> = (
           {/* ── デスクトップ: 左ロゴ + タブ + 右ログイン ── */}
           <button
             onClick={() => onChange('home')}
-            className="hidden md:flex items-center gap-2 flex-shrink-0 hover:opacity-80 transition-opacity"
+            className="hidden lg:flex items-center gap-2 flex-shrink-0 hover:opacity-80 transition-opacity"
           >
             <img src="/doujin-pp.png" alt="同人++" className="w-7 h-7 rounded-lg shadow" />
             <span
@@ -296,7 +296,7 @@ const TopNav: React.FC<{ section: Section; onChange: (s: Section) => void }> = (
             </span>
           </button>
 
-          <div className="hidden md:flex md:ml-auto min-w-0 overflow-x-auto scrollbar-none">
+          <div className="hidden lg:flex lg:ml-auto">
             <ul className="flex items-center gap-2 px-1">
               {SECTIONS.map(s => {
                 const active = s === section;
@@ -326,11 +326,11 @@ const TopNav: React.FC<{ section: Section; onChange: (s: Section) => void }> = (
           {/* ログインボタン: モバイルではアイコンのみで右端に固定 */}
           <Link
             to="/"
-            className="ml-auto md:ml-0 flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs sm:text-sm font-medium transition-colors flex-shrink-0"
+            className="ml-auto lg:ml-0 flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs sm:text-sm font-medium transition-colors flex-shrink-0"
             aria-label="ログイン"
           >
             <LogIn size={14} />
-            <span className="hidden md:inline">ログイン</span>
+            <span className="hidden lg:inline">ログイン</span>
           </Link>
         </div>
       </nav>

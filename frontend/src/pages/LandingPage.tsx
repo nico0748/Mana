@@ -296,7 +296,7 @@ const TopNav: React.FC<{ section: Section; onChange: (s: Section) => void }> = (
             </span>
           </button>
 
-          <div className="hidden md:flex flex-1 min-w-0 overflow-x-auto scrollbar-none">
+          <div className="hidden md:flex md:ml-auto min-w-0 overflow-x-auto scrollbar-none">
             <ul className="flex items-center gap-2 px-1">
               {SECTIONS.map(s => {
                 const active = s === section;

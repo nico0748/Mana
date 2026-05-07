@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import {
   ArrowLeft, ShieldCheck, Users, ScrollText, Crown, Search, Loader2, Lock, AlertTriangle,
-  RefreshCw, Megaphone, ImagePlus, X, Send,
+  RefreshCw, Megaphone, ImagePlus, X, Send, Save, CalendarClock, Pencil,
 } from 'lucide-react';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import {
@@ -429,15 +429,33 @@ const CATEGORY_OPTIONS: { value: AnnouncementCategory; label: string }[] = [
 // 画像 1 枚あたりの上限。Express の JSON ペイロード上限 (50mb) と DB 行サイズを考慮した安全圏。
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
+// epoch ms ⇄ <input type="datetime-local"> 形式の文字列 ("YYYY-MM-DDTHH:mm") 変換。
+// datetime-local はローカルタイム解釈なので、Date のメンバ getter/setter で直接組み立てる。
+const toLocalDatetimeInput = (ms: number): string => {
+  const d = new Date(ms);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+const parseLocalDatetimeInput = (s: string): number | null => {
+  if (!s) return null;
+  const ms = new Date(s).getTime();
+  return Number.isFinite(ms) ? ms : null;
+};
+
 const AnnouncementsTab: React.FC = () => {
   const queryClient = useQueryClient();
+  const formRef = React.useRef<HTMLDivElement>(null);
+  const fileRef = React.useRef<HTMLInputElement>(null);
+
+  const [editingId, setEditingId] = React.useState<string | null>(null);
   const [title, setTitle] = React.useState('');
   const [body, setBody] = React.useState('');
   const [category, setCategory] = React.useState<AnnouncementCategory>('info');
   const [imageDataUrl, setImageDataUrl] = React.useState<string | null>(null);
   const [imageError, setImageError] = React.useState<string | null>(null);
+  // datetime-local 用の文字列。空 = サーバ時刻 / 既存値据え置き。
+  const [createdAtInput, setCreatedAtInput] = React.useState('');
   const [confirmDelete, setConfirmDelete] = React.useState<Announcement | null>(null);
-  const fileRef = React.useRef<HTMLInputElement>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['announcements', 'public'],
@@ -445,26 +463,64 @@ const AnnouncementsTab: React.FC = () => {
     staleTime: 30_000,
   });
 
-  const createMutation = useMutation({
-    mutationFn: () => announcementsApi.create({
+  const resetForm = () => {
+    setEditingId(null);
+    setTitle('');
+    setBody('');
+    setCategory('info');
+    setImageDataUrl(null);
+    setImageError(null);
+    setCreatedAtInput('');
+    if (fileRef.current) fileRef.current.value = '';
+  };
+
+  const startEdit = (a: Announcement) => {
+    setEditingId(a.id);
+    setTitle(a.title);
+    setBody(a.body);
+    setCategory(a.category);
+    setImageDataUrl(a.imageUrl ?? null);
+    setImageError(null);
+    setCreatedAtInput(toLocalDatetimeInput(a.createdAt));
+    if (fileRef.current) fileRef.current.value = '';
+    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const buildPayload = () => {
+    const createdAtMs = parseLocalDatetimeInput(createdAtInput);
+    return {
       title: title.trim(),
       body,
       imageUrl: imageDataUrl,
       category,
-    }),
+      ...(createdAtMs != null ? { createdAt: createdAtMs } : {}),
+    };
+  };
+
+  const createMutation = useMutation({
+    mutationFn: () => announcementsApi.create(buildPayload()),
     onSuccess: () => {
-      setTitle('');
-      setBody('');
-      setCategory('info');
-      setImageDataUrl(null);
-      if (fileRef.current) fileRef.current.value = '';
+      resetForm();
+      queryClient.invalidateQueries({ queryKey: ['announcements', 'public'] });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: () => {
+      if (!editingId) throw new Error('not editing');
+      return announcementsApi.update(editingId, buildPayload());
+    },
+    onSuccess: () => {
+      resetForm();
       queryClient.invalidateQueries({ queryKey: ['announcements', 'public'] });
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => announcementsApi.delete(id),
-    onSuccess: () => {
+    onSuccess: (_, id) => {
+      // 編集中の項目を削除した場合はフォームもリセット
+      if (editingId === id) resetForm();
       setConfirmDelete(null);
       queryClient.invalidateQueries({ queryKey: ['announcements', 'public'] });
     },
@@ -487,16 +543,53 @@ const AnnouncementsTab: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  const canSubmit = title.trim().length > 0 && body.trim().length > 0 && !createMutation.isPending;
+  const isEditing = editingId !== null;
+  const submitting = createMutation.isPending || updateMutation.isPending;
+  const canSubmit = title.trim().length > 0 && body.trim().length > 0 && !submitting;
+  const submitError = isEditing ? updateMutation.error : createMutation.error;
+
+  const handleSubmit = () => {
+    if (!canSubmit) return;
+    if (isEditing) updateMutation.mutate();
+    else createMutation.mutate();
+  };
 
   return (
     <div className="space-y-6">
-      {/* ── 投稿フォーム ── */}
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 space-y-4">
-        <h3 className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
-          <Megaphone className="w-4 h-4" />
-          新規投稿
-        </h3>
+      {/* ── 投稿 / 編集フォーム ── */}
+      <div
+        ref={formRef}
+        className={[
+          'rounded-2xl border bg-zinc-900/60 p-5 space-y-4 transition-colors',
+          isEditing ? 'border-amber-500/40 ring-1 ring-amber-500/20' : 'border-zinc-800',
+        ].join(' ')}
+      >
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
+            {isEditing ? (
+              <>
+                <Pencil className="w-4 h-4 text-amber-300" />
+                <span>編集中</span>
+              </>
+            ) : (
+              <>
+                <Megaphone className="w-4 h-4" />
+                <span>新規投稿</span>
+              </>
+            )}
+          </h3>
+          {isEditing && (
+            <button
+              type="button"
+              onClick={resetForm}
+              disabled={submitting}
+              className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-200 transition-colors disabled:opacity-40"
+            >
+              <X className="w-3.5 h-3.5" />
+              編集をキャンセル
+            </button>
+          )}
+        </div>
 
         <div className="grid sm:grid-cols-[1fr_auto] gap-3">
           <input
@@ -516,6 +609,33 @@ const AnnouncementsTab: React.FC = () => {
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
+        </div>
+
+        <div>
+          <label className="block text-xs text-zinc-500 mb-1.5 flex items-center gap-1.5">
+            <CalendarClock className="w-3.5 h-3.5" />
+            投稿日時 {isEditing
+              ? '（変更可・並び順にも反映されます）'
+              : '（任意・空ならサーバ時刻）'}
+          </label>
+          <div className="flex items-center gap-2 flex-wrap">
+            <input
+              type="datetime-local"
+              value={createdAtInput}
+              onChange={(e) => setCreatedAtInput(e.target.value)}
+              className="px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+            />
+            {createdAtInput && (
+              <button
+                type="button"
+                onClick={() => setCreatedAtInput('')}
+                className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-200 transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+                クリア
+              </button>
+            )}
+          </div>
         </div>
 
         <div>
@@ -570,27 +690,33 @@ const AnnouncementsTab: React.FC = () => {
           )}
         </div>
 
-        {createMutation.error && (
+        {submitError && (
           <div className="text-xs text-red-400 bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2">
-            投稿に失敗しました。
+            {isEditing ? '更新に失敗しました。' : '投稿に失敗しました。'}
           </div>
         )}
 
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-2">
+          {isEditing && (
+            <Button variant="ghost" size="sm" onClick={resetForm} disabled={submitting}>
+              キャンセル
+            </Button>
+          )}
           <Button
             variant="default"
             size="sm"
-            onClick={() => createMutation.mutate()}
-            isLoading={createMutation.isPending}
+            onClick={handleSubmit}
+            isLoading={submitting}
             disabled={!canSubmit}
           >
-            <Send className="w-4 h-4 mr-2" />
-            投稿する
+            {isEditing
+              ? <><Save className="w-4 h-4 mr-2" />更新する</>
+              : <><Send className="w-4 h-4 mr-2" />投稿する</>}
           </Button>
         </div>
       </div>
 
-      {/* ── 既存お知らせ一覧 ── */}
+      {/* ── 既存お知らせ一覧（投稿日時の降順） ── */}
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-zinc-200">投稿済みのお知らせ</h3>
         {isLoading && (
@@ -608,8 +734,10 @@ const AnnouncementsTab: React.FC = () => {
               <AnnouncementItem
                 key={a.id}
                 announcement={a}
+                onEdit={startEdit}
                 onDelete={(id) => setConfirmDelete(data.find(x => x.id === id) ?? null)}
                 deleting={deleteMutation.isPending && confirmDelete?.id === a.id}
+                highlighted={editingId === a.id}
               />
             ))}
           </div>

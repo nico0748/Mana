@@ -101,6 +101,8 @@ export interface AnnouncementInput {
   body: string;
   imageUrl?: string | null;
   category: AnnouncementCategory;
+  // epoch ms。投稿時 / 編集時の任意指定。未指定なら作成時はサーバ時刻、更新時は変更なし。
+  createdAt?: number;
 }
 
 export const announcementsApi = {
@@ -108,6 +110,8 @@ export const announcementsApi = {
   list: () => req<Announcement[]>('/public/announcements'),
   create: (data: AnnouncementInput) =>
     req<Announcement>('/admin/announcements', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: Partial<AnnouncementInput>) =>
+    req<Announcement>(`/admin/announcements/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   delete: (id: string) =>
     req<void>(`/admin/announcements/${id}`, { method: 'DELETE' }),
 };

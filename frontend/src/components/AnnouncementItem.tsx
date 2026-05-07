@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Trash2, Sparkles, Wrench, CalendarDays, Megaphone } from 'lucide-react';
+import { Trash2, Sparkles, Wrench, CalendarDays, Megaphone, Pencil } from 'lucide-react';
 import type { Announcement, AnnouncementCategory } from '../types';
 
 const CATEGORY_META: Record<AnnouncementCategory, { label: string; icon: React.ComponentType<{ className?: string }>; chip: string }> = {
@@ -16,16 +16,23 @@ const formatDate = (ms: number) =>
 
 interface Props {
   announcement: Announcement;
+  onEdit?: (a: Announcement) => void;
   onDelete?: (id: string) => void;
   deleting?: boolean;
+  highlighted?: boolean;
 }
 
-export const AnnouncementItem: React.FC<Props> = ({ announcement, onDelete, deleting }) => {
+export const AnnouncementItem: React.FC<Props> = ({ announcement, onEdit, onDelete, deleting, highlighted }) => {
   const meta = CATEGORY_META[announcement.category] ?? CATEGORY_META.info;
   const Icon = meta.icon;
 
   return (
-    <article className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-5 sm:p-6">
+    <article
+      className={[
+        'rounded-2xl border bg-zinc-900/60 p-5 sm:p-6 transition-colors',
+        highlighted ? 'border-emerald-500/50 ring-1 ring-emerald-500/30' : 'border-zinc-800',
+      ].join(' ')}
+    >
       <header className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-2 flex-wrap">
           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ring-1 ${meta.chip}`}>
@@ -34,16 +41,30 @@ export const AnnouncementItem: React.FC<Props> = ({ announcement, onDelete, dele
           </span>
           <span className="text-xs text-zinc-500">{formatDate(announcement.createdAt)}</span>
         </div>
-        {onDelete && (
-          <button
-            type="button"
-            onClick={() => onDelete(announcement.id)}
-            disabled={deleting}
-            className="p-1.5 text-zinc-600 hover:text-red-400 hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-40"
-            title="削除"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+        {(onEdit || onDelete) && (
+          <div className="flex items-center gap-0.5 flex-shrink-0">
+            {onEdit && (
+              <button
+                type="button"
+                onClick={() => onEdit(announcement)}
+                className="p-1.5 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 rounded-lg transition-colors"
+                title="編集"
+              >
+                <Pencil className="w-4 h-4" />
+              </button>
+            )}
+            {onDelete && (
+              <button
+                type="button"
+                onClick={() => onDelete(announcement.id)}
+                disabled={deleting}
+                className="p-1.5 text-zinc-600 hover:text-red-400 hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-40"
+                title="削除"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         )}
       </header>
 

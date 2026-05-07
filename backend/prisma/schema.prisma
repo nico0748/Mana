@@ -139,6 +139,8 @@ model EventTemplate {
   date            String?
   // [{ hall, imageDataUrl, generatedSvg? }]
   venueMaps       Json
+  // [{ name, author, hall, block, number, order, xUrl?, menuImageUrl?, mapX?, mapY? }]
+  circles         Json      @default("[]")
   // 申請メタ
   submittedByUid  String
   sourceEventId   String?

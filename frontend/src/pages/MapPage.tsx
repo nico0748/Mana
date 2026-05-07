@@ -541,7 +541,10 @@ const MapPage: React.FC = () => {
     setShowAddHall(false);
   };
 
-  const handleTemplateImport = async (template: EventTemplate) => {
+  const handleTemplateImport = async (
+    template: EventTemplate,
+    options: { includeCircles: boolean } = { includeCircles: false },
+  ) => {
     const event = await eventsApi.create({
       name: template.name,
       date: template.date,
@@ -558,6 +561,29 @@ const MapPage: React.FC = () => {
         })
       )
     );
+
+    // ユーザーが「サークル情報も取り込む」を選んだ場合のみサークルを実体化する。
+    // 状態は新規取り込みなので未購入 (pending) で開始。元のステータス・アイテムは持ち込まない。
+    if (options.includeCircles && template.circles.length > 0) {
+      await circlesApi.bulkCreate(
+        template.circles.map(c => ({
+          eventId: event.id,
+          name: c.name,
+          author: c.author,
+          hall: c.hall,
+          block: c.block,
+          number: c.number,
+          order: c.order,
+          status: 'pending',
+          xUrl: c.xUrl ?? undefined,
+          menuImageUrl: c.menuImageUrl ?? undefined,
+          mapX: c.mapX ?? undefined,
+          mapY: c.mapY ?? undefined,
+        }))
+      );
+      await queryClient.invalidateQueries({ queryKey: ['circles'] });
+    }
+
     await queryClient.invalidateQueries({ queryKey: ['events'] });
     await queryClient.invalidateQueries({ queryKey: ['venueMaps'] });
     setSelectedEventId(event.id);

@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-import { X, FileJson, Download, Check, Loader, MapPin } from 'lucide-react';
+import { X, FileJson, Download, Check, Loader, MapPin, Users2 } from 'lucide-react';
 import { eventTemplatesApi } from '../../lib/api';
 import type { EventTemplate } from '../../types';
 
+export interface TemplateImportOptions {
+  includeCircles: boolean;
+}
+
 interface Props {
   onClose: () => void;
-  onImport: (template: EventTemplate) => Promise<void>;
+  onImport: (template: EventTemplate, options: TemplateImportOptions) => Promise<void>;
 }
 
 const TemplateImportModal: React.FC<Props> = ({ onClose, onImport }) => {
@@ -20,13 +24,15 @@ const TemplateImportModal: React.FC<Props> = ({ onClose, onImport }) => {
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [doneId, setDoneId] = useState<string | null>(null);
   const [errMsg, setErrMsg] = useState<string | null>(null);
+  // サークル情報を取り込むか。デフォルトは off（最小限のセットアップで開始したい人を想定）。
+  const [includeCircles, setIncludeCircles] = useState(false);
 
   const handleImport = async (id: string) => {
     setLoadingId(id);
     setErrMsg(null);
     try {
       const detail = await eventTemplatesApi.getPublic(id);
-      await onImport(detail);
+      await onImport(detail, { includeCircles });
       setDoneId(id);
       setTimeout(() => onClose(), 900);
     } catch (e) {
@@ -69,6 +75,26 @@ const TemplateImportModal: React.FC<Props> = ({ onClose, onImport }) => {
             読み込むと即売会・ホール一覧・マップ画像が自動作成されます。
           </p>
 
+          {/* オプション */}
+          <label className="flex items-start gap-2.5 mb-4 px-3 py-2.5 rounded-lg bg-zinc-800/60 border border-zinc-700/50 cursor-pointer hover:bg-zinc-800/80 transition-colors">
+            <input
+              type="checkbox"
+              checked={includeCircles}
+              onChange={e => setIncludeCircles(e.target.checked)}
+              disabled={loadingId !== null}
+              className="mt-0.5 w-4 h-4 rounded accent-violet-500 cursor-pointer"
+            />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 text-sm text-zinc-200 font-medium">
+                <Users2 size={13} className="text-zinc-400" />
+                サークル情報も一緒に取り込む
+              </div>
+              <p className="text-xs text-zinc-500 mt-0.5 leading-relaxed">
+                オフにすると即売会とホールマップだけが取り込まれ、サークルは作成されません。
+              </p>
+            </div>
+          </label>
+
           {isLoading && (
             <div className="flex items-center gap-2 text-zinc-500 text-sm py-6">
               <Loader size={14} className="animate-spin" />
@@ -93,6 +119,7 @@ const TemplateImportModal: React.FC<Props> = ({ onClose, onImport }) => {
               {data.map(t => {
                 const isLoading = loadingId === t.id;
                 const isDone = doneId === t.id;
+                const hasCircles = (t.circleCount ?? 0) > 0;
                 return (
                   <div
                     key={t.id}
@@ -103,9 +130,17 @@ const TemplateImportModal: React.FC<Props> = ({ onClose, onImport }) => {
                       {t.date && (
                         <p className="text-xs text-zinc-500 mt-0.5">{t.date}</p>
                       )}
-                      <div className="flex items-center gap-1 text-xs text-zinc-600 mt-0.5">
-                        <MapPin size={11} />
-                        {t.hallCount} ホール
+                      <div className="flex items-center gap-3 text-xs text-zinc-600 mt-0.5">
+                        <span className="inline-flex items-center gap-1">
+                          <MapPin size={11} />
+                          {t.hallCount} ホール
+                        </span>
+                        {hasCircles && (
+                          <span className="inline-flex items-center gap-1">
+                            <Users2 size={11} />
+                            {t.circleCount} サークル
+                          </span>
+                        )}
                       </div>
                     </div>
                     <button

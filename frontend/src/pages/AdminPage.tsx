@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tansta
 import {
   ArrowLeft, ShieldCheck, Users, ScrollText, Crown, Search, Loader2, Lock, AlertTriangle,
   RefreshCw, Megaphone, ImagePlus, X, Send, Save, CalendarClock, Pencil,
-  FileJson, MapPin, Check, ChevronDown, ChevronUp,
+  FileJson, MapPin, Check, ChevronDown, ChevronUp, Users2,
 } from 'lucide-react';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import {
@@ -830,6 +830,7 @@ const TemplateRow: React.FC<{
             </div>
             <div className="mt-1 flex items-center gap-3 text-xs text-zinc-500 flex-wrap">
               <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{template.hallCount} ホール</span>
+              <span className="flex items-center gap-1"><Users2 className="w-3 h-3" />{template.circleCount} サークル</span>
               <span className="font-mono text-[10px] text-zinc-600 truncate">submitter: {template.submittedByUid}</span>
               <span className="text-zinc-600">{new Date(template.createdAt).toLocaleString('ja-JP')}</span>
             </div>
@@ -927,6 +928,26 @@ const TemplateRow: React.FC<{
               ))}
             </div>
           )}
+          {template.circles.length > 0 && (
+            <div className="pt-2 border-t border-zinc-800/60">
+              <p className="text-[11px] text-zinc-500 mb-2 flex items-center gap-1">
+                <Users2 className="w-3 h-3" />
+                サークルスナップショット（{template.circles.length} 件）
+              </p>
+              <ul className="space-y-1 max-h-60 overflow-y-auto pr-1">
+                {template.circles.map((c, i) => (
+                  <li key={`${c.hall}-${c.block}-${c.number}-${i}`} className="flex items-baseline gap-2 text-xs">
+                    <span className="font-mono text-zinc-500 w-20 flex-shrink-0">
+                      {c.hall} {c.block}-{c.number}
+                    </span>
+                    <span className="text-zinc-200 truncate">{c.name}</span>
+                    {c.author && <span className="text-zinc-500 truncate">/ {c.author}</span>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {template.sourceEventId && (
             <p className="text-[10px] text-zinc-600 font-mono break-all">source event: {template.sourceEventId}</p>
           )}

@@ -77,12 +77,26 @@ export interface EventTemplateVenueMap {
   generatedSvg: string | null;
 }
 
+export interface EventTemplateCircle {
+  name: string;
+  author: string;
+  hall: string;
+  block: string;
+  number: string;
+  order: number;
+  xUrl: string | null;
+  menuImageUrl: string | null;
+  mapX: number | null;
+  mapY: number | null;
+}
+
 export interface EventTemplateSummary {
   id: string;
   name: string;
   date?: string;
   halls: string[];
   hallCount: number;
+  circleCount: number;
   createdAt: number;
 }
 
@@ -91,7 +105,9 @@ export interface EventTemplate {
   name: string;
   date?: string;
   venueMaps: EventTemplateVenueMap[];
+  circles: EventTemplateCircle[];
   hallCount: number;
+  circleCount: number;
   createdAt: number;
 }
 

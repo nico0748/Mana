@@ -71,6 +71,42 @@ export interface CircleItem {
   addedToLibraryBookId?: string | null;
 }
 
+export interface EventTemplateVenueMap {
+  hall: string;
+  imageDataUrl: string;
+  generatedSvg: string | null;
+}
+
+export interface EventTemplateSummary {
+  id: string;
+  name: string;
+  date?: string;
+  halls: string[];
+  hallCount: number;
+  createdAt: number;
+}
+
+export interface EventTemplate {
+  id: string;
+  name: string;
+  date?: string;
+  venueMaps: EventTemplateVenueMap[];
+  hallCount: number;
+  createdAt: number;
+}
+
+export type EventTemplateStatus = 'pending' | 'approved' | 'rejected';
+
+export interface EventTemplateAdminView extends EventTemplate {
+  status: EventTemplateStatus;
+  submittedByUid: string;
+  sourceEventId: string | null;
+  reviewedByUid: string | null;
+  reviewedAt: number | null;
+  rejectionReason: string | null;
+  updatedAt: number;
+}
+
 export type AnnouncementCategory = 'feature' | 'fix' | 'event' | 'info';
 
 export interface Announcement {

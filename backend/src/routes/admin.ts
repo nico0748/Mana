@@ -6,10 +6,12 @@ import { effectivePlan } from '../lib/plans';
 import { isInitialAdmin } from '../middleware/auth';
 import { adminSyncRateLimit } from '../middleware/requireAdmin';
 import { adminAnnouncementsRouter } from './announcements';
+import { adminEventTemplatesRouter } from './eventTemplates';
 
 const router = Router();
 
 router.use('/announcements', adminAnnouncementsRouter);
+router.use('/event-templates', adminEventTemplatesRouter);
 
 const ALLOWED_ROLES = new Set(['user', 'admin']);
 

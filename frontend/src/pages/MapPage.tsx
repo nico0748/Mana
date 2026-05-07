@@ -11,8 +11,7 @@ import {
 } from 'lucide-react';
 import { eventsApi, circlesApi, venueMapsApi, circleItemsApi } from '../lib/api';
 import { renderPdfPageToDataUrl } from '../lib/pdfUtils';
-import type { CircleItem } from '../types';
-import type { EventTemplate } from '../types/template';
+import type { CircleItem, EventTemplate } from '../types';
 import { clsx } from 'clsx';
 import TemplateImportModal from '../components/map/TemplateImportModal';
 import { useAppSettings } from '../contexts/AppSettingsContext';
@@ -544,13 +543,19 @@ const MapPage: React.FC = () => {
 
   const handleTemplateImport = async (template: EventTemplate) => {
     const event = await eventsApi.create({
-      name: template.event.name,
-      date: template.event.date,
-      budget: template.event.budget,
+      name: template.name,
+      date: template.date,
     });
+    // テンプレートはマップ画像（imageDataUrl）込みで配布される。
+    // 元の即売会で画像が登録されていなかったホールはここでは空文字のまま入る。
     await Promise.all(
-      template.halls.map(hall =>
-        venueMapsApi.upsert({ eventId: event.id, hall, imageDataUrl: '' })
+      template.venueMaps.map(m =>
+        venueMapsApi.upsert({
+          eventId: event.id,
+          hall: m.hall,
+          imageDataUrl: m.imageDataUrl,
+          generatedSvg: m.generatedSvg ?? undefined,
+        })
       )
     );
     await queryClient.invalidateQueries({ queryKey: ['events'] });

@@ -699,6 +699,175 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ circleId, onAdd, onClose })
   );
 };
 
+// ─── ImportCirclesModal ────────────────────────────────────────────────────
+// CSV / Excel / JSON からサークルをインポートする際に「どの即売会に紐付けるか」を選ぶモーダル。
+// 新規イベントを作成する or 既存イベントに追加する の2モード。
+
+type ImportRow = ReturnType<typeof parseCirclesFile>[number];
+
+type ImportTarget =
+  | { kind: 'new'; name: string; date?: string; budget?: number }
+  | { kind: 'existing'; eventId: string };
+
+interface ImportCirclesModalProps {
+  rows: ImportRow[];
+  sourceLabel: string; // 'CSV' / 'Excel' / 'JSON' など、UI 表示用
+  events: DoujinEvent[];
+  onConfirm: (target: ImportTarget) => Promise<void> | void;
+  onClose: () => void;
+}
+
+const ImportCirclesModal: React.FC<ImportCirclesModalProps> = ({
+  rows, sourceLabel, events, onConfirm, onClose,
+}) => {
+  // 既存イベントが無ければ「既存」タブは選べないので新規をデフォルトに
+  const [mode, setMode] = useState<'new' | 'existing'>(events.length > 0 ? 'new' : 'new');
+  const [name, setName] = useState('');
+  const [date, setDate] = useState('');
+  const [budget, setBudget] = useState('');
+  const [selectedEventId, setSelectedEventId] = useState<string>(events[0]?.id ?? '');
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const canSubmit =
+    !submitting &&
+    (mode === 'new' ? name.trim().length > 0 : selectedEventId.length > 0);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canSubmit) return;
+    setErrorMsg(null);
+    setSubmitting(true);
+    try {
+      if (mode === 'new') {
+        await onConfirm({
+          kind: 'new',
+          name: name.trim(),
+          date: date || undefined,
+          budget: budget ? Number(budget) : undefined,
+        });
+      } else {
+        await onConfirm({ kind: 'existing', eventId: selectedEventId });
+      }
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'インポートに失敗しました');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 40 }}
+        className="relative w-full max-w-md bg-zinc-900 rounded-2xl border border-zinc-800 p-6 z-10 space-y-4"
+      >
+        <div>
+          <h2 className="text-lg font-bold text-zinc-100 mb-1">サークルをインポート</h2>
+          <p className="text-xs text-zinc-500">
+            {sourceLabel} から {rows.length} 件のサークルを読み込みました。
+            どの即売会に追加するかを選んでください。
+          </p>
+        </div>
+
+        {/* 新規 / 既存 切り替え */}
+        <div className="flex bg-zinc-800 rounded-lg p-0.5 gap-0.5">
+          <button
+            type="button"
+            onClick={() => setMode('new')}
+            className={`flex-1 py-1.5 text-sm rounded-md transition-colors ${
+              mode === 'new' ? 'bg-zinc-600 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            新規即売会を作成
+          </button>
+          <button
+            type="button"
+            onClick={() => events.length > 0 && setMode('existing')}
+            disabled={events.length === 0}
+            className={`flex-1 py-1.5 text-sm rounded-md transition-colors ${
+              mode === 'existing' ? 'bg-zinc-600 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
+            } disabled:opacity-40 disabled:cursor-not-allowed`}
+          >
+            既存の即売会へ追加
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {mode === 'new' ? (
+            <>
+              <div>
+                <label className="block text-sm text-zinc-400 mb-1">イベント名 *</label>
+                <Input
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  placeholder="例: コミックマーケット106"
+                  required
+                  autoFocus
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm text-zinc-400 mb-1">日付</label>
+                  <Input
+                    type="date"
+                    value={date}
+                    onChange={e => setDate(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-zinc-400 mb-1">予算（円）</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="1000"
+                    value={budget}
+                    onChange={e => setBudget(e.target.value)}
+                    placeholder="任意"
+                  />
+                </div>
+              </div>
+            </>
+          ) : (
+            <div>
+              <label className="block text-sm text-zinc-400 mb-1">追加先の即売会</label>
+              <select
+                value={selectedEventId}
+                onChange={e => setSelectedEventId(e.target.value)}
+                className="w-full bg-zinc-800/50 border border-zinc-700 text-zinc-100 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-zinc-400 focus:ring-2 focus:ring-white/10"
+              >
+                {events.map(ev => (
+                  <option key={ev.id} value={ev.id}>
+                    {ev.name}{ev.date ? ` (${formatDate(ev.date)})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {errorMsg && (
+            <div className="text-xs text-red-400 bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2">
+              {errorMsg}
+            </div>
+          )}
+
+          <div className="flex gap-2 pt-1">
+            <Button type="button" variant="outline" onClick={onClose} className="flex-1" disabled={submitting}>
+              キャンセル
+            </Button>
+            <Button type="submit" className="flex-1" disabled={!canSubmit}>
+              {submitting ? 'インポート中…' : `${rows.length} 件をインポート`}
+            </Button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+};
+
 // ─── EditItemModal ─────────────────────────────────────────────────────────
 
 interface EditItemModalProps {
@@ -1400,6 +1569,7 @@ const ShoppingListPage: React.FC = () => {
   const csvImportRef = useRef<HTMLInputElement>(null);
   const jsonImportRef = useRef<HTMLInputElement>(null);
   const excelImportRef = useRef<HTMLInputElement>(null);
+  const [pendingImport, setPendingImport] = useState<{ rows: ImportRow[]; sourceLabel: string } | null>(null);
 
   if (eventsLoading || circlesLoading) {
     return <div className="text-center py-8 text-zinc-400">読み込み中...</div>;
@@ -1515,29 +1685,18 @@ const ShoppingListPage: React.FC = () => {
     queryClient.invalidateQueries({ queryKey: ['circleItems'] });
   };
 
+  // パースまでだけここで実施し、対象イベントの選択は ImportCirclesModal で行う。
   const handleCirclesCsvImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
       const buffer = await file.arrayBuffer();
       const rows = parseCirclesFile(buffer);
-      if (!confirm(`${rows.length}件のサークルをインポートします。よろしいですか？`)) return;
-      const existing = circles ?? [];
-      const baseOrder = existing.length > 0 ? Math.max(...existing.map(c => c.order)) + 1 : 0;
-      await circlesApi.bulkCreate(rows.map((r, i) => ({
-        ...r,
-        order: baseOrder + i,
-        status: r.status ?? 'pending',
-      })));
-      queryClient.invalidateQueries({ queryKey: ['circles'] });
-      alert(`${rows.length}件のサークルをインポートしました。`);
+      const sourceLabel = file.name.toLowerCase().endsWith('.csv') ? 'CSV' : 'Excel';
+      setPendingImport({ rows, sourceLabel });
     } catch (err) {
-      if (isPlanLimitError(err)) {
-        openUpgrade({ resource: 'circles', limit: err.payload?.limit ?? null, current: err.payload?.current });
-      } else {
-        console.error(err);
-        alert(`インポートに失敗しました。\n${err instanceof Error ? err.message : ''}`);
-      }
+      console.error(err);
+      alert(`インポートに失敗しました。\n${err instanceof Error ? err.message : ''}`);
     } finally {
       e.target.value = '';
     }
@@ -1549,25 +1708,56 @@ const ShoppingListPage: React.FC = () => {
     try {
       const json = await file.text();
       const rows = parseCirclesJson(json);
-      if (!confirm(`${rows.length}件のサークルをインポートします。よろしいですか？`)) return;
+      setPendingImport({ rows, sourceLabel: 'JSON' });
+    } catch (err) {
+      console.error(err);
+      alert(`インポートに失敗しました。\n${err instanceof Error ? err.message : ''}`);
+    } finally {
+      e.target.value = '';
+    }
+  };
+
+  // ImportCirclesModal からのコールバック。新規 or 既存イベントを決定して bulkCreate する。
+  const handleConfirmImport = async (target: ImportTarget) => {
+    if (!pendingImport) return;
+    const { rows } = pendingImport;
+    try {
+      let eventId: string;
+      if (target.kind === 'new') {
+        const created = await eventsApi.create({
+          name: target.name,
+          date: target.date,
+          budget: target.budget,
+        });
+        eventId = created.id;
+        queryClient.invalidateQueries({ queryKey: ['events'] });
+      } else {
+        eventId = target.eventId;
+      }
+
       const existing = circles ?? [];
-      const baseOrder = existing.length > 0 ? Math.max(...existing.map(c => c.order)) + 1 : 0;
+      const sameEventCircles = existing.filter(c => c.eventId === eventId);
+      const baseOrder = sameEventCircles.length > 0
+        ? Math.max(...sameEventCircles.map(c => c.order)) + 1
+        : 0;
+
       await circlesApi.bulkCreate(rows.map((r, i) => ({
         ...r,
+        eventId,
         order: baseOrder + i,
         status: r.status ?? 'pending',
       })));
       queryClient.invalidateQueries({ queryKey: ['circles'] });
+      setPendingImport(null);
       alert(`${rows.length}件のサークルをインポートしました。`);
     } catch (err) {
       if (isPlanLimitError(err)) {
-        openUpgrade({ resource: 'circles', limit: err.payload?.limit ?? null, current: err.payload?.current });
-      } else {
-        console.error(err);
-        alert(`インポートに失敗しました。\n${err instanceof Error ? err.message : ''}`);
+        openUpgrade({ resource: target.kind === 'new' ? 'events' : 'circles', limit: err.payload?.limit ?? null, current: err.payload?.current });
+        setPendingImport(null);
+        return;
       }
-    } finally {
-      e.target.value = '';
+      // ImportCirclesModal 側で表示するために再 throw
+      throw err;
     }
   };
 
@@ -1838,6 +2028,15 @@ const ShoppingListPage: React.FC = () => {
           <SubmitTemplateModal
             event={submittingTemplateFor}
             onClose={() => setSubmittingTemplateFor(null)}
+          />
+        )}
+        {pendingImport && (
+          <ImportCirclesModal
+            rows={pendingImport.rows}
+            sourceLabel={pendingImport.sourceLabel}
+            events={eventsList}
+            onConfirm={handleConfirmImport}
+            onClose={() => setPendingImport(null)}
           />
         )}
       </AnimatePresence>

@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, type Variants } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import {
   BookOpen, Map, ShoppingCart, Settings,
-  ChevronDown, ChevronUp, LogIn, ArrowRight, FileJson, Crown, Check,
+  ChevronDown, ChevronUp, LogIn, ArrowRight, FileJson, Crown, Check, Megaphone,
 } from 'lucide-react';
+import { announcementsApi } from '../lib/api';
+import { AnnouncementItem } from '../components/AnnouncementItem';
 
 // ─── アニメーション設定 ────────────────────────────────────────────────────────
 
@@ -99,6 +102,51 @@ const FeatureSection: React.FC<{ feature: typeof FEATURES[0]; index: number }> =
         <div className="mt-16 sm:mt-24 h-px bg-gradient-to-r from-transparent via-zinc-800 to-transparent" />
       )}
     </motion.section>
+  );
+};
+
+// ─── お知らせセクション ────────────────────────────────────────────────────────
+
+const AnnouncementsSection: React.FC = () => {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['announcements', 'public'],
+    queryFn: announcementsApi.list,
+    staleTime: 60_000,
+  });
+
+  // 取得失敗・お知らせ無しのときはセクション自体を非表示にする
+  if (isLoading || error || !data || data.length === 0) return null;
+
+  return (
+    <section className="border-t border-zinc-800/60 bg-zinc-950">
+      <div className="max-w-3xl mx-auto px-6 py-16 sm:py-24">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={fadeUp}
+          className="text-center mb-10"
+        >
+          <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet-400 uppercase tracking-widest mb-2">
+            <Megaphone className="w-3.5 h-3.5" />
+            News
+          </p>
+          <h2 className="text-2xl sm:text-3xl font-bold text-zinc-100">お知らせ</h2>
+        </motion.div>
+
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={fadeUp}
+          className="space-y-4"
+        >
+          {data.map(a => (
+            <AnnouncementItem key={a.id} announcement={a} />
+          ))}
+        </motion.div>
+      </div>
+    </section>
   );
 };
 
@@ -245,6 +293,9 @@ const LandingPage: React.FC = () => {
           </div>
         </motion.div>
       </section>
+
+      {/* ── お知らせ ── */}
+      <AnnouncementsSection />
 
       {/* ── 機能紹介（左右交互） ── */}
       <div className="border-t border-zinc-800/60">

@@ -71,6 +71,18 @@ export interface CircleItem {
   addedToLibraryBookId?: string | null;
 }
 
+export type AnnouncementCategory = 'feature' | 'fix' | 'event' | 'info';
+
+export interface Announcement {
+  id: string;
+  title: string;
+  body: string;
+  imageUrl?: string | null;
+  category: AnnouncementCategory;
+  createdAt: number;
+  updatedAt: number;
+}
+
 export interface Distribution {
   id: string;
   title: string;

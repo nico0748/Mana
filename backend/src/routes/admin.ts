@@ -5,8 +5,11 @@ import { prisma } from '../prisma';
 import { effectivePlan } from '../lib/plans';
 import { isInitialAdmin } from '../middleware/auth';
 import { adminSyncRateLimit } from '../middleware/requireAdmin';
+import { adminAnnouncementsRouter } from './announcements';
 
 const router = Router();
+
+router.use('/announcements', adminAnnouncementsRouter);
 
 const ALLOWED_ROLES = new Set(['user', 'admin']);
 

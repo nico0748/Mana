@@ -10,29 +10,50 @@ interface SnapshotMap {
   generatedSvg: string | null;
 }
 
+interface SnapshotCircle {
+  name: string;
+  author: string;
+  hall: string;
+  block: string;
+  number: string;
+  order: number;
+  xUrl: string | null;
+  menuImageUrl: string | null;
+  mapX: number | null;
+  mapY: number | null;
+}
+
 const isSnapshotMaps = (v: unknown): v is SnapshotMap[] =>
   Array.isArray(v) && v.every(m => m && typeof m === 'object' && typeof (m as any).hall === 'string');
 
+const isSnapshotCircles = (v: unknown): v is SnapshotCircle[] =>
+  Array.isArray(v) && v.every(c => c && typeof c === 'object' && typeof (c as any).name === 'string');
+
 const summarize = (t: any) => {
   const maps: SnapshotMap[] = isSnapshotMaps(t.venueMaps) ? t.venueMaps : [];
+  const circles: SnapshotCircle[] = isSnapshotCircles(t.circles) ? t.circles : [];
   return {
     id: t.id,
     name: t.name,
     date: t.date,
     halls: maps.map(m => m.hall),
     hallCount: maps.length,
+    circleCount: circles.length,
     createdAt: t.createdAt instanceof Date ? t.createdAt.getTime() : t.createdAt,
   };
 };
 
 const detail = (t: any) => {
   const maps: SnapshotMap[] = isSnapshotMaps(t.venueMaps) ? t.venueMaps : [];
+  const circles: SnapshotCircle[] = isSnapshotCircles(t.circles) ? t.circles : [];
   return {
     id: t.id,
     name: t.name,
     date: t.date,
     venueMaps: maps,
+    circles,
     hallCount: maps.length,
+    circleCount: circles.length,
     createdAt: t.createdAt instanceof Date ? t.createdAt.getTime() : t.createdAt,
   };
 };
@@ -113,17 +134,37 @@ userEventTemplatesRouter.post('/', async (req, res) => {
     where: { eventId, userId: uid },
     orderBy: { hall: 'asc' },
   });
-  const snapshot: SnapshotMap[] = venueMaps.map(m => ({
+  const mapSnapshot: SnapshotMap[] = venueMaps.map(m => ({
     hall: m.hall,
     imageDataUrl: m.imageDataUrl,
     generatedSvg: m.generatedSvg ?? null,
+  }));
+
+  // サークル情報をスナップショット（status / 紐づくアイテムは含めない）。
+  // インポート時はユーザーが「サークルも含める」を選んだときだけ実体化される。
+  const circles = await prisma.circle.findMany({
+    where: { eventId, userId: uid },
+    orderBy: { order: 'asc' },
+  });
+  const circleSnapshot: SnapshotCircle[] = circles.map(c => ({
+    name: c.name,
+    author: c.author,
+    hall: c.hall,
+    block: c.block,
+    number: c.number,
+    order: c.order,
+    xUrl: c.xUrl ?? null,
+    menuImageUrl: c.menuImageUrl ?? null,
+    mapX: c.mapX ?? null,
+    mapY: c.mapY ?? null,
   }));
 
   const created = await prisma.eventTemplate.create({
     data: {
       name: event.name,
       date: event.date,
-      venueMaps: snapshot as unknown as Prisma.InputJsonValue,
+      venueMaps: mapSnapshot as unknown as Prisma.InputJsonValue,
+      circles: circleSnapshot as unknown as Prisma.InputJsonValue,
       submittedByUid: uid,
       sourceEventId: event.id,
       status: 'pending',

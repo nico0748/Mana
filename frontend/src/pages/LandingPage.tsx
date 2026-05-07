@@ -7,7 +7,7 @@ import {
   ChevronDown, ChevronUp, LogIn, ArrowRight, FileJson, Crown, Check,
   Megaphone, MapPin, Calendar, Mail, ExternalLink, Loader2,
   Camera, Tag, Database, Navigation, Layers, Image as ImageIcon,
-  Menu, X,
+  Menu, X, Users2,
 } from 'lucide-react';
 import { announcementsApi, eventTemplatesApi } from '../lib/api';
 import { AnnouncementItem } from '../components/AnnouncementItem';
@@ -653,9 +653,17 @@ const TemplateSummaryCard: React.FC<{ template: EventTemplateSummary }> = ({ tem
         )}
       </div>
     </div>
-    <div className="flex items-center gap-1 text-xs text-zinc-500 pl-[23px]">
-      <MapPin size={11} />
-      <span>{template.hallCount} ホール</span>
+    <div className="flex items-center gap-3 text-xs text-zinc-500 pl-[23px]">
+      <span className="inline-flex items-center gap-1">
+        <MapPin size={11} />
+        {template.hallCount} ホール
+      </span>
+      {template.circleCount > 0 && (
+        <span className="inline-flex items-center gap-1">
+          <Users2 size={11} />
+          {template.circleCount} サークル
+        </span>
+      )}
     </div>
     {template.halls.length > 0 && (
       <div className="mt-2 flex flex-wrap gap-1 pl-[23px]">

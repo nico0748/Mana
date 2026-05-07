@@ -1009,6 +1009,14 @@ const SubmitTemplateModal: React.FC<SubmitTemplateModalProps> = ({ event, onClos
   });
   const eventMaps = (allMaps ?? []).filter(m => m.eventId === event.id);
 
+  // サークルもスナップショットに含まれるので件数を表示する。
+  const { data: allCircles } = useQuery({
+    queryKey: ['circles'],
+    queryFn: circlesApi.list,
+    staleTime: 30_000,
+  });
+  const eventCircles = (allCircles ?? []).filter(c => c.eventId === event.id);
+
   const submit = useMutation({
     mutationFn: () => eventTemplatesApi.submit(event.id),
     onSuccess: () => {
@@ -1052,7 +1060,8 @@ const SubmitTemplateModal: React.FC<SubmitTemplateModalProps> = ({ event, onClos
 
             <p className="text-sm text-zinc-400 leading-relaxed">
               この即売会を運営に申請して、承認されると公開テンプレート一覧（/templates）に掲載されます。
-              申請時点の<strong className="text-zinc-200">イベント名 / 日付 / 会場マップ</strong>がスナップショットとして保存されます。
+              申請時点の<strong className="text-zinc-200">イベント名 / 日付 / 会場マップ / サークル一覧</strong>がスナップショットとして保存されます。
+              読み込む側ではサークルを取り込むかを選べます。
             </p>
 
             <div className="rounded-xl border border-zinc-800 bg-zinc-950/60 p-3 space-y-2 text-sm">
@@ -1098,6 +1107,19 @@ const SubmitTemplateModal: React.FC<SubmitTemplateModalProps> = ({ event, onClos
                     ))}
                   </div>
                 )}
+              </div>
+              <div className="border-t border-zinc-800 pt-2">
+                <div className="flex items-center justify-between gap-3 text-xs">
+                  <span className="text-zinc-500">サークル</span>
+                  <span className={eventCircles.length > 0 ? 'text-zinc-300' : 'text-zinc-600'}>
+                    {eventCircles.length} 個
+                    {eventCircles.length > 0 && (
+                      <span className="text-zinc-600 ml-1">
+                        （順位・配置・X リンクごと）
+                      </span>
+                    )}
+                  </span>
+                </div>
               </div>
               {totalImageBytes > 0 && (
                 <div className="text-[10px] text-zinc-600 pt-1">

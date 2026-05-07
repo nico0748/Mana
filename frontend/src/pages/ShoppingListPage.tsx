@@ -159,6 +159,7 @@ interface CircleCardProps {
   onItemStatusChange: (itemId: string, status: CircleItem['status']) => void;
   onReorder?: (id: string, dir: 'top' | 'up' | 'down') => void;
   onAddItem: (circleId: string) => void;
+  onEditItem: (item: CircleItem) => void;
   onDeleteItem: (itemId: string) => void;
 }
 
@@ -176,7 +177,7 @@ const itemStatusClass: Record<CircleItem['status'], string> = {
 const CircleCard: React.FC<CircleCardProps> = ({
   circle, items, circleIndex, totalCircles, eventName,
   onEdit, onDelete, onStatusChange, onItemStatusChange,
-  onReorder, onAddItem, onDeleteItem,
+  onReorder, onAddItem, onEditItem, onDeleteItem,
 }) => {
   const [expanded, setExpanded] = useState(true);
   const [addToLibraryItem, setAddToLibraryItem] = useState<CircleItem | null>(null);
@@ -306,6 +307,13 @@ const CircleCard: React.FC<CircleCardProps> = ({
                               : <BookPlus className="w-3.5 h-3.5" />}
                           </button>
                         )}
+                        <button
+                          onClick={() => onEditItem(item)}
+                          title="アイテムを編集"
+                          className="p-1 text-zinc-500 hover:text-zinc-200 transition-colors"
+                        >
+                          <Pencil className="w-3 h-3" />
+                        </button>
                         <button
                           onClick={() => onDeleteItem(item.id)}
                           className="p-1 text-zinc-600 hover:text-red-400 transition-colors"
@@ -681,6 +689,156 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ circleId, onAdd, onClose })
   );
 };
 
+// ─── EditItemModal ─────────────────────────────────────────────────────────
+
+interface EditItemModalProps {
+  item: CircleItem;
+  onSave: (id: string, data: Partial<Omit<CircleItem, 'id' | 'circleId'>>) => Promise<void> | void;
+  onClose: () => void;
+}
+
+const DOUJIN_TYPES = new Set(['shinkan', 'kikan']);
+
+const EditItemModal: React.FC<EditItemModalProps> = ({ item, onSave, onClose }) => {
+  const [category, setCategory] = useState<'doujin' | 'other'>(DOUJIN_TYPES.has(item.type) ? 'doujin' : 'other');
+  const [form, setForm] = useState({
+    title: item.title,
+    type: item.type,
+    price: item.price,
+    quantity: item.quantity,
+  });
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.title.trim()) return;
+    if (category === 'other' && !form.type.trim()) return;
+    setSaving(true);
+    try {
+      await onSave(item.id, {
+        title: form.title.trim(),
+        type: form.type,
+        price: form.price,
+        quantity: form.quantity,
+      });
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 40 }}
+        className="relative w-full max-w-md bg-zinc-900 rounded-xl border border-zinc-800 p-6 z-10"
+      >
+        <h2 className="text-lg font-bold text-zinc-100 mb-4">アイテムを編集</h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm text-zinc-400 mb-1">タイトル *</label>
+            <Input
+              value={form.title}
+              onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+              placeholder="タイトルを入力"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-zinc-400 mb-2">種別</label>
+            <div className="flex bg-zinc-800 rounded-lg p-0.5 gap-0.5 mb-2">
+              <button type="button"
+                onClick={() => {
+                  setCategory('doujin');
+                  // 旧 type が doujin 種別でなければ shinkan にフォールバック
+                  if (!DOUJIN_TYPES.has(form.type)) setForm(f => ({ ...f, type: 'shinkan' }));
+                }}
+                className={`flex-1 py-1.5 text-sm rounded-md transition-colors ${category === 'doujin' ? 'bg-zinc-600 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}>
+                同人誌
+              </button>
+              <button type="button"
+                onClick={() => {
+                  setCategory('other');
+                  if (DOUJIN_TYPES.has(form.type)) setForm(f => ({ ...f, type: '' }));
+                }}
+                className={`flex-1 py-1.5 text-sm rounded-md transition-colors ${category === 'other' ? 'bg-zinc-600 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}>
+                その他
+              </button>
+            </div>
+            {category === 'doujin' ? (
+              <div className="flex gap-2">
+                {[{ v: 'shinkan', l: '新刊' }, { v: 'kikan', l: '既刊' }].map(({ v, l }) => (
+                  <button key={v} type="button"
+                    onClick={() => setForm(f => ({ ...f, type: v }))}
+                    className={`flex-1 py-2 text-sm rounded-lg border transition-colors ${form.type === v ? 'border-zinc-400 bg-zinc-700 text-zinc-100' : 'border-zinc-700 text-zinc-500 hover:text-zinc-300'}`}>
+                    {l}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div>
+                <Input
+                  value={form.type}
+                  onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
+                  placeholder="タペストリー、アクリルスタンドなど"
+                />
+                <div className="flex gap-1.5 mt-2 flex-wrap">
+                  {['タペストリー', 'アクリルスタンド', '缶バッジ', 'クリアファイル', 'ブロマイド'].map(s => (
+                    <button key={s} type="button"
+                      onClick={() => setForm(f => ({ ...f, type: s }))}
+                      className="px-2 py-0.5 text-xs bg-zinc-800 text-zinc-400 rounded-full border border-zinc-700 hover:border-zinc-500 hover:text-zinc-200 transition-colors">
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm text-zinc-400 mb-1">価格（円）</label>
+              <div className="flex items-center gap-1">
+                <button type="button"
+                  onClick={() => setForm(f => ({ ...f, price: Math.max(0, f.price - 100) }))}
+                  className="w-8 h-9 flex items-center justify-center rounded-lg border border-zinc-700 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 transition-colors font-bold flex-shrink-0">
+                  −
+                </button>
+                <input
+                  type="number" step="100" min="0"
+                  value={form.price === 0 ? '' : form.price}
+                  placeholder="0"
+                  onChange={e => setForm(f => ({ ...f, price: e.target.value === '' ? 0 : Number(e.target.value) }))}
+                  className="w-full bg-zinc-800/50 border border-zinc-700 text-zinc-100 rounded-xl px-2 py-2 text-sm text-center focus:outline-none focus:border-zinc-400 focus:ring-2 focus:ring-white/10 min-w-0"
+                />
+                <button type="button"
+                  onClick={() => setForm(f => ({ ...f, price: f.price + 100 }))}
+                  className="w-8 h-9 flex items-center justify-center rounded-lg border border-zinc-700 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 transition-colors font-bold flex-shrink-0">
+                  +
+                </button>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm text-zinc-400 mb-1">数量</label>
+              <Input
+                type="number" min="1"
+                value={form.quantity}
+                onChange={e => setForm(f => ({ ...f, quantity: Math.max(1, Number(e.target.value)) }))}
+              />
+            </div>
+          </div>
+          <div className="flex gap-2 pt-1">
+            <Button type="button" variant="outline" onClick={onClose} className="flex-1" disabled={saving}>キャンセル</Button>
+            <Button type="submit" className="flex-1" disabled={saving}>{saving ? '保存中...' : '保存'}</Button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+};
+
 // ─── AddEventModal ─────────────────────────────────────────────────────────
 
 interface AddEventModalProps {
@@ -996,6 +1154,7 @@ interface EventCardProps {
   onItemStatusChange: (itemId: string, status: CircleItem['status']) => void;
   onReorder: (id: string, dir: 'top' | 'up' | 'down') => void;
   onAddItem: (circleId: string) => void;
+  onEditItem: (item: CircleItem) => void;
   onDeleteItem: (itemId: string) => void;
   onDeleteEvent: (id: string) => void;
   onEditEvent: (event: DoujinEvent) => void;
@@ -1005,7 +1164,7 @@ interface EventCardProps {
 const EventCard: React.FC<EventCardProps> = ({
   event, circles, circleItems,
   onAddCircle, onEditCircle, onDeleteCircle, onStatusChange, onItemStatusChange, onReorder,
-  onAddItem, onDeleteItem, onDeleteEvent, onEditEvent, onRequestTemplate,
+  onAddItem, onEditItem, onDeleteItem, onDeleteEvent, onEditEvent, onRequestTemplate,
 }) => {
   const [expanded, setExpanded] = useState(true);
 
@@ -1169,6 +1328,7 @@ const EventCard: React.FC<EventCardProps> = ({
                   onItemStatusChange={onItemStatusChange}
                   onReorder={onReorder}
                   onAddItem={onAddItem}
+                  onEditItem={onEditItem}
                   onDeleteItem={onDeleteItem}
                 />
               ))}
@@ -1201,6 +1361,7 @@ const ShoppingListPage: React.FC = () => {
   const [addCircleForEvent, setAddCircleForEvent] = useState<string | null>(null);
   const [editingCircle, setEditingCircle] = useState<Circle | null>(null);
   const [addItemForCircle, setAddItemForCircle] = useState<string | null>(null);
+  const [editingItem, setEditingItem] = useState<CircleItem | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [importMenuOpen, setImportMenuOpen] = useState(false);
@@ -1304,6 +1465,11 @@ const ShoppingListPage: React.FC = () => {
 
   const handleAddItem = async (data: Omit<CircleItem, 'id' | 'status' | 'onlineStatus' | 'addedToLibraryBookId'>) => {
     await circleItemsApi.create(data);
+    queryClient.invalidateQueries({ queryKey: ['circleItems'] });
+  };
+
+  const handleEditItem = async (id: string, data: Partial<Omit<CircleItem, 'id' | 'circleId'>>) => {
+    await circleItemsApi.update(id, data);
     queryClient.invalidateQueries({ queryKey: ['circleItems'] });
   };
 
@@ -1561,6 +1727,7 @@ const ShoppingListPage: React.FC = () => {
                 onItemStatusChange={handleItemStatusChange}
                 onReorder={(id, dir) => handleReorder(id, dir, event.id)}
                 onAddItem={setAddItemForCircle}
+                onEditItem={setEditingItem}
                 onDeleteItem={handleDeleteItem}
                 onDeleteEvent={handleDeleteEvent}
                 onEditEvent={setEditingEvent}
@@ -1585,6 +1752,7 @@ const ShoppingListPage: React.FC = () => {
                       onStatusChange={handleStatusChange}
                       onItemStatusChange={handleItemStatusChange}
                       onAddItem={setAddItemForCircle}
+                      onEditItem={setEditingItem}
                       onDeleteItem={handleDeleteItem}
                     />
                   ))}
@@ -1625,6 +1793,13 @@ const ShoppingListPage: React.FC = () => {
             circleId={addItemForCircle}
             onAdd={handleAddItem}
             onClose={() => setAddItemForCircle(null)}
+          />
+        )}
+        {editingItem && (
+          <EditItemModal
+            item={editingItem}
+            onSave={handleEditItem}
+            onClose={() => setEditingItem(null)}
           />
         )}
         {submittingTemplateFor && (

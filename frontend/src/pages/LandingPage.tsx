@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { announcementsApi, eventTemplatesApi } from '../lib/api';
 import { AnnouncementItem } from '../components/AnnouncementItem';
-import type { EventTemplateSummary } from '../types';
+import type { EventTemplateSummary, Announcement } from '../types';
 
 // ─── 設定 ──────────────────────────────────────────────────────────────────────
 
@@ -527,6 +527,16 @@ const HomeSection: React.FC = () => (
 
 // ─── NEWS セクション ───────────────────────────────────────────────────────────
 
+// 月キー: "YYYY-MM"
+const monthKeyOf = (ms: number): string => {
+  const d = new Date(ms);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+};
+const formatMonthLabel = (key: string): string => {
+  const [year, month] = key.split('-');
+  return `${year}年${Number(month)}月`;
+};
+
 const NewsSection: React.FC = () => {
   const { data, isLoading, error } = useQuery({
     queryKey: ['announcements', 'public'],
@@ -534,8 +544,30 @@ const NewsSection: React.FC = () => {
     staleTime: 60_000,
   });
 
+  // 投稿日時 (createdAt: 管理者ページから編集可) でグループ化。バックエンド側で createdAt desc 済み。
+  // 注: lucide-react の `Map` アイコンと衝突するため Map クラスは使わずレコードで実装。
+  const groups = React.useMemo<{ key: string; items: Announcement[] }[]>(() => {
+    if (!data) return [];
+    const buckets: Record<string, Announcement[]> = {};
+    const order: string[] = [];
+    for (const a of data) {
+      const k = monthKeyOf(a.createdAt);
+      if (!buckets[k]) {
+        buckets[k] = [];
+        order.push(k);
+      }
+      buckets[k].push(a);
+    }
+    return order.map(key => ({ key, items: buckets[key] }));
+  }, [data]);
+
+  const handleJump = (key: string) => {
+    const el = document.getElementById(`news-${key}`);
+    el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   return (
-    <section className="max-w-3xl mx-auto px-6 py-16 sm:py-20">
+    <section className="max-w-5xl mx-auto px-6 py-16 sm:py-20">
       <motion.div initial="hidden" animate="visible" variants={fadeUp} className="text-center mb-10">
         <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-violet-400 uppercase tracking-widest mb-2">
           <Megaphone className="w-3.5 h-3.5" />
@@ -560,10 +592,45 @@ const NewsSection: React.FC = () => {
           現在お知らせはありません。
         </div>
       )}
+
       {data && data.length > 0 && (
-        <motion.div initial="hidden" animate="visible" variants={fadeUp} className="space-y-4">
-          {data.map(a => <AnnouncementItem key={a.id} announcement={a} />)}
-        </motion.div>
+        <div className="grid lg:grid-cols-[180px_1fr] gap-6 lg:gap-10">
+          {/* ── サイドバー: 月別ナビ ── */}
+          <aside className="lg:sticky lg:top-20 lg:self-start">
+            {/* モバイルでは横スクロールのピル列、lg 以上では縦リスト */}
+            <p className="text-[10px] font-semibold tracking-widest text-zinc-500 uppercase mb-2 lg:mb-3">Archive</p>
+            <ul className="flex lg:flex-col gap-1 lg:gap-0.5 overflow-x-auto lg:overflow-visible scrollbar-none -mx-1 px-1 lg:mx-0 lg:px-0">
+              {groups.map(g => (
+                <li key={g.key} className="flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handleJump(g.key)}
+                    className="w-full flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg text-xs text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60 transition-colors text-left whitespace-nowrap"
+                  >
+                    <span>{formatMonthLabel(g.key)}</span>
+                    <span className="text-[10px] text-zinc-600">{g.items.length}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </aside>
+
+          {/* ── メイン: 月セクション + プルダウン式の各お知らせ ── */}
+          <motion.div initial="hidden" animate="visible" variants={fadeUp} className="min-w-0 space-y-8">
+            {groups.map(g => (
+              <section key={g.key} id={`news-${g.key}`} className="scroll-mt-24">
+                <h3 className="text-sm font-semibold text-zinc-300 mb-3 sticky top-14 bg-zinc-950/80 backdrop-blur-sm py-2 z-10 border-b border-zinc-800/60">
+                  {formatMonthLabel(g.key)}
+                </h3>
+                <div className="space-y-3">
+                  {g.items.map(a => (
+                    <AnnouncementItem key={a.id} announcement={a} collapsible />
+                  ))}
+                </div>
+              </section>
+            ))}
+          </motion.div>
+        </div>
       )}
     </section>
   );

@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tansta
 import {
   ArrowLeft, ShieldCheck, Users, ScrollText, Crown, Search, Loader2, Lock, AlertTriangle,
   RefreshCw, Megaphone, ImagePlus, X, Send, Save, CalendarClock, Pencil,
-  FileJson, MapPin, Check, ChevronDown, ChevronUp, Users2,
+  FileJson, MapPin, Check, ChevronDown, ChevronUp, Users2, Trash2,
 } from 'lucide-react';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import {
@@ -863,10 +863,11 @@ const TemplateRow: React.FC<{
               type="button"
               onClick={onDelete}
               disabled={busy}
-              className="p-2 text-zinc-600 hover:text-red-400 hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-40"
+              className="inline-flex items-center gap-1 px-2 py-1.5 text-xs text-zinc-400 hover:text-red-400 hover:bg-red-400/10 border border-zinc-800 hover:border-red-500/30 rounded-lg transition-colors disabled:opacity-40"
               title="削除"
             >
-              <X className="w-4 h-4" />
+              <Trash2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">削除</span>
             </button>
           </div>
         </div>
@@ -957,10 +958,55 @@ const TemplateRow: React.FC<{
   );
 };
 
+// 削除確認モーダル: ステータスに応じて警告強度を変える。
+const TemplateDeleteConfirm: React.FC<{
+  template: EventTemplateAdminView;
+  onConfirm: () => void;
+  onCancel: () => void;
+  busy: boolean;
+}> = ({ template, onConfirm, onCancel, busy }) => {
+  const isApproved = template.status === 'approved';
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+      <div className="w-full max-w-sm bg-zinc-900 rounded-2xl border border-zinc-800 p-6 space-y-4">
+        <div className="flex items-center gap-2 text-red-400">
+          <AlertTriangle className="w-5 h-5" />
+          <h3 className="text-base font-semibold">
+            {isApproved ? '公開中のテンプレートを削除' : 'テンプレート申請を削除'}
+          </h3>
+        </div>
+        <p className="text-sm text-zinc-400 leading-relaxed">
+          「<span className="text-zinc-200">{template.name}</span>」を削除します。
+          {isApproved ? (
+            <>
+              <br />
+              <span className="text-amber-300">
+                このテンプレートは公開中で、ユーザーが /templates ページから閲覧・取り込みできる状態です。
+                削除すると即座に公開一覧から消えます。
+              </span>
+            </>
+          ) : null}
+          <br />
+          この操作は取り消せません。
+        </p>
+        <div className="flex justify-end gap-2 pt-1">
+          <Button variant="ghost" size="sm" onClick={onCancel} disabled={busy}>
+            キャンセル
+          </Button>
+          <Button variant="default" size="sm" onClick={onConfirm} isLoading={busy}>
+            削除する
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const EventTemplatesTab: React.FC = () => {
   const queryClient = useQueryClient();
   const [filter, setFilter] = React.useState<EventTemplateStatus | 'all'>('pending');
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
+  const [confirmDeleteTarget, setConfirmDeleteTarget] = React.useState<EventTemplateAdminView | null>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'event-templates', filter],
@@ -982,7 +1028,11 @@ const EventTemplatesTab: React.FC = () => {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => eventTemplatesApi.adminDelete(id),
-    onSuccess: () => { setErrorMsg(null); refresh(); },
+    onSuccess: () => {
+      setErrorMsg(null);
+      setConfirmDeleteTarget(null);
+      refresh();
+    },
     onError: () => setErrorMsg('削除に失敗しました'),
   });
 
@@ -1032,14 +1082,19 @@ const EventTemplatesTab: React.FC = () => {
               busy={busy && busyId === t.id}
               onApprove={() => updateMutation.mutate({ id: t.id, status: 'approved' })}
               onReject={(reason) => updateMutation.mutate({ id: t.id, status: 'rejected', rejectionReason: reason })}
-              onDelete={() => {
-                if (window.confirm('このテンプレート申請を削除します。よろしいですか？')) {
-                  deleteMutation.mutate(t.id);
-                }
-              }}
+              onDelete={() => setConfirmDeleteTarget(t)}
             />
           ))}
         </ul>
+      )}
+
+      {confirmDeleteTarget && (
+        <TemplateDeleteConfirm
+          template={confirmDeleteTarget}
+          onCancel={() => setConfirmDeleteTarget(null)}
+          onConfirm={() => deleteMutation.mutate(confirmDeleteTarget.id)}
+          busy={deleteMutation.isPending}
+        />
       )}
     </div>
   );

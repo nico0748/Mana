@@ -1361,14 +1361,17 @@ interface EventCardProps {
   onDeleteEvent: (id: string) => void;
   onEditEvent: (event: DoujinEvent) => void;
   onRequestTemplate: (event: DoujinEvent) => void;
+  // 開閉状態は親に持ち上げ。サイドバーからの「ジャンプして開く」操作に対応するため。
+  expanded: boolean;
+  onToggleExpanded: () => void;
 }
 
 const EventCard: React.FC<EventCardProps> = ({
   event, circles, circleItems,
   onAddCircle, onEditCircle, onDeleteCircle, onStatusChange, onItemStatusChange, onReorder,
   onAddItem, onEditItem, onDeleteItem, onDeleteEvent, onEditEvent, onRequestTemplate,
+  expanded, onToggleExpanded,
 }) => {
-  const [expanded, setExpanded] = useState(true);
 
   const pendingTotal = circles
     .filter(c => c.status === 'pending')
@@ -1391,11 +1394,12 @@ const EventCard: React.FC<EventCardProps> = ({
 
   return (
     <motion.div
+      id={`shopping-event-${event.id}`}
       layout
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
-      className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden"
+      className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden scroll-mt-20"
     >
       {/* Event header */}
       <div className="p-4">
@@ -1448,7 +1452,7 @@ const EventCard: React.FC<EventCardProps> = ({
               <UploadCloud className="w-4 h-4" />
             </button>
             <button
-              onClick={() => setExpanded(e => !e)}
+              onClick={onToggleExpanded}
               className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-lg transition-colors"
             >
               {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -1561,6 +1565,28 @@ const ShoppingListPage: React.FC = () => {
   const [editingEvent, setEditingEvent] = useState<DoujinEvent | null>(null);
   const [submittingTemplateFor, setSubmittingTemplateFor] = useState<DoujinEvent | null>(null);
   const [showTemplateImport, setShowTemplateImport] = useState(false);
+  // どの即売会カードを展開しているか。デフォルトは全て閉じる。
+  const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
+
+  const toggleExpanded = (eventId: string) => {
+    setExpandedEvents(prev => {
+      const next = new Set(prev);
+      if (next.has(eventId)) next.delete(eventId);
+      else next.add(eventId);
+      return next;
+    });
+  };
+
+  const handleSidebarEventClick = (eventId: string) => {
+    // 開いた状態でスクロールジャンプ（閉じたまま飛ぶと UX が悪い）
+    setExpandedEvents(prev => new Set(prev).add(eventId));
+    setSidebarOpen(false);
+    // 状態更新後の再描画を待ってからスクロール
+    requestAnimationFrame(() => {
+      const el = document.getElementById(`shopping-event-${eventId}`);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
   const [addCircleForEvent, setAddCircleForEvent] = useState<string | null>(null);
   const [editingCircle, setEditingCircle] = useState<Circle | null>(null);
   const [addItemForCircle, setAddItemForCircle] = useState<string | null>(null);
@@ -1836,6 +1862,67 @@ const ShoppingListPage: React.FC = () => {
   // Circles not linked to any event (legacy / migrated data)
   const orphanCircles = circlesList.filter(c => !c.eventId);
 
+  // サイドバー本体: 登録済み即売会の一覧
+  const sidebarBody = (
+    <div className="space-y-3">
+      <div>
+        <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-0.5">即売会</p>
+        <p className="text-xs text-zinc-600">
+          {eventsList.length > 0 ? `${eventsList.length} 件登録` : '登録なし'}
+        </p>
+      </div>
+
+      {eventsList.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-zinc-800 px-3 py-6 text-center text-xs text-zinc-600">
+          即売会がまだ追加されていません
+        </div>
+      ) : (
+        <ul className="space-y-1.5">
+          {eventsList.map(ev => {
+            const evCircles = circlesList.filter(c => c.eventId === ev.id);
+            const itemsForEv = allItems.filter(i => evCircles.some(c => c.id === i.circleId));
+            const totalAmount = itemsForEv.reduce((s, i) => s + i.price * i.quantity, 0);
+            const isExpanded = expandedEvents.has(ev.id);
+            return (
+              <li key={ev.id}>
+                <button
+                  type="button"
+                  onClick={() => handleSidebarEventClick(ev.id)}
+                  className={[
+                    'w-full text-left rounded-lg px-3 py-2 border transition-colors',
+                    isExpanded
+                      ? 'border-violet-500/40 bg-violet-500/10 text-zinc-100'
+                      : 'border-zinc-800 bg-zinc-900/40 hover:bg-zinc-800/60 hover:border-zinc-700 text-zinc-200',
+                  ].join(' ')}
+                  title={`${ev.name} へ移動`}
+                >
+                  <div className="text-sm font-semibold truncate">{ev.name}</div>
+                  <div className="mt-0.5 flex items-center gap-2 text-[10px] text-zinc-500 flex-wrap">
+                    {ev.date && (
+                      <span className="inline-flex items-center gap-0.5">
+                        <Calendar className="w-3 h-3" />
+                        {formatDate(ev.date)}
+                      </span>
+                    )}
+                    <span>{evCircles.length} サークル</span>
+                    {ev.budget != null && (
+                      <span className="text-zinc-600">予算 ¥{ev.budget.toLocaleString()}</span>
+                    )}
+                  </div>
+                  {totalAmount > 0 && (
+                    <div className="mt-0.5 text-[10px] text-zinc-500">
+                      合計 <span className="text-zinc-300">¥{totalAmount.toLocaleString()}</span>
+                    </div>
+                  )}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+
   const sidebarFooter = (
     <div className="space-y-2.5">
       <div className="mb-3">
@@ -1970,7 +2057,9 @@ const ShoppingListPage: React.FC = () => {
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         footer={sidebarFooter}
-      />
+      >
+        {sidebarBody}
+      </PageSidebar>
 
       {/* メインコンテンツ */}
       <div className="flex-1 overflow-y-auto min-w-0">
@@ -2030,6 +2119,8 @@ const ShoppingListPage: React.FC = () => {
                 onDeleteEvent={handleDeleteEvent}
                 onEditEvent={setEditingEvent}
                 onRequestTemplate={setSubmittingTemplateFor}
+                expanded={expandedEvents.has(event.id)}
+                onToggleExpanded={() => toggleExpanded(event.id)}
               />
             ))}
           </AnimatePresence>

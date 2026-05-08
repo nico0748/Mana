@@ -7,7 +7,7 @@ import {
   BookPlus, Check, Calendar, Pencil, FileSpreadsheet, FileDown, PanelLeft, ExternalLink,
   Download, Upload, FileJson, Share2, UploadCloud, AlertTriangle, MapPin, Loader2,
 } from 'lucide-react';
-import type { Circle, CircleItem, DoujinEvent, VenueMap } from '../types';
+import type { Circle, CircleItem, DoujinEvent, VenueMap, EventTemplate } from '../types';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { PageSidebar } from '../components/layout/PageSidebar';
@@ -18,6 +18,7 @@ import {
 import { eventsApi, circlesApi, circleItemsApi, booksApi, venueMapsApi, eventTemplatesApi, ApiError } from '../lib/api';
 import { useUpgradeModal, isPlanLimitError } from '../contexts/UpgradeModalContext';
 import { ShoppingTabs } from '../components/shopping/ShoppingTabs';
+import TemplateImportModal from '../components/map/TemplateImportModal';
 
 // ─── status helpers ────────────────────────────────────────────────────────
 
@@ -1559,6 +1560,7 @@ const ShoppingListPage: React.FC = () => {
   const [showAddEvent, setShowAddEvent] = useState(false);
   const [editingEvent, setEditingEvent] = useState<DoujinEvent | null>(null);
   const [submittingTemplateFor, setSubmittingTemplateFor] = useState<DoujinEvent | null>(null);
+  const [showTemplateImport, setShowTemplateImport] = useState(false);
   const [addCircleForEvent, setAddCircleForEvent] = useState<string | null>(null);
   const [editingCircle, setEditingCircle] = useState<Circle | null>(null);
   const [addItemForCircle, setAddItemForCircle] = useState<string | null>(null);
@@ -1729,6 +1731,57 @@ const ShoppingListPage: React.FC = () => {
       alert(`インポートに失敗しました。\n${err instanceof Error ? err.message : ''}`);
     } finally {
       e.target.value = '';
+    }
+  };
+
+  // 公開テンプレートからイベント + 会場マップ + (任意で) サークルをまとめて取り込む。
+  // MapPage の handleTemplateImport と同じロジック。買い物リストでは selectedEventId を持たないので最後にクエリ invalidate するだけ。
+  const handleTemplateImport = async (
+    template: EventTemplate,
+    options: { includeCircles: boolean } = { includeCircles: false },
+  ) => {
+    try {
+      const event = await eventsApi.create({
+        name: template.name,
+        date: template.date,
+      });
+      await Promise.all(
+        template.venueMaps.map(m =>
+          venueMapsApi.upsert({
+            eventId: event.id,
+            hall: m.hall,
+            imageDataUrl: m.imageDataUrl,
+            generatedSvg: m.generatedSvg ?? undefined,
+          })
+        )
+      );
+      if (options.includeCircles && template.circles.length > 0) {
+        await circlesApi.bulkCreate(
+          template.circles.map(c => ({
+            eventId: event.id,
+            name: c.name,
+            author: c.author,
+            hall: c.hall,
+            block: c.block,
+            number: c.number,
+            order: c.order,
+            status: 'pending',
+            xUrl: c.xUrl ?? undefined,
+            menuImageUrl: c.menuImageUrl ?? undefined,
+            mapX: c.mapX ?? undefined,
+            mapY: c.mapY ?? undefined,
+          }))
+        );
+        queryClient.invalidateQueries({ queryKey: ['circles'] });
+      }
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['venueMaps'] });
+    } catch (err) {
+      if (isPlanLimitError(err)) {
+        openUpgrade({ resource: 'events', limit: err.payload?.limit ?? null, current: err.payload?.current });
+        return;
+      }
+      throw err;
     }
   };
 
@@ -1926,6 +1979,14 @@ const ShoppingListPage: React.FC = () => {
       <div className="flex items-center justify-between mb-3">
         <h1 className="text-lg font-bold text-zinc-100">買い物リスト</h1>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowTemplateImport(true)}
+            title="テンプレートから読み込む"
+            className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-violet-400 hover:text-violet-300 bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/20 rounded-md transition-colors"
+          >
+            <FileJson className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">テンプレート</span>
+          </button>
           <Button onClick={() => setShowAddEvent(true)}>
             <Plus className="w-4 h-4 mr-1" /> 即売会を追加
           </Button>
@@ -2064,6 +2125,12 @@ const ShoppingListPage: React.FC = () => {
             events={eventsList}
             onConfirm={handleConfirmImport}
             onClose={() => setPendingImport(null)}
+          />
+        )}
+        {showTemplateImport && (
+          <TemplateImportModal
+            onImport={handleTemplateImport}
+            onClose={() => setShowTemplateImport(false)}
           />
         )}
       </AnimatePresence>

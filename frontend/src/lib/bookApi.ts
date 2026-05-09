@@ -81,61 +81,32 @@ function normalizeGoogleBooksImageUrl(url: string | undefined): string | null {
   return url.replace(/^http:\/\//, 'https://').replace(/zoom=\d/, 'zoom=1');
 }
 
-// Google Books の results から最初に画像を持つアイテムのURLを返す
-function pickCoverFromGoogleBooks(items: any[]): string | null {
-  for (const item of items) {
-    const links = item.volumeInfo?.imageLinks;
-    const url = links?.small || links?.thumbnail || links?.smallThumbnail;
-    const normalized = normalizeGoogleBooksImageUrl(url);
-    if (normalized) return normalized;
-  }
-  return null;
-}
-
+// タイトルから表紙画像を取得する。
+//
+// 旧実装は `intitle:` 完全一致 → `intitle:` 言語無制限 → フリーテキスト の3段階フォールバックで、
+// さらに各段階で「最初に画像のあるアイテム」を選んでいた。これだと検索順位が下位の別シリーズ・別巻が
+// 引っ張られて精度が悪くなるケースが多かった。
+//
+// 新実装はシンプルに「**Google Books で検索した最上位ヒットの表紙**をそのまま使う」方針。
+// 最上位に表紙画像が無い場合はあきらめて null を返し、ユーザーに手動アップロードを促す。
 export const searchBookByTitle = async (title: string): Promise<string | null> => {
-  if (!title) return null;
+  const q = title.trim();
+  if (!q) return null;
 
-  // 戦略1: intitle: 完全一致検索（日本語優先）
   try {
-    const res1 = await fetch(
-      `https://www.googleapis.com/books/v1/volumes?q=intitle:${encodeURIComponent(title)}&langRestrict=ja&maxResults=5`
+    // langRestrict=ja は日本語タイトルのヒット精度を上げるため残す。
+    // q= に intitle: を付けないことで、Google Books 側の関連度ランキングを最大限に活用する。
+    const res = await fetch(
+      `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&langRestrict=ja&maxResults=1`
     );
-    const data1 = await res1.json();
-    if (data1.items?.length) {
-      const url = pickCoverFromGoogleBooks(data1.items);
-      if (url) return url;
-    }
+    const data = await res.json();
+    const top = data?.items?.[0];
+    if (!top) return null;
+    const links = top.volumeInfo?.imageLinks;
+    const url = links?.small || links?.thumbnail || links?.smallThumbnail;
+    return normalizeGoogleBooksImageUrl(url);
   } catch (error) {
-    console.warn("Google Books intitle(ja) search failed:", error);
+    console.error('Google Books title search failed:', error);
+    return null;
   }
-
-  // 戦略2: intitle: 検索（言語制限なし）
-  try {
-    const res2 = await fetch(
-      `https://www.googleapis.com/books/v1/volumes?q=intitle:${encodeURIComponent(title)}&maxResults=5`
-    );
-    const data2 = await res2.json();
-    if (data2.items?.length) {
-      const url = pickCoverFromGoogleBooks(data2.items);
-      if (url) return url;
-    }
-  } catch (error) {
-    console.warn("Google Books intitle search failed:", error);
-  }
-
-  // 戦略3: フリーテキスト検索（最後の手段）
-  try {
-    const res3 = await fetch(
-      `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(title)}&maxResults=10`
-    );
-    const data3 = await res3.json();
-    if (data3.items?.length) {
-      const url = pickCoverFromGoogleBooks(data3.items);
-      if (url) return url;
-    }
-  } catch (error) {
-    console.error("Google Books full-text search failed:", error);
-  }
-
-  return null;
 };

@@ -192,6 +192,9 @@ export interface MeResponse {
 
 export const meApi = {
   get: () => req<MeResponse>('/me'),
+  // アカウント完全削除。confirm はユーザー名（または email）一致を要求。
+  deleteAccount: (confirm: string) =>
+    req<void>('/me', { method: 'DELETE', body: JSON.stringify({ confirm }) }),
 };
 
 // ── Billing ────────────────────────────────────────────────────────────────

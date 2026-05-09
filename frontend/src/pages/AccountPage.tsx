@@ -1,9 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Crown, ExternalLink, Check, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Crown, ExternalLink, Check, ShieldCheck, AlertTriangle, Trash2 } from 'lucide-react';
 import { useCurrentUser } from '../hooks/useCurrentUser';
-import { billingApi, ApiError, type ResourceKey } from '../lib/api';
+import { useAuth } from '../contexts/AuthContext';
+import { billingApi, meApi, ApiError, type ResourceKey } from '../lib/api';
 import { Button } from '../components/ui/Button';
 
 const RESOURCE_LABELS: Record<ResourceKey, string> = {
@@ -51,6 +52,11 @@ const AccountPage: React.FC = () => {
   const navigate = useNavigate();
   const [portalLoading, setPortalLoading] = React.useState(false);
   const [toast, setToast] = React.useState<string | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteInput, setDeleteInput] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const { user: authUser, logout } = useAuth();
 
   // Stripe からの戻りリンクで status クエリを処理
   useEffect(() => {
@@ -73,6 +79,36 @@ const AccountPage: React.FC = () => {
       setTimeout(() => setToast(null), 3500);
     }
   }, [location.search, queryClient, navigate]);
+
+  // 削除確認に使う名前。displayName を最優先、空なら email にフォールバック。
+  const confirmTarget =
+    (authUser?.displayName?.trim() || data?.user?.email?.trim() || '').trim();
+
+  const handleDeleteAccount = async () => {
+    if (!confirmTarget || deleteInput.trim() !== confirmTarget) {
+      setDeleteError('入力内容が一致しません。');
+      return;
+    }
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await meApi.deleteAccount(deleteInput.trim());
+      // Firebase 側はバックエンドが削除済み。ローカルの認証情報を消してログイン画面へ。
+      try { await logout(); } catch { /* noop */ }
+      queryClient.clear();
+      navigate('/', { replace: true });
+    } catch (e: unknown) {
+      let msg = 'アカウント削除に失敗しました。時間をおいて再度お試しください。';
+      if (e instanceof ApiError) {
+        const code = e.payload?.error;
+        if (code === 'confirmation_mismatch') msg = '入力内容が一致しません。';
+        else if (code === 'confirm_required') msg = '確認用の入力が必要です。';
+        else if (code === 'confirmation_target_missing') msg = '確認用のユーザー名・メールが取得できませんでした。';
+      }
+      setDeleteError(msg);
+      setDeleting(false);
+    }
+  };
 
   const handlePortal = async () => {
     setPortalLoading(true);
@@ -236,7 +272,98 @@ const AccountPage: React.FC = () => {
             </ul>
           </section>
         )}
+
+        {/* Danger zone: アカウント削除 */}
+        <section className="rounded-2xl border border-red-500/30 bg-red-500/5 p-6">
+          <h2 className="text-base font-bold mb-2 flex items-center gap-2 text-red-300">
+            <AlertTriangle className="w-5 h-5" />
+            アカウントの削除
+          </h2>
+          <p className="text-sm text-zinc-400 leading-relaxed mb-4">
+            アカウントを削除すると、登録した蔵書・サークル・即売会・会場マップ・頒布物データはすべて完全に削除され、復元できません。
+            Pro プランをご利用中の場合は、削除に先立って自動的にサブスクリプションをキャンセルします。
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => { setDeleteInput(''); setDeleteError(null); setDeleteOpen(true); }}
+            className="border-red-500/40 text-red-300 hover:bg-red-500/10 hover:text-red-200"
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            アカウントを削除する
+          </Button>
+        </section>
       </div>
+
+      {/* ── 削除確認モーダル ── */}
+      {deleteOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-zinc-900 rounded-2xl border border-zinc-800 p-6 space-y-4">
+            <div className="flex items-center gap-2 text-red-400">
+              <AlertTriangle className="w-5 h-5" />
+              <h3 className="text-base font-semibold">アカウントの削除</h3>
+            </div>
+
+            <p className="text-sm text-zinc-300 leading-relaxed">
+              この操作は <strong className="text-red-300">取り消せません</strong>。以下のデータが削除されます:
+            </p>
+
+            <ul className="text-xs text-zinc-400 space-y-0.5 bg-zinc-950/60 border border-zinc-800 rounded-lg p-3">
+              <li>・蔵書 {usage.books} 冊</li>
+              <li>・サークル {usage.circles} 件</li>
+              <li>・即売会 {usage.events} 件</li>
+              <li>・会場マップ {usage.venueMaps} 件</li>
+              <li>・頒布物 {usage.distributions} 件</li>
+              <li>・アカウント情報・ログイン手段</li>
+              {isPro && <li className="text-amber-300">・Pro プランのサブスクリプション（自動キャンセル）</li>}
+            </ul>
+
+            <div>
+              <label className="block text-xs text-zinc-400 mb-1.5">
+                確認のため、ご自身の<strong className="text-zinc-200">{authUser?.displayName?.trim() ? 'ユーザー名' : 'メールアドレス'}</strong>「
+                <span className="text-zinc-100 font-mono">{confirmTarget || '(未設定)'}</span>
+                」を入力してください
+              </label>
+              <input
+                type="text"
+                value={deleteInput}
+                onChange={(e) => { setDeleteInput(e.target.value); setDeleteError(null); }}
+                disabled={deleting}
+                autoFocus
+                className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 text-sm placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-red-500/40"
+                placeholder={confirmTarget}
+              />
+            </div>
+
+            {deleteError && (
+              <div className="text-xs text-red-400 bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2">
+                {deleteError}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setDeleteOpen(false)}
+                disabled={deleting}
+              >
+                キャンセル
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleDeleteAccount}
+                isLoading={deleting}
+                disabled={deleteInput.trim() !== confirmTarget || !confirmTarget}
+                className="bg-red-600 hover:bg-red-500 text-white"
+              >
+                <Trash2 className="w-4 h-4 mr-1.5" />
+                完全に削除する
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

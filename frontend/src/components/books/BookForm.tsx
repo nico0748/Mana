@@ -45,6 +45,8 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
     type:       (initialData?.type      ?? "commercial") as Book["type"],
     category:   initialData?.category   ?? "",
     ndcCode:    initialData?.ndcCode    ?? "",
+    series:     initialData?.series     ?? "",
+    genre:      initialData?.genre      ?? "",
     status:     (initialData?.status    ?? "owned") as Book["status"],
     price:      (initialData?.price     ?? "") as number | "",
     memo:       initialData?.memo       ?? "",
@@ -178,6 +180,8 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
         ...formData,
         price:      formData.price !== "" ? Number(formData.price) : undefined,
         circleName: formData.circleName || undefined,
+        series:     formData.series     || undefined,
+        genre:      formData.genre      || undefined,
         tags,
       } as Omit<Book, "id" | "createdAt" | "updatedAt">);
     } catch (err) {
@@ -328,6 +332,55 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
             </div>
           </div>
 
+          {/* シリーズ・ジャンル（商業誌・同人誌共通）。datalist で既存値を補完表示する */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <FieldLabel>シリーズ</FieldLabel>
+              <Input
+                name="series"
+                value={formData.series}
+                onChange={handleChange}
+                placeholder="例: 青春ブタ野郎、SAO"
+                list="series-suggestions"
+              />
+              <datalist id="series-suggestions">
+                {Array.from(
+                  new Set(
+                    existingBooks
+                      .map(b => b.series?.trim())
+                      .filter((s): s is string => !!s),
+                  ),
+                ).sort((a, b) => a.localeCompare(b, 'ja')).map(s => (
+                  <option key={s} value={s} />
+                ))}
+              </datalist>
+            </div>
+            <div>
+              <FieldLabel>ジャンル</FieldLabel>
+              <Input
+                name="genre"
+                value={formData.genre}
+                onChange={handleChange}
+                placeholder="例: 恋愛、バトル、SF"
+                list="genre-suggestions"
+              />
+              <datalist id="genre-suggestions">
+                {/* 既存登録値 + よくあるジャンルのプリセット */}
+                {Array.from(
+                  new Set([
+                    ...existingBooks
+                      .map(b => b.genre?.trim())
+                      .filter((g): g is string => !!g),
+                    '恋愛', 'バトル', 'SF', 'ファンタジー', 'コメディ',
+                    '日常', 'ホラー', 'ミステリー', '異世界', '青春',
+                  ]),
+                ).sort((a, b) => a.localeCompare(b, 'ja')).map(g => (
+                  <option key={g} value={g} />
+                ))}
+              </datalist>
+            </div>
+          </div>
+
           {/* 商業誌: カテゴリ + NDC */}
           {!isDoujin && (
             <div className="grid grid-cols-2 gap-3">
@@ -378,8 +431,26 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
                 </div>
               )}
               <div className="flex gap-2">
-                <Input value={tagInput} onChange={e => setTagInput(e.target.value)}
-                  onKeyDown={handleTagKeyDown} placeholder="タグを入力してEnter" />
+                <Input
+                  value={tagInput}
+                  onChange={e => setTagInput(e.target.value)}
+                  onKeyDown={handleTagKeyDown}
+                  placeholder="タグを入力してEnter"
+                  list="tag-suggestions"
+                />
+                <datalist id="tag-suggestions">
+                  {/* 既存の本に登録されているタグから、まだ未選択のものを候補として表示 */}
+                  {Array.from(
+                    new Set(
+                      existingBooks
+                        .flatMap(b => b.tags ?? [])
+                        .map(t => t.trim())
+                        .filter(t => t.length > 0 && !tags.includes(t)),
+                    ),
+                  ).sort((a, b) => a.localeCompare(b, 'ja')).map(t => (
+                    <option key={t} value={t} />
+                  ))}
+                </datalist>
                 <Button type="button" variant="outline" size="icon" onClick={addTag} disabled={!tagInput.trim()}>
                   <Plus className="h-4 w-4" />
                 </Button>

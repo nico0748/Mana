@@ -23,6 +23,7 @@ frontend/.vite/
 setup.md
 docs/manual.md
 docs/roadmap.md
+docs/legal-info.md
 next.md
 
 # Firebase サービスアカウントキー（絶対にコミットしない）

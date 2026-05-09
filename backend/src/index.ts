@@ -17,6 +17,7 @@ import {
   publicEventTemplatesRouter,
   userEventTemplatesRouter,
 } from './routes/eventTemplates';
+import { publicFaqsRouter } from './routes/faqs';
 import { authenticate } from './middleware/auth';
 import { requireAdmin, adminRateLimit } from './middleware/requireAdmin';
 
@@ -44,6 +45,7 @@ app.use(express.json({ limit: '50mb' })); // large for image data URLs
 // 公開エンドポイント (認証不要)。authenticate より前にマウントする。
 app.use('/api/public/announcements', publicAnnouncementsRouter);
 app.use('/api/public/event-templates', publicEventTemplatesRouter);
+app.use('/api/public/faqs', publicFaqsRouter);
 
 app.use('/api', authenticate);
 app.use('/api/admin', adminRateLimit, requireAdmin, adminRouter);

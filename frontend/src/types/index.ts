@@ -123,6 +123,15 @@ export interface EventTemplateAdminView extends EventTemplate {
   updatedAt: number;
 }
 
+export interface Faq {
+  id: string;
+  question: string;
+  answer: string;
+  order: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
 export type AnnouncementCategory = 'feature' | 'fix' | 'event' | 'info';
 
 export interface Announcement {

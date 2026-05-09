@@ -7,11 +7,13 @@ import { isInitialAdmin } from '../middleware/auth';
 import { adminSyncRateLimit } from '../middleware/requireAdmin';
 import { adminAnnouncementsRouter } from './announcements';
 import { adminEventTemplatesRouter } from './eventTemplates';
+import { adminFaqsRouter } from './faqs';
 
 const router = Router();
 
 router.use('/announcements', adminAnnouncementsRouter);
 router.use('/event-templates', adminEventTemplatesRouter);
+router.use('/faqs', adminFaqsRouter);
 
 const ALLOWED_ROLES = new Set(['user', 'admin']);
 

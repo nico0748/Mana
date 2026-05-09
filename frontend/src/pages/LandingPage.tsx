@@ -9,7 +9,7 @@ import {
   Camera, Tag, Database, Navigation, Layers, Image as ImageIcon,
   Menu, X, Users2,
 } from 'lucide-react';
-import { announcementsApi, eventTemplatesApi } from '../lib/api';
+import { announcementsApi, eventTemplatesApi, faqsApi } from '../lib/api';
 import { AnnouncementItem } from '../components/AnnouncementItem';
 import type { EventTemplateSummary, Announcement } from '../types';
 
@@ -126,32 +126,7 @@ const SYSTEM_DETAILS = [
   },
 ];
 
-const FAQ_ITEMS = [
-  {
-    q: 'テンプレートデータとは？',
-    a: '即売会名・日程・ホール一覧と会場マップ画像を含んだデータです。アプリ内でインポートすると即売会・ホール一覧・マップ画像までまとめて自動作成されます。コミュニティ申請 → 運営承認の流れで TEMPLATE に掲載されます。',
-  },
-  {
-    q: 'マップ画像はどこから用意すればよいですか？',
-    a: '各即売会の公式サイトで配布されている PDF や画像をお使いください。PDF・JPG・PNG いずれも対応しています。TEMPLATE の承認済みテンプレートを使えば画像も同梱されています。',
-  },
-  {
-    q: 'データはどこに保存されますか？',
-    a: 'アカウントに紐づいてクラウドに保存されます。複数デバイスからアクセス可能です。',
-  },
-  {
-    q: '既存の Excel データは使えますか？',
-    a: 'はい。CSV・Excel・JSON 形式でのインポートに対応しています。テンプレートファイルをダウンロードして書式を確認できます。',
-  },
-  {
-    q: '無料プランの上限は？',
-    a: '蔵書 200 冊、サークル 50、イベント 3 までを無料でご利用いただけます。Pro プラン（月額 ¥480 / 年額 ¥4,800 予定）で無制限になる予定ですが、現在準備中です。',
-  },
-  {
-    q: 'Pro プランはいつ使えるようになりますか？',
-    a: 'Pro プランは現在準備中です。リリース時期が決まり次第、お知らせします。それまではすべての方に Free プランの上限内でご利用いただけます。',
-  },
-];
+// FAQ は管理者ページから動的に編集可能。データは /api/public/faqs から取得する。
 
 // ─── 共通: トップナビ ──────────────────────────────────────────────────────────
 
@@ -832,19 +807,45 @@ const FaqItem: React.FC<{ q: string; a: string }> = ({ q, a }) => {
   );
 };
 
-const FaqSection: React.FC = () => (
-  <section className="max-w-3xl mx-auto px-6 py-16 sm:py-20">
-    <motion.div initial="hidden" animate="visible" variants={fadeUp} className="text-center mb-10">
-      <p className="text-xs font-semibold text-violet-400 uppercase tracking-widest mb-2">FAQ</p>
-      <h2 className="text-2xl sm:text-3xl font-bold text-zinc-100">よくある質問</h2>
-    </motion.div>
-    <motion.div initial="hidden" animate="visible" variants={fadeUp}>
-      <div className="bg-zinc-900 rounded-2xl border border-zinc-800 px-6">
-        {FAQ_ITEMS.map(item => <FaqItem key={item.q} q={item.q} a={item.a} />)}
-      </div>
-    </motion.div>
-  </section>
-);
+const FaqSection: React.FC = () => {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['faqs', 'public'],
+    queryFn: faqsApi.list,
+    staleTime: 60_000,
+  });
+
+  return (
+    <section className="max-w-3xl mx-auto px-6 py-16 sm:py-20">
+      <motion.div initial="hidden" animate="visible" variants={fadeUp} className="text-center mb-10">
+        <p className="text-xs font-semibold text-violet-400 uppercase tracking-widest mb-2">FAQ</p>
+        <h2 className="text-2xl sm:text-3xl font-bold text-zinc-100">よくある質問</h2>
+      </motion.div>
+
+      {isLoading && (
+        <div className="text-zinc-500 text-sm flex items-center gap-2 justify-center py-12">
+          <Loader2 className="w-4 h-4 animate-spin" />読み込み中…
+        </div>
+      )}
+      {error && (
+        <div className="text-red-400 text-sm text-center py-12">
+          FAQ の取得に失敗しました。
+        </div>
+      )}
+      {data && data.length === 0 && (
+        <div className="rounded-2xl border border-dashed border-zinc-800 px-6 py-16 text-center text-sm text-zinc-500">
+          FAQ がまだ登録されていません。
+        </div>
+      )}
+      {data && data.length > 0 && (
+        <motion.div initial="hidden" animate="visible" variants={fadeUp}>
+          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 px-6">
+            {data.map(item => <FaqItem key={item.id} q={item.question} a={item.answer} />)}
+          </div>
+        </motion.div>
+      )}
+    </section>
+  );
+};
 
 // ─── CONTACT セクション ────────────────────────────────────────────────────────
 

@@ -156,6 +156,18 @@ model EventTemplate {
   @@index([submittedByUid])
 }
 
+model Faq {
+  id        String   @id @default(uuid())
+  question  String
+  answer    String
+  // 表示順。小さい順に上から表示する。
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([order])
+}
+
 model AdminAuditLog {
   id         String   @id @default(uuid())
   actorUid   String

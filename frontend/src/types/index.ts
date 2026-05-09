@@ -11,6 +11,10 @@ export interface Book {
   memo?: string;
   coverUrl?: string;
   circleName?: string;
+  /** シリーズ（例: 青春ブタ野郎、ソードアート・オンライン） */
+  series?: string;
+  /** ジャンル（例: 恋愛、バトル、SF、コメディ） */
+  genre?: string;
   tags?: string[];
   createdAt: number;
   updatedAt: number;

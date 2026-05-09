@@ -21,6 +21,10 @@ model Book {
   memo      String?
   coverUrl   String?
   circleName String?
+  // 同じシリーズ（例: 青春ブタ野郎、ソードアート・オンライン）でまとめるためのタグ。
+  series     String?
+  // ジャンル（例: 恋愛、バトル、SF）でまとめるためのタグ。
+  genre      String?
   tags       String[]
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt

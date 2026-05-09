@@ -256,7 +256,7 @@ export const BookList: React.FC = () => {
         <p className="text-xs text-zinc-600">本棚データのエクスポート・インポート</p>
       </div>
 
-      {/* エキスポートドロップダウン */}
+      {/* エクスポートドロップダウン */}
       <div className="relative">
         <Button
           onClick={() => { setExportMenuOpen(v => !v); setImportMenuOpen(false); }}
@@ -265,7 +265,7 @@ export const BookList: React.FC = () => {
           className="w-full relative flex items-center justify-center gap-2"
         >
           <Upload className="w-3.5 h-3.5" />
-          エキスポート
+          エクスポート
           <ChevronDown className="w-3.5 h-3.5 absolute right-3" />
         </Button>
         {exportMenuOpen && (

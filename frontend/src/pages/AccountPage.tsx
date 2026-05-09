@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Crown, ExternalLink, Check, ShieldCheck } from 'lucide-react';
 import { useCurrentUser } from '../hooks/useCurrentUser';
-import { billingApi, type ResourceKey } from '../lib/api';
+import { billingApi, ApiError, type ResourceKey } from '../lib/api';
 import { Button } from '../components/ui/Button';
 
 const RESOURCE_LABELS: Record<ResourceKey, string> = {
@@ -79,8 +79,18 @@ const AccountPage: React.FC = () => {
     try {
       const { url } = await billingApi.portal();
       window.location.href = url;
-    } catch (e: any) {
-      alert(e?.message ?? 'カスタマーポータルの起動に失敗しました');
+    } catch (e: unknown) {
+      // バックエンドの生のメッセージはそのまま表示せず、エラーコードからユーザー向け文言にマップする。
+      let msg = 'カスタマーポータルの起動に失敗しました。時間をおいて再度お試しください。';
+      if (e instanceof ApiError) {
+        const code = e.payload?.error;
+        if (code === 'billing_unavailable') {
+          msg = '決済機能は現在ご利用いただけません。お手数ですが時間をおいて再度お試しください。';
+        } else if (code === 'no_customer') {
+          msg = 'まだ Pro プランの決済情報が登録されていません。先に Pro プランへお申し込みください。';
+        }
+      }
+      alert(msg);
       setPortalLoading(false);
     }
   };

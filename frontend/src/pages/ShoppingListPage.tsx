@@ -1935,10 +1935,10 @@ const ShoppingListPage: React.FC = () => {
     <div className="space-y-2.5">
       <div className="mb-3">
         <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-0.5">データ管理</p>
-        <p className="text-xs text-zinc-600">買い物リストのエキスポート・インポート</p>
+        <p className="text-xs text-zinc-600">買い物リストのエクスポート・インポート</p>
       </div>
 
-      {/* エキスポートドロップダウン */}
+      {/* エクスポートドロップダウン */}
       <div className="relative">
         <Button
           onClick={() => { setExportMenuOpen(v => !v); setImportMenuOpen(false); }}
@@ -1947,7 +1947,7 @@ const ShoppingListPage: React.FC = () => {
           className="w-full relative flex items-center justify-center gap-2"
         >
           <Upload className="w-3.5 h-3.5" />
-          エキスポート
+          エクスポート
           <ChevronDown className="w-3.5 h-3.5 absolute right-3" />
         </Button>
         {exportMenuOpen && (

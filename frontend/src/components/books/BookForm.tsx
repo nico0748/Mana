@@ -174,10 +174,16 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
   // ── 送信 ─────────────────────────────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // 同人誌は著者名 or サークル名のどちらかが必須（個人誌・サークル誌どちらにも対応するため）
+    if (isDoujin && !formData.author.trim() && !formData.circleName.trim()) {
+      alert("同人誌の登録には、著者名 または サークル名のいずれかが必要です。");
+      return;
+    }
     setLoading(true);
     try {
       await onSubmit({
         ...formData,
+        author:     formData.author.trim(),
         price:      formData.price !== "" ? Number(formData.price) : undefined,
         circleName: formData.circleName || undefined,
         series:     formData.series     || undefined,
@@ -268,10 +274,10 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
             </div>
           </div>
 
-          {/* サークル名（同人誌のみ） */}
+          {/* サークル名（同人誌のみ）。同人誌では著者名 と どちらか必須。 */}
           {isDoujin && (
             <div>
-              <FieldLabel>サークル名</FieldLabel>
+              <FieldLabel required>サークル名</FieldLabel>
               <div className="relative">
                 <Input
                   name="circleName"
@@ -286,10 +292,13 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
                   </span>
                 )}
               </div>
+              <p className="mt-1 text-[10px] text-zinc-500">
+                ※ 著者名 と サークル名は<strong className="text-zinc-300">どちらか必須</strong>です（両方の入力も可）
+              </p>
             </div>
           )}
 
-          {/* 著者名 */}
+          {/* 著者名: 商業誌は必須、同人誌はサークル名と択一 */}
           <div>
             <FieldLabel required>著者名</FieldLabel>
             <div className="relative">
@@ -297,8 +306,8 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
                 name="author"
                 value={formData.author}
                 onChange={isDoujin ? handleAuthorChange : handleChange}
-                required
-                placeholder="著者名を入力"
+                required={!isDoujin}
+                placeholder={isDoujin ? "著者名（サークル名と どちらか必須）" : "著者名を入力"}
                 className={autoHighlightClass("author")}
               />
               {autoFilled === "author" && (

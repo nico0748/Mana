@@ -92,6 +92,61 @@ function pickCoverFromGoogleBooks(items: any[]): string | null {
   return null;
 }
 
+// ─── 一括追加用: タイトル検索で候補リストを取得 ────────────────────────────
+//
+// 「シリーズで一括追加」UI から使用。Google Books の検索結果を最大 maxResults 件返す。
+// 各件にはタイトル・著者・ISBN・表紙が含まれ、ユーザーが UI でチェックして一括登録する。
+
+export interface BookSearchResult {
+  /** Google Books の volume id。選択状態の保持に使う安定 ID */
+  googleBooksId: string;
+  title: string;
+  author: string;
+  isbn?: string;
+  coverUrl?: string;
+  publisher?: string;
+  publishedDate?: string;
+}
+
+export const searchBooksByTitle = async (
+  title: string,
+  maxResults = 30,
+): Promise<BookSearchResult[]> => {
+  const q = title.trim();
+  if (!q) return [];
+  try {
+    const res = await fetch(
+      `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&langRestrict=ja&maxResults=${Math.min(40, maxResults)}`,
+    );
+    const data = await res.json();
+    const items: any[] = Array.isArray(data?.items) ? data.items : [];
+    return items
+      .map((item: any): BookSearchResult | null => {
+        const v = item?.volumeInfo ?? {};
+        if (!v.title) return null;
+        const isbn = (v.industryIdentifiers ?? [])
+          .find((id: any) => id?.type === 'ISBN_13' || id?.type === 'ISBN_10')?.identifier;
+        const rawCover =
+          v.imageLinks?.small ||
+          v.imageLinks?.thumbnail ||
+          v.imageLinks?.smallThumbnail;
+        return {
+          googleBooksId: item.id ?? `${v.title}-${isbn ?? Math.random()}`,
+          title: v.title,
+          author: Array.isArray(v.authors) ? v.authors.join(', ') : '',
+          isbn: typeof isbn === 'string' ? isbn : undefined,
+          coverUrl: normalizeGoogleBooksImageUrl(rawCover) ?? undefined,
+          publisher: typeof v.publisher === 'string' ? v.publisher : undefined,
+          publishedDate: typeof v.publishedDate === 'string' ? v.publishedDate : undefined,
+        };
+      })
+      .filter((b): b is BookSearchResult => b !== null);
+  } catch (e) {
+    console.error('Google Books bulk search failed:', e);
+    return [];
+  }
+};
+
 export const searchBookByTitle = async (title: string): Promise<string | null> => {
   if (!title) return null;
 

@@ -7,11 +7,12 @@ import { type Book } from "../../types";
 import { BookItem } from "./BookItem";
 import { BookForm } from "./BookForm";
 import { BookDetailModal } from "./BookDetailModal";
+import { BulkSeriesAddModal } from "./BulkSeriesAddModal";
 import { PageSidebar } from "../layout/PageSidebar";
 import { Button } from "../ui/Button";
 import {
   Plus, ArrowUpAZ, ArrowDownAZ, Download, Upload, PanelLeft,
-  BookOpen, BookMarked, ChevronDown, FileJson, FileSpreadsheet, Crown,
+  BookOpen, BookMarked, ChevronDown, FileJson, FileSpreadsheet, Crown, BookCopy,
 } from "lucide-react";
 import { Input } from "../ui/Input";
 import { AnimatePresence, motion } from "framer-motion";
@@ -86,6 +87,7 @@ export const BookList: React.FC = () => {
   const booksLimit = useResourceLimit('books');
   const { open: openUpgrade } = useUpgradeModal();
   const [isAdding, setIsAdding] = useState(false);
+  const [isBulkAdding, setIsBulkAdding] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [selectedType, setSelectedType] = useState<Book['type']>('commercial');
@@ -392,9 +394,19 @@ export const BookList: React.FC = () => {
                   <Crown className="mr-2 h-4 w-4" /> Pro で無制限に
                 </Button>
               ) : (
-                <Button onClick={() => setIsAdding(true)} disabled={isAdding}>
-                  <Plus className="mr-2 h-4 w-4" /> 本を追加
-                </Button>
+                <>
+                  <Button
+                    onClick={() => setIsBulkAdding(true)}
+                    variant="outline"
+                    title="シリーズで一括追加"
+                  >
+                    <BookCopy className="mr-2 h-4 w-4" />
+                    <span className="hidden sm:inline">シリーズ追加</span>
+                  </Button>
+                  <Button onClick={() => setIsAdding(true)} disabled={isAdding}>
+                    <Plus className="mr-2 h-4 w-4" /> 本を追加
+                  </Button>
+                </>
               )}
               {booksLimit.plan === 'free' && booksLimit.limit != null && (
                 <span className="hidden sm:inline text-xs text-zinc-500">
@@ -538,6 +550,28 @@ export const BookList: React.FC = () => {
                 onUploadImage={uploadImage}
               />
             </div>
+          )}
+
+          {/* シリーズ一括追加モーダル */}
+          {isBulkAdding && (
+            <BulkSeriesAddModal
+              existingBooks={books}
+              onClose={() => setIsBulkAdding(false)}
+              onAdd={async (data) => {
+                try {
+                  await addBook(data);
+                } catch (err) {
+                  if (isPlanLimitError(err)) {
+                    openUpgrade({
+                      resource: 'books',
+                      limit: err.payload?.limit ?? null,
+                      current: err.payload?.current,
+                    });
+                  }
+                  throw err;
+                }
+              }}
+            />
           )}
 
           {/* 本リスト */}

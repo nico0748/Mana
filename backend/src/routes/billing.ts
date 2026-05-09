@@ -49,7 +49,9 @@ router.post('/checkout', async (req, res) => {
     res.json({ url: session.url });
   } catch (err: any) {
     console.error('billing/checkout error', err);
-    res.status(500).json({ error: 'checkout_failed', message: err?.message });
+    // 詳細は console に出すだけにとどめ、クライアントには内部実装の詳細を漏らさない。
+    const code = err?.message === 'billing_unavailable' ? 'billing_unavailable' : 'checkout_failed';
+    res.status(code === 'billing_unavailable' ? 503 : 500).json({ error: code });
   }
 });
 
@@ -72,7 +74,8 @@ router.post('/portal', async (req, res) => {
     res.json({ url: portal.url });
   } catch (err: any) {
     console.error('billing/portal error', err);
-    res.status(500).json({ error: 'portal_failed', message: err?.message });
+    const code = err?.message === 'billing_unavailable' ? 'billing_unavailable' : 'portal_failed';
+    res.status(code === 'billing_unavailable' ? 503 : 500).json({ error: code });
   }
 });
 

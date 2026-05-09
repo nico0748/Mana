@@ -180,7 +180,7 @@ const TemplatesPage: React.FC = () => {
             <Star size={14} className="text-violet-400" />
             <span className="text-sm font-semibold text-zinc-400">同人++</span>
           </div>
-          <p className="text-xs text-zinc-600">© 2024 同人++</p>
+          <p className="text-xs text-zinc-600">© 2026 同人++</p>
         </div>
       </footer>
     </div>

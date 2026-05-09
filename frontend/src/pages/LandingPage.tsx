@@ -907,7 +907,7 @@ const Footer: React.FC = () => (
           同人++
         </span>
       </div>
-      <p className="text-xs text-zinc-600">© 2024 同人++ — 同人活動をもっとスマートに</p>
+      <p className="text-xs text-zinc-600">© 2026 同人++ — 同人活動をもっとスマートに</p>
     </div>
   </footer>
 );

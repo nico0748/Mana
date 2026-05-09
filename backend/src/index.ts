@@ -18,6 +18,7 @@ import {
   userEventTemplatesRouter,
 } from './routes/eventTemplates';
 import { publicFaqsRouter } from './routes/faqs';
+import { publicBookSearchRouter } from './routes/bookSearch';
 import { authenticate } from './middleware/auth';
 import { requireAdmin, adminRateLimit } from './middleware/requireAdmin';
 
@@ -46,6 +47,7 @@ app.use(express.json({ limit: '50mb' })); // large for image data URLs
 app.use('/api/public/announcements', publicAnnouncementsRouter);
 app.use('/api/public/event-templates', publicEventTemplatesRouter);
 app.use('/api/public/faqs', publicFaqsRouter);
+app.use('/api/public/book-search', publicBookSearchRouter);
 
 app.use('/api', authenticate);
 app.use('/api/admin', adminRateLimit, requireAdmin, adminRouter);

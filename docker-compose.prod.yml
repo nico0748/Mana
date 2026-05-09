@@ -35,6 +35,8 @@ services:
       STRIPE_PRICE_YEARLY: ${STRIPE_PRICE_YEARLY}
       APP_URL: ${APP_URL}
       INITIAL_ADMIN_UIDS: ${INITIAL_ADMIN_UIDS}
+      # ── 楽天ブックス API（任意・書籍カバー検索の補完ソース） ──
+      RAKUTEN_APP_ID: ${RAKUTEN_APP_ID}
     depends_on:
       db:
         condition: service_healthy

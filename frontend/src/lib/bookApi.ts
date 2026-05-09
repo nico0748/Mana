@@ -239,8 +239,64 @@ export interface BookSearchResult {
   coverUrl?: string;
   publisher?: string;
   publishedDate?: string;
-  /** ヒット元: 'ndl' / 'google' （UI でバッジ表示等に使用） */
-  source?: 'ndl' | 'google';
+  /** ヒット元: 'ndl' / 'rakuten' / 'google'（UI でバッジ表示等に使用） */
+  source?: 'ndl' | 'rakuten' | 'google';
+}
+
+// ─── 楽天ブックス検索（バックエンドプロキシ経由） ─────────────────────────
+//
+// バックエンドの /api/public/book-search/rakuten が楽天 BooksBook API をプロキシする。
+// `RAKUTEN_APP_ID` が未設定なら 503 を返すので、その場合は無視して次のソースへフォールバック。
+
+async function searchRakutenByTitle(
+  title: string,
+  maxResults: number,
+): Promise<BookSearchResult[]> {
+  try {
+    const r = await fetch(
+      `/api/public/book-search/rakuten?title=${encodeURIComponent(title)}&hits=${Math.min(30, maxResults)}`,
+    );
+    if (!r.ok) return [];
+    const data = await r.json();
+    const items: any[] = Array.isArray(data?.Items) ? data.Items : [];
+    return items
+      .map((item: any): BookSearchResult | null => {
+        if (!item?.title) return null;
+        const cover =
+          item.largeImageUrl || item.mediumImageUrl || item.smallImageUrl || '';
+        return {
+          // 楽天の表紙 URL は `?_ex=200x200` のようなクエリ付き低解像度になっているので、
+          // クエリを取り除くと最大解像度（だいたい 200x300〜400x600）を取れる
+          id: `rkt-${item.isbn ?? item.title}`,
+          title: String(item.title),
+          author: item.author ? String(item.author) : '',
+          isbn: item.isbn ? String(item.isbn) : undefined,
+          coverUrl: cover ? cover.replace(/\?_ex=.*$/, '') : undefined,
+          publisher: item.publisherName ? String(item.publisherName) : undefined,
+          publishedDate: item.salesDate ? String(item.salesDate) : undefined,
+          source: 'rakuten',
+        };
+      })
+      .filter((b): b is BookSearchResult => b !== null);
+  } catch (e) {
+    console.warn('Rakuten search failed:', e);
+    return [];
+  }
+}
+
+async function fetchRakutenCoverByIsbn(isbn: string): Promise<string | null> {
+  try {
+    const r = await fetch(
+      `/api/public/book-search/rakuten?isbn=${encodeURIComponent(isbn)}&hits=1`,
+    );
+    if (!r.ok) return null;
+    const data = await r.json();
+    const item = Array.isArray(data?.Items) ? data.Items[0] : null;
+    const cover = item?.largeImageUrl || item?.mediumImageUrl || item?.smallImageUrl;
+    return cover ? String(cover).replace(/\?_ex=.*$/, '') : null;
+  } catch {
+    return null;
+  }
 }
 
 async function searchGoogleBooks(title: string, maxResults: number): Promise<BookSearchResult[]> {
@@ -308,6 +364,18 @@ export const searchBooksByTitle = async (
     const isbnList = dedupedNdl.map(r => r.isbn).filter((s): s is string => !!s);
     const coverMap = await fetchOpenBdCovers(isbnList);
 
+    // OpenBD で表紙が見つからなかった ISBN について、楽天で個別に補完する。
+    // 件数が多いと楽天側のレート制限に引っかかるので、最初の 5 件だけ補完する。
+    const missingIsbns = isbnList.filter(i => !coverMap.has(i)).slice(0, 5);
+    if (missingIsbns.length > 0) {
+      const rakutenCovers = await Promise.all(
+        missingIsbns.map(async i => [i, await fetchRakutenCoverByIsbn(i)] as const),
+      );
+      for (const [isbn, cover] of rakutenCovers) {
+        if (cover) coverMap.set(isbn, cover);
+      }
+    }
+
     return dedupedNdl.map((r): BookSearchResult => ({
       id: r.isbn ?? `ndl-${r.title}-${r.author}`,
       title: r.title,
@@ -320,7 +388,10 @@ export const searchBooksByTitle = async (
     }));
   }
 
-  // NDL でゼロヒットなら Google Books にフォールバック
+  // NDL でゼロヒットなら 楽天 → Google Books の順にフォールバック
+  const rakuten = await searchRakutenByTitle(q, maxResults);
+  if (rakuten.length > 0) return rakuten;
+
   return searchGoogleBooks(q, maxResults);
 };
 
@@ -343,7 +414,19 @@ export const searchBookByTitle = async (title: string): Promise<string | null> =
     }
   }
 
-  // OpenBD で表紙が見つからなかった or NDL がヒットしなかった場合 → Google Books に問い合わせ
+  // OpenBD で表紙が見つからなかった or NDL がヒットしなかった場合 → 楽天 → Google Books の順
+  // (1) 楽天: NDL の ISBN ベースで未取得の場合の補完
+  if (isbns.length > 0) {
+    for (const isbn of isbns) {
+      const cover = await fetchRakutenCoverByIsbn(isbn);
+      if (cover) return cover;
+    }
+  }
+  // (2) 楽天: タイトル検索（NDL ゼロヒット時の保険）
+  const rakuten = await searchRakutenByTitle(q, 1);
+  if (rakuten[0]?.coverUrl) return rakuten[0].coverUrl;
+
+  // (3) Google Books 最終フォールバック
   try {
     const res = await fetch(
       `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&langRestrict=ja&maxResults=1`,

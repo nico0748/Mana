@@ -2,6 +2,7 @@ import type {
   Announcement, AnnouncementCategory,
   Book, Circle, CircleItem, Distribution, DoujinEvent, VenueMap,
   EventTemplate, EventTemplateSummary, EventTemplateAdminView, EventTemplateStatus,
+  Faq,
 } from '../types';
 import { auth } from './firebase';
 
@@ -139,6 +140,25 @@ export const eventTemplatesApi = {
     req<EventTemplateAdminView>(`/admin/event-templates/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   adminDelete: (id: string) =>
     req<void>(`/admin/event-templates/${id}`, { method: 'DELETE' }),
+};
+
+// ── FAQ ────────────────────────────────────────────────────────────────────
+export interface FaqInput {
+  question: string;
+  answer: string;
+  order?: number;
+}
+
+export const faqsApi = {
+  // 公開: /about の FAQ セクションから取得（認証不要）
+  list: () => req<Faq[]>('/public/faqs'),
+  // 管理者
+  create: (data: FaqInput) =>
+    req<Faq>('/admin/faqs', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: Partial<FaqInput>) =>
+    req<Faq>(`/admin/faqs/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  delete: (id: string) =>
+    req<void>(`/admin/faqs/${id}`, { method: 'DELETE' }),
 };
 
 // ── Sync ───────────────────────────────────────────────────────────────────

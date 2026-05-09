@@ -4,11 +4,11 @@ import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tansta
 import {
   ArrowLeft, ShieldCheck, Users, ScrollText, Crown, Search, Loader2, Lock, AlertTriangle,
   RefreshCw, Megaphone, ImagePlus, X, Send, Save, CalendarClock, Pencil,
-  FileJson, MapPin, Check, ChevronDown, ChevronUp, Users2, Trash2,
+  FileJson, MapPin, Check, ChevronDown, ChevronUp, Users2, Trash2, HelpCircle,
 } from 'lucide-react';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import {
-  adminApi, announcementsApi, eventTemplatesApi, ApiError,
+  adminApi, announcementsApi, eventTemplatesApi, faqsApi, ApiError,
   type AdminUser, type AdminAuditLogEntry, type AdminStats, type Role,
 } from '../lib/api';
 import { Button } from '../components/ui/Button';
@@ -16,9 +16,10 @@ import { AnnouncementItem } from '../components/AnnouncementItem';
 import type {
   Announcement, AnnouncementCategory,
   EventTemplateAdminView, EventTemplateStatus,
+  Faq,
 } from '../types';
 
-type Tab = 'dashboard' | 'users' | 'audit' | 'announcements' | 'event-templates';
+type Tab = 'dashboard' | 'users' | 'audit' | 'announcements' | 'event-templates' | 'faqs';
 
 const formatDateTime = (ms: number) =>
   new Date(ms).toLocaleString('ja-JP', {
@@ -1100,6 +1101,280 @@ const EventTemplatesTab: React.FC = () => {
   );
 };
 
+// ── FAQ tab ──────────────────────────────────────────────────────────────────
+
+const FaqsTab: React.FC = () => {
+  const queryClient = useQueryClient();
+  const formRef = React.useRef<HTMLDivElement>(null);
+  const [editingId, setEditingId] = React.useState<string | null>(null);
+  const [question, setQuestion] = React.useState('');
+  const [answer, setAnswer] = React.useState('');
+  const [orderInput, setOrderInput] = React.useState('');
+  const [confirmDelete, setConfirmDelete] = React.useState<Faq | null>(null);
+  const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['faqs', 'public'],
+    queryFn: faqsApi.list,
+    staleTime: 30_000,
+  });
+
+  const resetForm = () => {
+    setEditingId(null);
+    setQuestion('');
+    setAnswer('');
+    setOrderInput('');
+    setErrorMsg(null);
+  };
+
+  const startEdit = (f: Faq) => {
+    setEditingId(f.id);
+    setQuestion(f.question);
+    setAnswer(f.answer);
+    setOrderInput(String(f.order));
+    setErrorMsg(null);
+    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const buildPayload = () => {
+    const trimmedOrder = orderInput.trim();
+    const order = trimmedOrder === '' ? undefined : Number(trimmedOrder);
+    return {
+      question: question.trim(),
+      answer: answer.trim(),
+      ...(order !== undefined && Number.isFinite(order) ? { order } : {}),
+    };
+  };
+
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ['faqs', 'public'] });
+
+  const createMutation = useMutation({
+    mutationFn: () => faqsApi.create(buildPayload()),
+    onSuccess: () => { resetForm(); refresh(); },
+    onError: () => setErrorMsg('投稿に失敗しました'),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: () => {
+      if (!editingId) throw new Error('not editing');
+      return faqsApi.update(editingId, buildPayload());
+    },
+    onSuccess: () => { resetForm(); refresh(); },
+    onError: () => setErrorMsg('更新に失敗しました'),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => faqsApi.delete(id),
+    onSuccess: (_, id) => {
+      if (editingId === id) resetForm();
+      setConfirmDelete(null);
+      refresh();
+    },
+    onError: () => setErrorMsg('削除に失敗しました'),
+  });
+
+  const isEditing = editingId !== null;
+  const submitting = createMutation.isPending || updateMutation.isPending;
+  const canSubmit = question.trim().length > 0 && answer.trim().length > 0 && !submitting;
+
+  const handleSubmit = () => {
+    if (!canSubmit) return;
+    if (isEditing) updateMutation.mutate();
+    else createMutation.mutate();
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* ── 投稿 / 編集フォーム ── */}
+      <div
+        ref={formRef}
+        className={[
+          'rounded-2xl border bg-zinc-900/60 p-5 space-y-4 transition-colors',
+          isEditing ? 'border-amber-500/40 ring-1 ring-amber-500/20' : 'border-zinc-800',
+        ].join(' ')}
+      >
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold text-zinc-200 flex items-center gap-2">
+            {isEditing ? (
+              <>
+                <Pencil className="w-4 h-4 text-amber-300" />
+                <span>編集中</span>
+              </>
+            ) : (
+              <>
+                <HelpCircle className="w-4 h-4" />
+                <span>新規 FAQ</span>
+              </>
+            )}
+          </h3>
+          {isEditing && (
+            <button
+              type="button"
+              onClick={resetForm}
+              disabled={submitting}
+              className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-200 transition-colors disabled:opacity-40"
+            >
+              <X className="w-3.5 h-3.5" />
+              編集をキャンセル
+            </button>
+          )}
+        </div>
+
+        <div>
+          <label className="block text-xs text-zinc-500 mb-1.5">質問</label>
+          <input
+            type="text"
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            placeholder="例: テンプレートデータとは？"
+            maxLength={200}
+            className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-100 text-sm placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs text-zinc-500 mb-1.5">回答</label>
+          <textarea
+            value={answer}
+            onChange={(e) => setAnswer(e.target.value)}
+            placeholder="回答を入力してください"
+            rows={5}
+            maxLength={5000}
+            className="w-full px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-100 text-sm placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs text-zinc-500 mb-1.5">
+            表示順（小さいほど上に表示。空のままなら末尾に追加）
+          </label>
+          <input
+            type="number"
+            value={orderInput}
+            onChange={(e) => setOrderInput(e.target.value)}
+            placeholder="例: 1"
+            className="w-32 px-3 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-100 text-sm placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+          />
+        </div>
+
+        {errorMsg && (
+          <div className="text-xs text-red-400 bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2">
+            {errorMsg}
+          </div>
+        )}
+
+        <div className="flex justify-end gap-2">
+          {isEditing && (
+            <Button variant="ghost" size="sm" onClick={resetForm} disabled={submitting}>
+              キャンセル
+            </Button>
+          )}
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleSubmit}
+            isLoading={submitting}
+            disabled={!canSubmit}
+          >
+            {isEditing
+              ? <><Save className="w-4 h-4 mr-2" />更新する</>
+              : <><Send className="w-4 h-4 mr-2" />投稿する</>}
+          </Button>
+        </div>
+      </div>
+
+      {/* ── 既存 FAQ 一覧 ── */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-zinc-200">登録済みの FAQ</h3>
+        {isLoading && (
+          <div className="text-zinc-500 text-sm flex items-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" />読み込み中…
+          </div>
+        )}
+        {error && <div className="text-red-400 text-sm">FAQ の取得に失敗しました。</div>}
+        {data && data.length === 0 && (
+          <div className="text-zinc-500 text-sm">まだ FAQ はありません。</div>
+        )}
+        {data && data.length > 0 && (
+          <ul className="space-y-2">
+            {data.map(f => (
+              <li
+                key={f.id}
+                className={[
+                  'rounded-xl border bg-zinc-900/60 px-4 py-3',
+                  editingId === f.id ? 'border-amber-500/40 ring-1 ring-amber-500/20' : 'border-zinc-800',
+                ].join(' ')}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 text-[10px] text-zinc-500 mb-1">
+                      <span className="px-1.5 py-0.5 rounded bg-zinc-800 font-mono tabular-nums">#{f.order}</span>
+                    </div>
+                    <p className="text-sm font-semibold text-zinc-100 leading-snug mb-1">{f.question}</p>
+                    <p className="text-xs text-zinc-400 leading-relaxed whitespace-pre-wrap break-words line-clamp-3">{f.answer}</p>
+                  </div>
+                  <div className="flex items-center gap-0.5 flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => startEdit(f)}
+                      className="p-1.5 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 rounded-lg transition-colors"
+                      title="編集"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDelete(f)}
+                      disabled={deleteMutation.isPending && confirmDelete?.id === f.id}
+                      className="p-1.5 text-zinc-600 hover:text-red-400 hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-40"
+                      title="削除"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      {/* ── 削除確認 ── */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="w-full max-w-sm bg-zinc-900 rounded-2xl border border-zinc-800 p-6 space-y-4">
+            <div className="flex items-center gap-2 text-red-400">
+              <AlertTriangle className="w-5 h-5" />
+              <h3 className="text-base font-semibold">FAQ を削除</h3>
+            </div>
+            <p className="text-sm text-zinc-400 leading-relaxed">
+              「<span className="text-zinc-200">{confirmDelete.question}</span>」を削除します。この操作は取り消せません。
+            </p>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setConfirmDelete(null)}
+                disabled={deleteMutation.isPending}
+              >
+                キャンセル
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => deleteMutation.mutate(confirmDelete.id)}
+                isLoading={deleteMutation.isPending}
+              >
+                削除する
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── Top page ─────────────────────────────────────────────────────────────────
 const AdminPage: React.FC = () => {
   const { data: me, isLoading } = useCurrentUser();
@@ -1163,6 +1438,12 @@ const AdminPage: React.FC = () => {
             label="テンプレート申請"
           />
           <TabButton
+            active={tab === 'faqs'}
+            onClick={() => setTab('faqs')}
+            icon={<HelpCircle className="w-4 h-4" />}
+            label="FAQ"
+          />
+          <TabButton
             active={tab === 'audit'}
             onClick={() => setTab('audit')}
             icon={<ScrollText className="w-4 h-4" />}
@@ -1174,6 +1455,7 @@ const AdminPage: React.FC = () => {
         {tab === 'users' && <UsersTab currentUid={me.user.firebaseUid} />}
         {tab === 'announcements' && <AnnouncementsTab />}
         {tab === 'event-templates' && <EventTemplatesTab />}
+        {tab === 'faqs' && <FaqsTab />}
         {tab === 'audit' && <AuditTab />}
       </div>
     </div>

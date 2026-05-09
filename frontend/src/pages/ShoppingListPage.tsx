@@ -1578,10 +1578,18 @@ const ShoppingListPage: React.FC = () => {
   };
 
   const handleSidebarEventClick = (eventId: string) => {
-    // 開いた状態でスクロールジャンプ（閉じたまま飛ぶと UX が悪い）
+    // 既に開いている即売会を再度クリックした場合は閉じる（トグル）。
+    // 閉じている状態 → 開いた上でスクロールジャンプし、モバイルではドロワーを閉じる。
+    if (expandedEvents.has(eventId)) {
+      setExpandedEvents(prev => {
+        const next = new Set(prev);
+        next.delete(eventId);
+        return next;
+      });
+      return;
+    }
     setExpandedEvents(prev => new Set(prev).add(eventId));
     setSidebarOpen(false);
-    // 状態更新後の再描画を待ってからスクロール
     requestAnimationFrame(() => {
       const el = document.getElementById(`shopping-event-${eventId}`);
       el?.scrollIntoView({ behavior: 'smooth', block: 'start' });

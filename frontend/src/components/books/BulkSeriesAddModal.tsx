@@ -59,7 +59,7 @@ export const BulkSeriesAddModal: React.FC<Props> = ({ existingBooks = [], onAdd,
   };
 
   const handleConfirm = async () => {
-    const targets = results.filter(r => selected.has(r.googleBooksId));
+    const targets = results.filter(r => selected.has(r.id));
     if (targets.length === 0) return;
 
     setAdding(true);
@@ -236,7 +236,7 @@ export const BulkSeriesAddModal: React.FC<Props> = ({ existingBooks = [], onAdd,
                 <div className="flex gap-1.5">
                   <button
                     type="button"
-                    onClick={() => setSelected(new Set(results.map(r => r.googleBooksId)))}
+                    onClick={() => setSelected(new Set(results.map(r => r.id)))}
                     disabled={adding}
                     className="text-xs text-zinc-400 hover:text-zinc-100 px-2 py-1 rounded hover:bg-zinc-800 transition-colors disabled:opacity-40"
                   >
@@ -255,12 +255,12 @@ export const BulkSeriesAddModal: React.FC<Props> = ({ existingBooks = [], onAdd,
 
               <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {results.map(r => {
-                  const isSelected = selected.has(r.googleBooksId);
+                  const isSelected = selected.has(r.id);
                   return (
-                    <li key={r.googleBooksId}>
+                    <li key={r.id}>
                       <button
                         type="button"
-                        onClick={() => toggle(r.googleBooksId)}
+                        onClick={() => toggle(r.id)}
                         disabled={adding}
                         className={[
                           'w-full text-left flex items-start gap-3 p-3 rounded-xl border transition-colors',

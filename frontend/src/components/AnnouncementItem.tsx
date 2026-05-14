@@ -3,6 +3,18 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Trash2, Sparkles, Wrench, CalendarDays, Megaphone, Pencil, ChevronDown, ChevronUp } from 'lucide-react';
 import type { Announcement, AnnouncementCategory } from '../types';
+import { isSafeHttpUrl } from '../lib/url';
+
+// react-markdown のリンク・画像 URL を明示的にホワイトリスト化する。
+// react-markdown v8+ の defaultUrlTransform は javascript: を弾くが、
+// ここで明示しておくことでデフォルト挙動の変更耐性を持たせる。
+// 許可: http(s):, mailto:, tel:, # (アンカーリンク), 同一オリジン相対 URL
+const safeUrlTransform = (url: string): string => {
+  if (!url) return '';
+  if (url.startsWith('#') || url.startsWith('/')) return url;
+  if (url.startsWith('mailto:') || url.startsWith('tel:')) return url;
+  return isSafeHttpUrl(url) ? url : '';
+};
 
 const CATEGORY_META: Record<AnnouncementCategory, { label: string; icon: React.ComponentType<{ className?: string }>; chip: string }> = {
   feature: { label: '機能追加', icon: Sparkles,     chip: 'bg-violet-500/15 text-violet-300 ring-violet-500/30' },
@@ -117,6 +129,7 @@ export const AnnouncementItem: React.FC<Props> = ({
           <div className="text-sm text-zinc-300 leading-relaxed space-y-3 break-words">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
+              urlTransform={safeUrlTransform}
               components={{
                 p:      ({ children }) => <p className="text-zinc-300">{children}</p>,
                 h1:     ({ children }) => <h4 className="text-base font-bold text-zinc-100 mt-3">{children}</h4>,

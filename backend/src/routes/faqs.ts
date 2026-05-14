@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../prisma';
+import { normalizeText } from '../lib/text';
 
 const MAX_QUESTION_LEN = 200;
 const MAX_ANSWER_LEN = 5000;
@@ -29,7 +30,9 @@ function parseInput(
   if (raw.question !== undefined) {
     if (typeof raw.question !== 'string' || !raw.question.trim()) return { ok: false, error: 'question_required' };
     if (raw.question.length > MAX_QUESTION_LEN) return { ok: false, error: 'question_too_long' };
-    data.question = raw.question.trim();
+    const normQ = normalizeText(raw.question);
+    if (!normQ) return { ok: false, error: 'question_required' };
+    data.question = normQ;
   } else if (!options.partial) {
     return { ok: false, error: 'question_required' };
   }
@@ -37,7 +40,8 @@ function parseInput(
   if (raw.answer !== undefined) {
     if (typeof raw.answer !== 'string' || !raw.answer.trim()) return { ok: false, error: 'answer_required' };
     if (raw.answer.length > MAX_ANSWER_LEN) return { ok: false, error: 'answer_too_long' };
-    data.answer = raw.answer;
+    // 回答本文は改行・空白を保つため trim はせず NFC 正規化のみ
+    data.answer = raw.answer.normalize('NFC');
   } else if (!options.partial) {
     return { ok: false, error: 'answer_required' };
   }

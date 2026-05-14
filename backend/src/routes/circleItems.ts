@@ -1,7 +1,11 @@
 import { Router } from 'express';
 import { prisma } from '../prisma';
+import { normalizeFields } from '../lib/text';
 
 const router = Router();
+
+// CircleItem のテキストフィールド。coverUrl は URL なので除外、status 系も列挙値。
+const ITEM_TEXT_FIELDS = ['title', 'type'] as const;
 
 router.get('/', async (req, res) => {
   const uid = (req as any).uid as string;
@@ -13,15 +17,16 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   const uid = (req as any).uid as string;
-  const { id, ...data } = req.body;
+  const { id, ...rest } = req.body;
   // Verify circle ownership
   const circle = await prisma.circle.findFirst({
-    where: { id: data.circleId, userId: uid },
+    where: { id: rest.circleId, userId: uid },
   });
   if (!circle) {
     res.status(403).json({ error: 'Forbidden' });
     return;
   }
+  const data = normalizeFields(rest, ITEM_TEXT_FIELDS);
   const item = await prisma.circleItem.create({ data });
   res.status(201).json(item);
 });
@@ -39,10 +44,11 @@ router.put('/:id', async (req, res) => {
     'title', 'type', 'price', 'quantity', 'coverUrl',
     'status', 'onlineStatus', 'addedToLibraryBookId',
   ] as const;
-  const data: Record<string, unknown> = {};
+  const filtered: Record<string, unknown> = {};
   for (const key of allowed) {
-    if (key in req.body) data[key] = req.body[key];
+    if (key in req.body) filtered[key] = req.body[key];
   }
+  const data = normalizeFields(filtered, ITEM_TEXT_FIELDS);
   const updated = await prisma.circleItem.update({
     where: { id: req.params.id },
     data,

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../prisma';
+import { normalizeText } from '../lib/text';
 
 const ALLOWED_CATEGORIES = new Set(['feature', 'fix', 'event', 'info']);
 const MAX_TITLE_LEN = 200;
@@ -48,8 +49,10 @@ function parseInput(
 
   if (raw.title !== undefined) {
     if (typeof raw.title !== 'string' || !raw.title.trim()) return { ok: false, error: 'title_required' };
+    const normalizedTitle = normalizeText(raw.title);
+    if (!normalizedTitle) return { ok: false, error: 'title_required' };
     if (raw.title.length > MAX_TITLE_LEN) return { ok: false, error: 'title_too_long' };
-    data.title = raw.title.trim();
+    data.title = normalizedTitle;
   } else if (!options.partial) {
     return { ok: false, error: 'title_required' };
   }
@@ -57,7 +60,8 @@ function parseInput(
   if (raw.body !== undefined) {
     if (typeof raw.body !== 'string' || !raw.body.trim()) return { ok: false, error: 'body_required' };
     if (raw.body.length > MAX_BODY_LEN) return { ok: false, error: 'body_too_long' };
-    data.body = raw.body;
+    // body は本文として改行・空白を残したいので trim はせず、NFC 正規化のみ
+    data.body = raw.body.normalize('NFC');
   } else if (!options.partial) {
     return { ok: false, error: 'body_required' };
   }

@@ -16,6 +16,7 @@ import {
   exportCirclesJson, exportCirclesCsv, exportCirclesExcel,
 } from '../lib/circlesCsv';
 import { eventsApi, circlesApi, circleItemsApi, booksApi, venueMapsApi, eventTemplatesApi, ApiError } from '../lib/api';
+import { isSafeHttpUrl } from '../lib/url';
 import { useUpgradeModal, isPlanLimitError } from '../contexts/UpgradeModalContext';
 import { ShoppingTabs } from '../components/shopping/ShoppingTabs';
 import TemplateImportModal from '../components/map/TemplateImportModal';
@@ -224,7 +225,9 @@ const CircleCard: React.FC<CircleCardProps> = ({
               <p className="text-sm text-zinc-400">{circle.author}</p>
             </div>
             <div className="flex items-center gap-1 flex-shrink-0">
-              {circle.xUrl && (
+              {/* xUrl は <a href> に注入されるため、http(s):// 以外を弾く（XSS 防止）。
+                  旧データや CSV 経由で不正な値が紛れ込んでいた場合のレンダ時の最後の砦。 */}
+              {circle.xUrl && isSafeHttpUrl(circle.xUrl) && (
                 <a
                   href={circle.xUrl}
                   target="_blank"
@@ -425,6 +428,10 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ onAdd, onClose }) => {
     e.preventDefault();
     if (!form.name) return;
     const { xUrl, ...rest } = form;
+    if (xUrl && !isSafeHttpUrl(xUrl)) {
+      alert('X (Twitter) の URL は http:// または https:// で始まる正しい URL を入力してください。');
+      return;
+    }
     onAdd({ ...rest, ...(xUrl ? { xUrl } : {}) });
     onClose();
   };
@@ -524,6 +531,10 @@ const EditCircleModal: React.FC<EditCircleModalProps> = ({ circle, onSave, onClo
     e.preventDefault();
     if (!form.name) return;
     const { xUrl, ...rest } = form;
+    if (xUrl && !isSafeHttpUrl(xUrl)) {
+      alert('X (Twitter) の URL は http:// または https:// で始まる正しい URL を入力してください。');
+      return;
+    }
     onSave(circle.id, { ...rest, xUrl: xUrl || undefined });
     onClose();
   };

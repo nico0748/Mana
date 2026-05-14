@@ -57,10 +57,19 @@ router.delete('/', async (req, res) => {
     res.status(400).json({ error: 'confirm_required' });
     return;
   }
-  const typed = confirm.trim();
+
+  // 比較対象は両側とも NFC 正規化する。
+  // - 互換文字（半角/全角、合成文字 vs 分解文字、㌀のような互換漢字）でバイト列が一致せず
+  //   ユーザーが「正しいユーザー名を入れたのに削除できない」UX バグを防ぐ。
+  // - 同時に、悪意ある第三者が U+212A (Kelvin Sign) のような視覚的同一文字を
+  //   入力した場合のなりすまし的バイパスを抑止する（このルートは認証必須なので
+  //   攻撃面は限定的だが、ハードニングとして揃える）。
+  const norm = (s: string) => s.normalize('NFC').trim();
+  const typed = norm(confirm);
 
   // ユーザー名 (displayName) を最優先、未設定なら email を許容する。
-  const expected = user.displayName?.trim() || user.email?.trim() || null;
+  const expectedRaw = user.displayName || user.email || '';
+  const expected = norm(expectedRaw);
   if (!expected) {
     // 確認に使える情報が DB にない（極めて稀）。サポート対応で進めてもらう。
     res.status(409).json({ error: 'confirmation_target_missing' });

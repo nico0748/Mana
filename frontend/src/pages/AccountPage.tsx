@@ -81,18 +81,20 @@ const AccountPage: React.FC = () => {
   }, [location.search, queryClient, navigate]);
 
   // 削除確認に使う名前。displayName を最優先、空なら email にフォールバック。
-  const confirmTarget =
-    (authUser?.displayName?.trim() || data?.user?.email?.trim() || '').trim();
+  // 比較は NFC 正規化で行う（半角/全角・合成文字違いで誤判定されない・なりすまし耐性も上がる）。
+  const normalize = (s: string) => s.normalize('NFC').trim();
+  const confirmTargetRaw = authUser?.displayName || data?.user?.email || '';
+  const confirmTarget = normalize(confirmTargetRaw);
 
   const handleDeleteAccount = async () => {
-    if (!confirmTarget || deleteInput.trim() !== confirmTarget) {
+    if (!confirmTarget || normalize(deleteInput) !== confirmTarget) {
       setDeleteError('入力内容が一致しません。');
       return;
     }
     setDeleting(true);
     setDeleteError(null);
     try {
-      await meApi.deleteAccount(deleteInput.trim());
+      await meApi.deleteAccount(normalize(deleteInput));
       // Firebase 側はバックエンドが削除済み。ローカルの認証情報を消してログイン画面へ。
       try { await logout(); } catch { /* noop */ }
       queryClient.clear();
@@ -354,7 +356,7 @@ const AccountPage: React.FC = () => {
                 size="sm"
                 onClick={handleDeleteAccount}
                 isLoading={deleting}
-                disabled={deleteInput.trim() !== confirmTarget || !confirmTarget}
+                disabled={normalize(deleteInput) !== confirmTarget || !confirmTarget}
                 className="bg-red-600 hover:bg-red-500 text-white"
               >
                 <Trash2 className="w-4 h-4 mr-1.5" />

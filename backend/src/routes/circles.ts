@@ -2,8 +2,13 @@ import { Router } from 'express';
 import { prisma } from '../prisma';
 import { guardLimit } from '../lib/enforceLimit';
 import { sanitizeHttpUrl } from '../lib/url';
+import { normalizeFields } from '../lib/text';
 
 const router = Router();
+
+// Circle の自由入力テキスト。xUrl は URL のため別途 sanitizeHttpUrl で検証する。
+// menuImageUrl は Base64 のため除外。status は列挙値で除外。
+const CIRCLE_TEXT_FIELDS = ['name', 'author', 'hall', 'block', 'number'] as const;
 
 const toCircle = (c: any) => ({
   ...c,
@@ -24,6 +29,13 @@ function sanitizeCircleInput<T extends Record<string, any>>(data: T): T {
   return data;
 }
 
+// 1 行で「xUrl の安全検証」と「テキストフィールドの NFC 正規化」を順に適用するヘルパ。
+// 触るフィールドが互いに重ならないので順序は実質どちらでも良いが、URL の検証を先に
+// やってから普通のテキスト正規化、という見通しのよい順番にしておく。
+function prepareCircleData<T extends Record<string, any>>(rest: T): T {
+  return normalizeFields(sanitizeCircleInput(rest), CIRCLE_TEXT_FIELDS);
+}
+
 router.get('/', async (req, res) => {
   const uid = (req as any).uid as string;
   const circles = await prisma.circle.findMany({
@@ -37,7 +49,7 @@ router.post('/', async (req, res) => {
   const uid = (req as any).uid as string;
   if (!(await guardLimit(res, req.user!, 'circles'))) return;
   const { id, createdAt, updatedAt, userId, ...rest } = req.body;
-  const data = sanitizeCircleInput(rest);
+  const data = prepareCircleData(rest);
   const circle = await prisma.circle.create({ data: { ...data, userId: uid } });
   res.status(201).json(toCircle(circle));
 });
@@ -49,7 +61,7 @@ router.post('/bulk', async (req, res) => {
   if (!(await guardLimit(res, req.user!, 'circles', rows.length))) return;
   const circles = await prisma.$transaction(
     rows.map(({ id, createdAt, updatedAt, userId, ...rest }) => {
-      const data = sanitizeCircleInput(rest);
+      const data = prepareCircleData(rest);
       return prisma.circle.create({ data: { ...data, userId: uid } });
     })
   );
@@ -59,7 +71,7 @@ router.post('/bulk', async (req, res) => {
 router.put('/:id', async (req, res) => {
   const uid = (req as any).uid as string;
   const { id, createdAt, updatedAt, userId, ...rest } = req.body;
-  const data = sanitizeCircleInput(rest);
+  const data = prepareCircleData(rest);
   const circle = await prisma.circle.update({
     where: { id: req.params.id, userId: uid },
     data,

@@ -1,8 +1,11 @@
 import { Router } from 'express';
 import { prisma } from '../prisma';
 import { guardLimit } from '../lib/enforceLimit';
+import { normalizeFields } from '../lib/text';
 
 const router = Router();
+
+const DIST_TEXT_FIELDS = ['title'] as const;
 
 const toDist = (d: any) => ({
   ...d,
@@ -23,14 +26,16 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   const uid = (req as any).uid as string;
   if (!(await guardLimit(res, req.user!, 'distributions'))) return;
-  const { id, createdAt, updatedAt, userId, ...data } = req.body;
+  const { id, createdAt, updatedAt, userId, ...rest } = req.body;
+  const data = normalizeFields(rest, DIST_TEXT_FIELDS);
   const dist = await prisma.distribution.create({ data: { ...data, userId: uid } });
   res.status(201).json(toDist(dist));
 });
 
 router.put('/:id', async (req, res) => {
   const uid = (req as any).uid as string;
-  const { id, createdAt, updatedAt, userId, ...data } = req.body;
+  const { id, createdAt, updatedAt, userId, ...rest } = req.body;
+  const data = normalizeFields(rest, DIST_TEXT_FIELDS);
   const dist = await prisma.distribution.update({
     where: { id: req.params.id, userId: uid },
     data,

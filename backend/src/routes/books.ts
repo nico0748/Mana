@@ -1,8 +1,16 @@
 import { Router } from 'express';
 import { prisma } from '../prisma';
 import { guardLimit } from '../lib/enforceLimit';
+import { normalizeFields } from '../lib/text';
 
 const router = Router();
+
+// Book の自由入力テキストフィールド。coverUrl / type / status はそれぞれ
+// URL / 列挙値のため正規化すると壊れるので含めない。
+const BOOK_TEXT_FIELDS = [
+  'title', 'author', 'isbn', 'category', 'ndcCode',
+  'memo', 'circleName', 'series', 'genre', 'tags',
+] as const;
 
 const toBook = (b: any) => ({
   ...b,
@@ -23,14 +31,16 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   const uid = (req as any).uid as string;
   if (!(await guardLimit(res, req.user!, 'books'))) return;
-  const { id, createdAt, updatedAt, userId, ...data } = req.body;
+  const { id, createdAt, updatedAt, userId, ...rest } = req.body;
+  const data = normalizeFields(rest, BOOK_TEXT_FIELDS);
   const book = await prisma.book.create({ data: { ...data, userId: uid } });
   res.status(201).json(toBook(book));
 });
 
 router.put('/:id', async (req, res) => {
   const uid = (req as any).uid as string;
-  const { id, createdAt, updatedAt, userId, ...data } = req.body;
+  const { id, createdAt, updatedAt, userId, ...rest } = req.body;
+  const data = normalizeFields(rest, BOOK_TEXT_FIELDS);
   const book = await prisma.book.update({
     where: { id: req.params.id, userId: uid },
     data,

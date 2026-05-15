@@ -68,6 +68,53 @@ export default defineConfig({
         clientsClaim: true,
         // 1 ファイルあたりのキャッシュ上限を 3MB へ（PDF.js などの大型 chunk 対策）。
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+        // ランタイムキャッシュ。React Query 側の IDB 永続化と二段構えで、
+        // SW レベルでも /api/* の GET レスポンスを保持しておく。
+        // これにより React Query キャッシュが何らかの理由で消えてもネットワーク層で
+        // 直近のレスポンスを返せる（バックアップ層として機能）。
+        runtimeCaching: [
+          {
+            // 自身のオリジン配下の API GET のみ対象（非 GET は SW で扱わない）。
+            urlPattern: ({ url, request, sameOrigin }) => {
+              return sameOrigin && request.method === 'GET' && url.pathname.startsWith('/api/');
+            },
+            handler: 'NetworkFirst',
+            method: 'GET',
+            options: {
+              cacheName: 'doujin-pp-api-cache-v1',
+              // オンライン時は 3 秒以内に応答がなければキャッシュを使う。
+              networkTimeoutSeconds: 3,
+              expiration: {
+                maxEntries: 200,
+                maxAgeSeconds: 60 * 60 * 24, // 24h
+              },
+              cacheableResponse: {
+                // 成功レスポンスのみキャッシュ。401/403/500 等はキャッシュしない。
+                statuses: [200],
+              },
+              // 認証ヘッダを含む API レスポンスをキャッシュする以上、
+              // ブラウザ側ストレージ任せ（同一ユーザー前提）でしか守れない。
+              // 端末共有時は OS / ブラウザのプロファイル分離に依存する想定。
+            },
+          },
+          {
+            // 外部 API（NDL Search / OpenBD など書誌情報）はネットワークの揺らぎが
+            // 大きいので StaleWhileRevalidate で UX を安定させる。
+            urlPattern: ({ url }) =>
+              url.origin === 'https://ndlsearch.ndl.go.jp' ||
+              url.origin === 'https://api.openbd.jp' ||
+              url.origin === 'https://cover.openbd.jp',
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'doujin-pp-bib-cache-v1',
+              expiration: {
+                maxEntries: 500,
+                maxAgeSeconds: 60 * 60 * 24 * 7, // 7d
+              },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
       },
       devOptions: {
         // dev サーバ起動時は SW を生成しない（HMR と競合するため）。

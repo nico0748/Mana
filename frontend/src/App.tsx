@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence, motion, type Easing } from "framer-motion";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { updateProfile } from "firebase/auth";
+import { queryClient, persistOptions } from "./lib/queryClient";
 import { AppLayout } from "./components/layout/AppLayout";
 import { BookList } from "./components/books/BookList";
 import ShoppingListPage from "./pages/ShoppingListPage";
@@ -18,19 +19,11 @@ import AdminPage from "./pages/AdminPage";
 import CompleteRegistrationPage from "./pages/CompleteRegistrationPage";
 import Onboarding, { ONBOARDING_KEY } from "./components/Onboarding";
 import { InstallBanner } from "./components/InstallBanner";
+import { SyncStatusHost } from "./components/SyncStatusHost";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AppSettingsProvider } from "./contexts/AppSettingsContext";
 import { UpgradeModalProvider } from "./contexts/UpgradeModalContext";
 import { LoginPage, SocialTermsModal } from "./pages/LoginPage";
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 30,
-      retry: 1,
-    },
-  },
-});
 
 const easeOut: Easing = 'easeOut';
 
@@ -174,6 +167,8 @@ function AppRoot() {
         <Route path="/auth/complete-registration" element={<CompleteRegistrationPage />} />
         <Route path="/*" element={<AuthGate />} />
       </Routes>
+      {/* オフライン中の通知 + オンライン復帰時の自動同期 + 同期完了トースト */}
+      <SyncStatusHost />
       {/* PWA インストールバナーは全ルートで共通（ログイン前のランディングからも誘導したい） */}
       <InstallBanner />
     </>
@@ -182,7 +177,7 @@ function AppRoot() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
       <AuthProvider>
         <AppSettingsProvider>
           <UpgradeModalProvider>
@@ -192,7 +187,7 @@ function App() {
           </UpgradeModalProvider>
         </AppSettingsProvider>
       </AuthProvider>
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   );
 }
 

@@ -10,6 +10,7 @@ import {
   Maximize2, Minimize2,
 } from 'lucide-react';
 import { eventsApi, circlesApi, venueMapsApi, circleItemsApi } from '../lib/api';
+import { applyCircleStatusChange, applyItemStatusChange } from '../lib/offlineMutations';
 import { renderPdfPageToDataUrl } from '../lib/pdfUtils';
 import type { CircleItem, EventTemplate } from '../types';
 import { clsx } from 'clsx';
@@ -1368,8 +1369,8 @@ const MapPage: React.FC = () => {
                       key={s}
                       onClick={async (e) => {
                         e.stopPropagation();
-                        await circlesApi.update(clickedCircle.id, { status: s, updatedAt: Date.now() });
-                        queryClient.invalidateQueries({ queryKey: ['circles'] });
+                        // オフライン時はキューに積まれて、復帰時に自動同期される。
+                        await applyCircleStatusChange(clickedCircle.id, s);
                       }}
                       className={clsx(
                         'flex-1 py-1 rounded text-[10px] font-medium transition-colors',
@@ -1395,8 +1396,7 @@ const MapPage: React.FC = () => {
                                 key={st}
                                 onClick={async (e) => {
                                   e.stopPropagation();
-                                  await circleItemsApi.update(item.id, { status: st });
-                                  queryClient.invalidateQueries({ queryKey: ['circleItems'] });
+                                  await applyItemStatusChange(item.id, st);
                                 }}
                                 className={clsx(
                                   'flex-1 py-0.5 rounded text-[9px] font-medium transition-colors',

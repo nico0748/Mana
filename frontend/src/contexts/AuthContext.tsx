@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 import { type User, onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { clearQueryPersistedCache } from '../lib/queryClient';
+import { clearAllQueue } from '../lib/mutationQueue';
 
 interface AuthContextValue {
   user: User | null;
@@ -45,11 +46,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const prevUid = prevUidRef.current;
 
       // UID が変わった（別ユーザーのログイン or ログアウト）場合、
-      // 前ユーザーの React Query 永続キャッシュを破棄する。データ越境防止。
+      // 前ユーザーの React Query 永続キャッシュとオフラインミューテーションキューを破棄。
+      // 端末共有時に「前ユーザーが offline で作った未送信変更」が次ユーザーで送信されるのを防止。
       if (prevUid !== currentUid) {
         clearQueryPersistedCache().catch(() => {
           // クリア失敗は致命的でない（次回ログイン時に上書きされる）
         });
+        clearAllQueue().catch(() => {});
         try {
           if (currentUid) {
             localStorage.setItem(LAST_UID_KEY, currentUid);

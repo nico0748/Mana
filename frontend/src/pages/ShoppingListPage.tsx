@@ -16,6 +16,7 @@ import {
   exportCirclesJson, exportCirclesCsv, exportCirclesExcel,
 } from '../lib/circlesCsv';
 import { eventsApi, circlesApi, circleItemsApi, booksApi, venueMapsApi, eventTemplatesApi, ApiError } from '../lib/api';
+import { applyCircleStatusChange, applyItemStatusChange } from '../lib/offlineMutations';
 import { isSafeHttpUrl } from '../lib/url';
 import { useUpgradeModal, isPlanLimitError } from '../contexts/UpgradeModalContext';
 import { ShoppingTabs } from '../components/shopping/ShoppingTabs';
@@ -1697,8 +1698,8 @@ const ShoppingListPage: React.FC = () => {
   };
 
   const handleStatusChange = async (id: string, status: Circle['status']) => {
-    await circlesApi.update(id, { status });
-    queryClient.invalidateQueries({ queryKey: ['circles'] });
+    // オフラインでもキューに積まれて、復帰時に自動同期される。
+    await applyCircleStatusChange(id, status);
   };
 
   const handleReorder = async (circleId: string, direction: 'top' | 'up' | 'down', eventId: string) => {
@@ -1743,8 +1744,8 @@ const ShoppingListPage: React.FC = () => {
   };
 
   const handleItemStatusChange = async (itemId: string, status: CircleItem['status']) => {
-    await circleItemsApi.update(itemId, { status });
-    queryClient.invalidateQueries({ queryKey: ['circleItems'] });
+    // オフラインでもキューに積まれて、復帰時に自動同期される。
+    await applyItemStatusChange(itemId, status);
   };
 
   // パースまでだけここで実施し、対象イベントの選択は ImportCirclesModal で行う。

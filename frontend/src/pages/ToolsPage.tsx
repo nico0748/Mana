@@ -228,6 +228,19 @@ const PersonalizeContent: React.FC<{
             </div>
           }
         />
+        <SettingRow
+          icon={<MapPin className="w-4 h-4" />}
+          label="ピンに優先順位番号を表示"
+          right={
+            <button
+              onClick={() => update({ showMapPinNumbers: !settings.showMapPinNumbers })}
+              className={`relative w-10 h-6 rounded-full transition-colors ${settings.showMapPinNumbers ? 'bg-emerald-500' : 'bg-zinc-700'}`}
+              aria-pressed={settings.showMapPinNumbers}
+            >
+              <span className={`absolute top-1 w-4 h-4 bg-zinc-100 rounded-full transition-transform ${settings.showMapPinNumbers ? 'translate-x-5' : 'translate-x-1'}`} />
+            </button>
+          }
+        />
       </Card>
 
       <SectionTitle>アクセシビリティ</SectionTitle>

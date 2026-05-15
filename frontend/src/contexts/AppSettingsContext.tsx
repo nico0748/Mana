@@ -11,6 +11,8 @@ export interface AppSettings {
   fontSize: FontSize;
   reduceMotion: boolean;
   mapMarkerSize: MapMarkerSize;
+  /** マップのサークルピンに優先順位番号を表示するか（買い物リストの番号と連動） */
+  showMapPinNumbers: boolean;
 }
 
 const DEFAULTS: AppSettings = {
@@ -20,6 +22,7 @@ const DEFAULTS: AppSettings = {
   fontSize: 'normal',
   reduceMotion: false,
   mapMarkerSize: 'normal',
+  showMapPinNumbers: true,
 };
 
 const STORAGE_KEY = 'doujin-pp-settings';

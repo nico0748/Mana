@@ -29,6 +29,7 @@ const MapPage: React.FC = () => {
   const defaultHall = searchParams.get('hall');
   const { settings } = useAppSettings();
   const markerSize = settings.mapMarkerSize;
+  const showPinNumbers = settings.showMapPinNumbers;
 
   const [editMode, setEditMode] = useState(false);
   const [selectedCircleId, setSelectedCircleId] = useState<string | null>(null);
@@ -193,6 +194,15 @@ const MapPage: React.FC = () => {
   const eventCircles = (circles ?? []).filter(c =>
     selectedEventId !== null ? c.eventId === selectedEventId : !c.eventId
   );
+
+  // 即売会全体での優先順位（買い物リストの番号と完全一致させる）。
+  // ホール跨ぎでも一意な通し番号で、ホール内では番号が飛ぶ仕様。
+  const eventPriorityById = React.useMemo(() => {
+    const sorted = [...eventCircles].sort((a, b) => a.order - b.order);
+    const map = new Map<string, number>();
+    sorted.forEach((c, i) => map.set(c.id, i + 1));
+    return map;
+  }, [eventCircles]);
 
   const hallsFromCircles = eventCircles.map(c => c.hall).filter(Boolean) as string[];
   const hallsFromMaps = (venueMaps ?? [])
@@ -843,7 +853,32 @@ const MapPage: React.FC = () => {
                 />
 
                 {/* Pins */}
-                {pinnedCircles.map(circle => (
+                {pinnedCircles.map(circle => {
+                  const isHighlighted = circle.id === highlightId;
+                  const isEditSelected = editMode && selectedCircleId === circle.id;
+                  const isBumped = isHighlighted || isEditSelected;
+
+                  // ピンサイズは「数字あり/なし」と markerSize（small/normal/large）の組み合わせで決定。
+                  // 数字ありモードでは中央に数字を入れるため、十分な大きさが必要。
+                  // 数字なしモード（旧仕様）は既存の小さなドットを維持。
+                  const sizeClass = showPinNumbers
+                    ? (markerSize === 'small'
+                        ? (isBumped ? 'w-6 h-6' : 'w-5 h-5')
+                        : markerSize === 'large'
+                          ? (isBumped ? 'w-10 h-10' : 'w-8 h-8')
+                          : (isBumped ? 'w-7 h-7' : 'w-6 h-6'))
+                    : (isBumped
+                        ? (markerSize === 'small' ? 'w-3 h-3' : markerSize === 'large' ? 'w-5 h-5' : 'w-4 h-4')
+                        : (markerSize === 'small' ? 'w-2 h-2' : markerSize === 'large' ? 'w-4 h-4' : 'w-2.5 h-2.5'));
+
+                  const priorityNumber = showPinNumbers ? eventPriorityById.get(circle.id) ?? null : null;
+                  // 3 桁以上は文字を1段階小さくして窮屈さを緩和する。
+                  const digits = priorityNumber == null ? 0 : String(priorityNumber).length;
+                  const numFontClass = digits >= 3
+                    ? (markerSize === 'large' ? 'text-[10px]' : markerSize === 'small' ? 'text-[7px]' : 'text-[8px]')
+                    : (markerSize === 'large' ? 'text-xs'     : markerSize === 'small' ? 'text-[9px]' : 'text-[10px]');
+
+                  return (
                   <div
                     key={circle.id}
                     className="absolute"
@@ -876,7 +911,7 @@ const MapPage: React.FC = () => {
                         });
                       }}
                     >
-                      {circle.id === highlightId && (
+                      {isHighlighted && (
                         <motion.div
                           className="absolute inset-0 rounded-full bg-emerald-500/50"
                           animate={{ scale: [1, 2.5, 1], opacity: [0.8, 0, 0.8] }}
@@ -884,20 +919,20 @@ const MapPage: React.FC = () => {
                         />
                       )}
                       <div className={clsx(
-                        'rounded-full border shadow-lg transition-all opacity-85',
-                        circle.id === highlightId
-                          ? clsx(
-                              markerSize === 'small' ? 'w-3 h-3' : markerSize === 'large' ? 'w-5 h-5' : 'w-4 h-4',
-                              'bg-emerald-500 border-emerald-200 ring-2 ring-emerald-500/50'
-                            )
-                          : editMode && selectedCircleId === circle.id
-                            ? clsx(
-                                markerSize === 'small' ? 'w-3 h-3' : markerSize === 'large' ? 'w-5 h-5' : 'w-4 h-4',
-                                'ring-2 ring-white/80'
-                              )
-                            : markerSize === 'small' ? 'w-2 h-2' : markerSize === 'large' ? 'w-4 h-4' : 'w-2.5 h-2.5',
-                        statusColor[circle.status] ?? 'bg-zinc-600 border-zinc-500'
-                      )} />
+                        'rounded-full border shadow-lg transition-all',
+                        showPinNumbers
+                          ? 'opacity-95 flex items-center justify-center text-white font-bold leading-none tabular-nums'
+                          : 'opacity-85',
+                        showPinNumbers ? numFontClass : null,
+                        sizeClass,
+                        isHighlighted
+                          ? 'bg-emerald-500 border-emerald-200 ring-2 ring-emerald-500/50'
+                          : isEditSelected
+                            ? clsx(statusColor[circle.status] ?? 'bg-zinc-600 border-zinc-500', 'ring-2 ring-white/80')
+                            : statusColor[circle.status] ?? 'bg-zinc-600 border-zinc-500',
+                      )}>
+                        {priorityNumber}
+                      </div>
 
                       {/* Hover preview (desktop): block・name のみのコンパクト tooltip。
                           クリック時の本ポップアップは createPortal で外側に描画される。
@@ -924,7 +959,8 @@ const MapPage: React.FC = () => {
                       )}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
 
                 {/* Edit mode indicator */}
                 {editMode && (

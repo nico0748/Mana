@@ -233,11 +233,16 @@ const PersonalizeContent: React.FC<{
           label="ピンに優先順位番号を表示"
           right={
             <button
+              type="button"
+              role="switch"
+              aria-checked={settings.showMapPinNumbers}
               onClick={() => update({ showMapPinNumbers: !settings.showMapPinNumbers })}
-              className={`relative w-10 h-6 rounded-full transition-colors ${settings.showMapPinNumbers ? 'bg-emerald-500' : 'bg-zinc-700'}`}
-              aria-pressed={settings.showMapPinNumbers}
+              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${settings.showMapPinNumbers ? 'bg-emerald-500' : 'bg-zinc-700'}`}
             >
-              <span className={`absolute top-1 w-4 h-4 bg-zinc-100 rounded-full transition-transform ${settings.showMapPinNumbers ? 'translate-x-5' : 'translate-x-1'}`} />
+              <span
+                aria-hidden
+                className={`inline-block h-4 w-4 rounded-full bg-zinc-100 shadow-sm transition-transform ${settings.showMapPinNumbers ? 'translate-x-6' : 'translate-x-1'}`}
+              />
             </button>
           }
         />
@@ -250,10 +255,16 @@ const PersonalizeContent: React.FC<{
           label="アニメーション削減"
           right={
             <button
+              type="button"
+              role="switch"
+              aria-checked={settings.reduceMotion}
               onClick={() => update({ reduceMotion: !settings.reduceMotion })}
-              className={`relative w-10 h-6 rounded-full transition-colors ${settings.reduceMotion ? 'bg-zinc-500' : 'bg-zinc-700'}`}
+              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${settings.reduceMotion ? 'bg-zinc-500' : 'bg-zinc-700'}`}
             >
-              <span className={`absolute top-1 w-4 h-4 bg-zinc-100 rounded-full transition-transform ${settings.reduceMotion ? 'translate-x-5' : 'translate-x-1'}`} />
+              <span
+                aria-hidden
+                className={`inline-block h-4 w-4 rounded-full bg-zinc-100 shadow-sm transition-transform ${settings.reduceMotion ? 'translate-x-6' : 'translate-x-1'}`}
+              />
             </button>
           }
         />

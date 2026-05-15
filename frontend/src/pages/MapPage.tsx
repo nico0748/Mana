@@ -917,7 +917,10 @@ const MapPage: React.FC = () => {
                       <div className={clsx(
                         'rounded-full border shadow-lg transition-all',
                         showPinNumbers
-                          ? 'opacity-95 flex items-center justify-center text-white font-bold leading-none tabular-nums'
+                          // 数字の色は zinc-900（ほぼ黒）。背景の白いマップに白文字だと滲んで読めず、
+                          // また黄ピン (pending) では白文字のコントラスト比が 1.7:1 で WCAG AA も不合格。
+                          // 黒に統一すると 全ステータス色 (黄/緑/赤) で AA 以上を確保できる。
+                          ? 'opacity-95 flex items-center justify-center text-zinc-900 font-bold leading-none tabular-nums'
                           : 'opacity-85',
                         showPinNumbers ? numFontClass : null,
                         sizeClass,

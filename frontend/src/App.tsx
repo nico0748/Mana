@@ -17,6 +17,7 @@ import AccountPage from "./pages/AccountPage";
 import AdminPage from "./pages/AdminPage";
 import CompleteRegistrationPage from "./pages/CompleteRegistrationPage";
 import Onboarding, { ONBOARDING_KEY } from "./components/Onboarding";
+import { InstallBanner } from "./components/InstallBanner";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AppSettingsProvider } from "./contexts/AppSettingsContext";
 import { UpgradeModalProvider } from "./contexts/UpgradeModalContext";
@@ -166,12 +167,16 @@ function AuthGate() {
 
 function AppRoot() {
   return (
-    <Routes>
-      <Route path="/about" element={<LandingPage />} />
-      <Route path="/templates" element={<TemplatesPage />} />
-      <Route path="/auth/complete-registration" element={<CompleteRegistrationPage />} />
-      <Route path="/*" element={<AuthGate />} />
-    </Routes>
+    <>
+      <Routes>
+        <Route path="/about" element={<LandingPage />} />
+        <Route path="/templates" element={<TemplatesPage />} />
+        <Route path="/auth/complete-registration" element={<CompleteRegistrationPage />} />
+        <Route path="/*" element={<AuthGate />} />
+      </Routes>
+      {/* PWA インストールバナーは全ルートで共通（ログイン前のランディングからも誘導したい） */}
+      <InstallBanner />
+    </>
   );
 }
 

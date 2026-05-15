@@ -611,7 +611,9 @@ const MapPage: React.FC = () => {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col" style={{ height: 'calc(100dvh - 3.5rem)' }}>
+    // モバイル: 3.5rem (上部ヘッダー) + 5rem (main の pb-20 = ボトムナビ分の余白) + safe-area-inset-bottom を差し引く
+    // デスクトップ (sm+): ボトムナビなしなので header 分のみ差し引く
+    <div className="flex flex-col h-[calc(100dvh-3.5rem-5rem-env(safe-area-inset-bottom))] sm:h-[calc(100dvh-3.5rem)]">
 
       {/* ── Event selector row ──────────────────────────────────────────── */}
       <div className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900 border-b border-zinc-800/60 overflow-x-auto">

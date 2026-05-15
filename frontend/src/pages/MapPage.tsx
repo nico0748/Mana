@@ -864,7 +864,8 @@ const MapPage: React.FC = () => {
                     ? (markerSize === 'small' ? 'w-3 h-3' : markerSize === 'large' ? 'w-5 h-5' : 'w-4 h-4')
                     : (markerSize === 'small' ? 'w-2 h-2' : markerSize === 'large' ? 'w-4 h-4' : 'w-2.5 h-2.5');
 
-                  const priorityNumber = showPinNumbers ? eventPriorityById.get(circle.id) ?? null : null;
+                  // 優先順位番号は popup/hover では常に表示するため、ピン表示の有無に関わらず計算。
+                  const priorityNumber = eventPriorityById.get(circle.id) ?? null;
                   // 小さいピンに収めるためフォントは極小。
                   // small/normal のドット (8-10px) では 1 桁がギリギリ。large (16-20px) でようやく 2 桁が見える程度。
                   // 3 桁以上は更に 1 段下げる。
@@ -926,7 +927,7 @@ const MapPage: React.FC = () => {
                             ? clsx(statusColor[circle.status] ?? 'bg-zinc-600 border-zinc-500', 'ring-2 ring-white/80')
                             : statusColor[circle.status] ?? 'bg-zinc-600 border-zinc-500',
                       )}>
-                        {priorityNumber}
+                        {showPinNumbers ? priorityNumber : null}
                       </div>
 
                       {/* Hover preview (desktop): block・name のみのコンパクト tooltip。
@@ -936,7 +937,14 @@ const MapPage: React.FC = () => {
                         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150">
                           <div className="bg-zinc-800 text-zinc-100 text-xs rounded-lg shadow-xl border border-zinc-700 text-left min-w-[140px] max-w-[200px]">
                             <div className="px-2.5 py-1.5">
-                              <div className="font-mono text-zinc-500 text-[10px]">{circle.block}-{circle.number}</div>
+                              <div className="flex items-center gap-1.5">
+                                {priorityNumber != null && (
+                                  <span className="inline-flex items-center justify-center min-w-[16px] h-[14px] px-1 rounded bg-violet-500/15 border border-violet-500/30 text-violet-300 text-[9px] font-mono font-bold tabular-nums leading-none">
+                                    #{priorityNumber}
+                                  </span>
+                                )}
+                                <div className="font-mono text-zinc-500 text-[10px]">{circle.block}-{circle.number}</div>
+                              </div>
                               <div className="text-zinc-200 font-medium truncate">{circle.name}</div>
                             </div>
                           </div>
@@ -1329,11 +1337,22 @@ const MapPage: React.FC = () => {
             soldout: 'bg-red-500/20 text-red-400',
           };
 
+          const clickedPriorityNumber = eventPriorityById.get(clickedCircle.id);
+
           return (
             <div style={cardStyle} onClick={e => e.stopPropagation()}>
               <div className="bg-zinc-800 text-zinc-100 text-xs rounded-lg shadow-xl border border-zinc-700 text-left min-w-[160px] max-w-[220px]">
                 <div className="px-2.5 py-2 border-b border-zinc-700/60">
-                  <div className="font-mono text-zinc-500 text-[10px]">{clickedCircle.block}-{clickedCircle.number}</div>
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    {/* 買い物リストの優先順位番号と一致するバッジ。ピンの数字表示がオフでも、
+                        詳細ポップアップでは常に表示する（識別の助けになるため）。 */}
+                    {clickedPriorityNumber != null && (
+                      <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded bg-violet-500/15 border border-violet-500/30 text-violet-300 text-[10px] font-mono font-bold tabular-nums">
+                        #{clickedPriorityNumber}
+                      </span>
+                    )}
+                    <div className="font-mono text-zinc-500 text-[10px]">{clickedCircle.block}-{clickedCircle.number}</div>
+                  </div>
                   <div className="text-zinc-200 font-medium truncate">{clickedCircle.name}</div>
                 </div>
                 <div className="flex gap-1 p-1.5 border-b border-zinc-700/40">

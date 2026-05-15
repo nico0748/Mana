@@ -19,7 +19,7 @@ import AdminPage from "./pages/AdminPage";
 import CompleteRegistrationPage from "./pages/CompleteRegistrationPage";
 import Onboarding, { ONBOARDING_KEY } from "./components/Onboarding";
 import { InstallBanner } from "./components/InstallBanner";
-import { OfflineIndicator } from "./components/OfflineIndicator";
+import { SyncStatusHost } from "./components/SyncStatusHost";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AppSettingsProvider } from "./contexts/AppSettingsContext";
 import { UpgradeModalProvider } from "./contexts/UpgradeModalContext";
@@ -167,8 +167,8 @@ function AppRoot() {
         <Route path="/auth/complete-registration" element={<CompleteRegistrationPage />} />
         <Route path="/*" element={<AuthGate />} />
       </Routes>
-      {/* オフライン中であることをユーザーに伝えるグローバルインジケータ */}
-      <OfflineIndicator />
+      {/* オフライン中の通知 + オンライン復帰時の自動同期 + 同期完了トースト */}
+      <SyncStatusHost />
       {/* PWA インストールバナーは全ルートで共通（ログイン前のランディングからも誘導したい） */}
       <InstallBanner />
     </>

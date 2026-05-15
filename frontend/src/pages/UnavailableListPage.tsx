@@ -5,6 +5,7 @@ import {
   Calendar, ExternalLink, Trash2, Filter, ShoppingCart, Search, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { eventsApi, circlesApi, circleItemsApi } from '../lib/api';
+import { applyItemOnlineStatusChange } from '../lib/offlineMutations';
 import type { Circle, CircleItem, CircleItemOnlineStatus, DoujinEvent } from '../types';
 import { ShoppingTabs } from '../components/shopping/ShoppingTabs';
 import { ONLINE_STORES } from '../lib/onlineStores';
@@ -71,8 +72,9 @@ const UnavailableListPage: React.FC = () => {
   }, [soldoutEntries, events]);
 
   const handleOnlineStatusChange = async (item: CircleItem, status: CircleItemOnlineStatus) => {
-    await circleItemsApi.update(item.id, { onlineStatus: status });
-    queryClient.invalidateQueries({ queryKey: ['circleItems'] });
+    // applyItemOnlineStatusChange はオンライン時即送信、オフライン時はキューに積み、
+    // どちらにしても React Query キャッシュは即座に楽観的更新される。
+    await applyItemOnlineStatusChange(item.id, status);
   };
 
   const handleDeleteItem = async (itemId: string) => {

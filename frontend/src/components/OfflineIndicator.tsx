@@ -5,9 +5,9 @@ import { useOnlineStatus } from '../hooks/useOnlineStatus';
 // 画面最上部に表示する控えめなオフライン通知バー。
 // オフライン時のみ表示し、ユーザーに「キャッシュ表示中・編集は復帰後に反映」であることを示す。
 //
-// 編集系（ステータストグル等）のオフライン対応は Phase 3 で実装予定だが、
-// 現段階では「閲覧はできるが編集は失敗する」状態なので、その注意喚起としても機能する。
-export function OfflineIndicator() {
+// pendingCount > 0 のときは「未同期 N 件」バッジを併記し、再接続時に
+// 自動同期される旨を視覚的に伝える。
+export function OfflineIndicator({ pendingCount = 0 }: { pendingCount?: number }) {
   const online = useOnlineStatus();
 
   return (
@@ -26,7 +26,14 @@ export function OfflineIndicator() {
           aria-live="polite"
         >
           <WifiOff className="h-3.5 w-3.5" />
-          <span>オフライン中 — 保存済みのデータを表示しています</span>
+          <span>
+            オフライン中 — 保存済みのデータを表示しています
+          </span>
+          {pendingCount > 0 && (
+            <span className="ml-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-amber-900 px-1.5 text-[10px] font-bold tabular-nums text-amber-50">
+              未同期 {pendingCount}
+            </span>
+          )}
         </motion.div>
       )}
     </AnimatePresence>

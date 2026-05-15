@@ -858,25 +858,20 @@ const MapPage: React.FC = () => {
                   const isEditSelected = editMode && selectedCircleId === circle.id;
                   const isBumped = isHighlighted || isEditSelected;
 
-                  // ピンサイズは「数字あり/なし」と markerSize（small/normal/large）の組み合わせで決定。
-                  // 数字ありモードでは中央に数字を入れるため、十分な大きさが必要。
-                  // 数字なしモード（旧仕様）は既存の小さなドットを維持。
-                  const sizeClass = showPinNumbers
-                    ? (markerSize === 'small'
-                        ? (isBumped ? 'w-6 h-6' : 'w-5 h-5')
-                        : markerSize === 'large'
-                          ? (isBumped ? 'w-10 h-10' : 'w-8 h-8')
-                          : (isBumped ? 'w-7 h-7' : 'w-6 h-6'))
-                    : (isBumped
-                        ? (markerSize === 'small' ? 'w-3 h-3' : markerSize === 'large' ? 'w-5 h-5' : 'w-4 h-4')
-                        : (markerSize === 'small' ? 'w-2 h-2' : markerSize === 'large' ? 'w-4 h-4' : 'w-2.5 h-2.5'));
+                  // ピンサイズは数字あり/なしに関わらず常に旧仕様（小さなドット）を維持。
+                  // 数字ありモードでは、その小さなドットの中央に小さなフォントで番号を表示する。
+                  const sizeClass = isBumped
+                    ? (markerSize === 'small' ? 'w-3 h-3' : markerSize === 'large' ? 'w-5 h-5' : 'w-4 h-4')
+                    : (markerSize === 'small' ? 'w-2 h-2' : markerSize === 'large' ? 'w-4 h-4' : 'w-2.5 h-2.5');
 
                   const priorityNumber = showPinNumbers ? eventPriorityById.get(circle.id) ?? null : null;
-                  // 3 桁以上は文字を1段階小さくして窮屈さを緩和する。
+                  // 小さいピンに収めるためフォントは極小。
+                  // small/normal のドット (8-10px) では 1 桁がギリギリ。large (16-20px) でようやく 2 桁が見える程度。
+                  // 3 桁以上は更に 1 段下げる。
                   const digits = priorityNumber == null ? 0 : String(priorityNumber).length;
                   const numFontClass = digits >= 3
-                    ? (markerSize === 'large' ? 'text-[10px]' : markerSize === 'small' ? 'text-[7px]' : 'text-[8px]')
-                    : (markerSize === 'large' ? 'text-xs'     : markerSize === 'small' ? 'text-[9px]' : 'text-[10px]');
+                    ? (markerSize === 'large' ? 'text-[7px]' : 'text-[5px]')
+                    : (markerSize === 'large' ? 'text-[9px]' : markerSize === 'small' ? 'text-[6px]' : 'text-[7px]');
 
                   return (
                   <div

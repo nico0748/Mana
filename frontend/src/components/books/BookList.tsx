@@ -98,7 +98,7 @@ export const BookList: React.FC = () => {
   const { settings, update: updateSettings } = useAppSettings();
   const viewMode = settings.bookViewMode;
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [selectedType, setSelectedType] = useState<Book['type']>('commercial');
+  const [selectedType, setSelectedType] = useState<Book['type']>('doujin');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -219,29 +219,11 @@ export const BookList: React.FC = () => {
         本棚の分類
       </p>
 
-      {/* 商業 */}
-      <button
-        onClick={() => selectType('commercial')}
-        className={clsx(
-          'w-full flex items-center gap-2 px-2 py-2 rounded-lg text-sm font-medium transition-colors',
-          typeIsActive('commercial')
-            ? 'bg-zinc-800 text-zinc-100'
-            : 'text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200'
-        )}
-      >
-        <BookOpen className="w-3.5 h-3.5 flex-shrink-0" />
-        <span className="flex-1 text-left">商業</span>
-        <span className="text-xs tabular-nums text-zinc-500">{commercialCount}</span>
-      </button>
-      <div className="mb-1">
-        {renderGroups('commercial', sidebarGroups.commercial)}
-      </div>
-
       {/* 同人誌 */}
       <button
         onClick={() => selectType('doujin')}
         className={clsx(
-          'w-full flex items-center gap-2 px-2 py-2 rounded-lg text-sm font-medium transition-colors mt-1',
+          'w-full flex items-center gap-2 px-2 py-2 rounded-lg text-sm font-medium transition-colors',
           typeIsActive('doujin')
             ? 'bg-zinc-800 text-zinc-100'
             : 'text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200'
@@ -251,8 +233,26 @@ export const BookList: React.FC = () => {
         <span className="flex-1 text-left">同人誌</span>
         <span className="text-xs tabular-nums text-zinc-500">{doujinCount}</span>
       </button>
-      <div>
+      <div className="mb-1">
         {renderGroups('doujin', sidebarGroups.doujin)}
+      </div>
+
+      {/* 商業 */}
+      <button
+        onClick={() => selectType('commercial')}
+        className={clsx(
+          'w-full flex items-center gap-2 px-2 py-2 rounded-lg text-sm font-medium transition-colors mt-1',
+          typeIsActive('commercial')
+            ? 'bg-zinc-800 text-zinc-100'
+            : 'text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200'
+        )}
+      >
+        <BookOpen className="w-3.5 h-3.5 flex-shrink-0" />
+        <span className="flex-1 text-left">商業</span>
+        <span className="text-xs tabular-nums text-zinc-500">{commercialCount}</span>
+      </button>
+      <div>
+        {renderGroups('commercial', sidebarGroups.commercial)}
       </div>
     </div>
   );
@@ -434,7 +434,7 @@ export const BookList: React.FC = () => {
           <div className="mb-6 space-y-3">
             {/* タイプスイッチャー — Material Design Segmented Button */}
             <div className="flex gap-0 p-0 bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden">
-              {(['commercial', 'doujin'] as const).map((type, i) => {
+              {(['doujin', 'commercial'] as const).map((type, i) => {
                 const isActive = selectedType === type;
                 const count = type === 'commercial' ? commercialCount : doujinCount;
                 const Icon = type === 'commercial' ? BookOpen : BookMarked;

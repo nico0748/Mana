@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 export type Theme = 'dark' | 'light' | 'taupe';
 export type FontSize = 'normal' | 'large';
 export type MapMarkerSize = 'small' | 'normal' | 'large';
+export type BookViewMode = 'list' | 'box';
 
 export interface AppSettings {
   theme: Theme;
@@ -13,6 +14,8 @@ export interface AppSettings {
   mapMarkerSize: MapMarkerSize;
   /** マップのサークルピンに優先順位番号を表示するか（買い物リストの番号と連動） */
   showMapPinNumbers: boolean;
+  /** 本棚の表示モード。list=テキストのみ (軽量) / box=表紙画像つき grid (仮想スクロール) */
+  bookViewMode: BookViewMode;
 }
 
 const DEFAULTS: AppSettings = {
@@ -23,6 +26,7 @@ const DEFAULTS: AppSettings = {
   reduceMotion: false,
   mapMarkerSize: 'normal',
   showMapPinNumbers: true,
+  bookViewMode: 'list',
 };
 
 const STORAGE_KEY = 'doujin-pp-settings';

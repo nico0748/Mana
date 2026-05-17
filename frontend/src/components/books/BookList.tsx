@@ -4,16 +4,19 @@ import { useSync } from "../../hooks/useSync";
 import { useResourceLimit } from "../../hooks/useCurrentUser";
 import { useUpgradeModal, isPlanLimitError } from "../../contexts/UpgradeModalContext";
 import { type Book } from "../../types";
-import { BookItem } from "./BookItem";
+import { BookListRow } from "./BookListRow";
+import { VirtualBookGrid, type VirtualGroup } from "./VirtualBookGrid";
 import { BookForm } from "./BookForm";
 import { BookDetailModal } from "./BookDetailModal";
 import { BulkSeriesAddModal } from "./BulkSeriesAddModal";
 import { ShareBookXModal } from "./ShareBookXModal";
 import { PageSidebar } from "../layout/PageSidebar";
 import { Button } from "../ui/Button";
+import { useAppSettings } from "../../contexts/AppSettingsContext";
 import {
   Plus, ArrowUpAZ, ArrowDownAZ, Download, Upload, PanelLeft,
   BookOpen, BookMarked, ChevronDown, FileJson, FileSpreadsheet, Crown, BookCopy,
+  LayoutList, LayoutGrid,
 } from "lucide-react";
 import { Input } from "../ui/Input";
 import { AnimatePresence, motion } from "framer-motion";
@@ -92,6 +95,9 @@ export const BookList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [sharingBook, setSharingBook] = useState<Book | null>(null);
+  const { settings, update: updateSettings } = useAppSettings();
+  const viewMode = settings.bookViewMode;
+  const scrollRef = useRef<HTMLDivElement>(null);
   const [selectedType, setSelectedType] = useState<Book['type']>('commercial');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -374,7 +380,7 @@ export const BookList: React.FC = () => {
       </PageSidebar>
 
       {/* メインコンテンツ */}
-      <div className="flex-1 overflow-y-auto min-w-0">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto min-w-0">
         <div className="max-w-4xl mx-auto px-4 py-4">
 
           {/* ヘッダー */}
@@ -522,6 +528,34 @@ export const BookList: React.FC = () => {
                   : <ArrowDownAZ className="h-5 w-5" />
                 }
               </button>
+              <div className="flex gap-0 rounded-xl border border-zinc-700 bg-zinc-900 overflow-hidden flex-shrink-0">
+                <button
+                  onClick={() => updateSettings({ bookViewMode: 'list' })}
+                  className={clsx(
+                    'flex items-center justify-center w-10 h-10 transition-colors',
+                    viewMode === 'list'
+                      ? 'bg-zinc-700 text-zinc-100'
+                      : 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800'
+                  )}
+                  title="リスト表示（テキストのみ・軽量）"
+                  aria-pressed={viewMode === 'list'}
+                >
+                  <LayoutList className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => updateSettings({ bookViewMode: 'box' })}
+                  className={clsx(
+                    'flex items-center justify-center w-10 h-10 transition-colors',
+                    viewMode === 'box'
+                      ? 'bg-zinc-700 text-zinc-100'
+                      : 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800'
+                  )}
+                  title="ボックス表示（表紙あり・仮想スクロール）"
+                  aria-pressed={viewMode === 'box'}
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </div>
 
@@ -591,8 +625,27 @@ export const BookList: React.FC = () => {
                 </button>
               )}
             </div>
+          ) : viewMode === 'box' ? (
+            // ── ボックス表示: 仮想スクロール付きカード grid。スクロールアウトで <img> が
+            //    アンマウントされブラウザがメモリから解放する。
+            (() => {
+              const boxGroups: VirtualGroup[] = contentGroups
+                ? contentGroups.filter(g => g.books.length > 0).map(g => ({ key: g.key, label: g.label, books: g.books }))
+                : [{ key: 'all', label: activeCategoryLabel ?? (selectedType === 'commercial' ? '商業' : '同人誌'), books: filteredBooks }];
+              return (
+                <VirtualBookGrid
+                  groups={boxGroups}
+                  scrollElementRef={scrollRef}
+                  onSelect={setSelectedBook}
+                  onEdit={setSelectedBook}
+                  onDelete={deleteBook}
+                  onShare={setSharingBook}
+                  onHeaderClick={contentGroups ? setSelectedCategory : undefined}
+                />
+              );
+            })()
           ) : contentGroups ? (
-            // カテゴリ別グループ表示（フィルターなし時）
+            // ── リスト表示 (グループあり): テキスト行のみ。img を描画しないので fetch なし。
             <div className="space-y-8">
               {contentGroups.filter(g => g.books.length > 0).map(group => (
                 <div key={group.key}>
@@ -608,9 +661,9 @@ export const BookList: React.FC = () => {
                     </span>
                     <div className="flex-1 h-px bg-zinc-800 group-hover:bg-zinc-700/50 transition-colors duration-200" />
                   </button>
-                  <div className="space-y-3">
+                  <div className="space-y-1.5">
                     {group.books.map(book => (
-                      <BookItem
+                      <BookListRow
                         key={book.id}
                         book={book}
                         onSelect={setSelectedBook}
@@ -624,10 +677,10 @@ export const BookList: React.FC = () => {
               ))}
             </div>
           ) : (
-            // フラットリスト（検索・カテゴリフィルター時）
-            <div className="space-y-4">
+            // ── リスト表示 (フラット): 検索・カテゴリフィルター時
+            <div className="space-y-1.5">
               {filteredBooks.map(book => (
-                <BookItem
+                <BookListRow
                   key={book.id}
                   book={book}
                   onSelect={setSelectedBook}

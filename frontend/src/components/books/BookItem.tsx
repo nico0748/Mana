@@ -2,12 +2,14 @@ import React from "react";
 import { type Book } from "../../types";
 import { Pencil, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { XLogoIcon } from "./XLogoIcon";
 
 interface BookItemProps {
   book: Book;
   onSelect: (book: Book) => void;
   onEdit: (book: Book) => void;
   onDelete: (id: string) => Promise<void>;
+  onShare?: (book: Book) => void;
 }
 
 // ── Google 4-color palette (dark mode tones) ──────────────────────────────
@@ -24,7 +26,7 @@ const typeConfig: Record<Book['type'], { label: string; className: string }> = {
   doujin:     { label: '同人', className: 'bg-rose-400/10 text-rose-400 border-rose-400/25'  }, // Google Red
 };
 
-export const BookItem: React.FC<BookItemProps> = ({ book, onSelect, onEdit, onDelete }) => {
+export const BookItem: React.FC<BookItemProps> = ({ book, onSelect, onEdit, onDelete, onShare }) => {
   const status = statusConfig[book.status] ?? statusConfig.wanted;
   const type   = typeConfig[book.type]     ?? typeConfig.doujin;
 
@@ -46,6 +48,15 @@ export const BookItem: React.FC<BookItemProps> = ({ book, onSelect, onEdit, onDe
         className="absolute top-3 right-3 flex items-center gap-0.5 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
         onClick={(e) => e.stopPropagation()}
       >
+        {onShare && (
+          <button
+            onClick={() => onShare(book)}
+            className="p-2 text-zinc-500 hover:text-zinc-100 hover:bg-zinc-700 rounded-full transition-all duration-150 active:scale-90"
+            title="X で紹介"
+          >
+            <XLogoIcon className="h-3.5 w-3.5" />
+          </button>
+        )}
         <button
           onClick={() => onEdit(book)}
           className="p-2 text-zinc-500 hover:text-zinc-200 hover:bg-zinc-700 rounded-full transition-all duration-150 active:scale-90"

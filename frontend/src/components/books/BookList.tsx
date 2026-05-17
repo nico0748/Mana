@@ -8,6 +8,7 @@ import { BookItem } from "./BookItem";
 import { BookForm } from "./BookForm";
 import { BookDetailModal } from "./BookDetailModal";
 import { BulkSeriesAddModal } from "./BulkSeriesAddModal";
+import { ShareBookXModal } from "./ShareBookXModal";
 import { PageSidebar } from "../layout/PageSidebar";
 import { Button } from "../ui/Button";
 import {
@@ -90,6 +91,7 @@ export const BookList: React.FC = () => {
   const [isBulkAdding, setIsBulkAdding] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+  const [sharingBook, setSharingBook] = useState<Book | null>(null);
   const [selectedType, setSelectedType] = useState<Book['type']>('commercial');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -614,6 +616,7 @@ export const BookList: React.FC = () => {
                         onSelect={setSelectedBook}
                         onEdit={setSelectedBook}
                         onDelete={deleteBook}
+                        onShare={setSharingBook}
                       />
                     ))}
                   </div>
@@ -630,6 +633,7 @@ export const BookList: React.FC = () => {
                   onSelect={setSelectedBook}
                   onEdit={setSelectedBook}
                   onDelete={deleteBook}
+                  onShare={setSharingBook}
                 />
               ))}
             </div>
@@ -644,7 +648,17 @@ export const BookList: React.FC = () => {
                 onUpdate={updateBook}
                 onDelete={deleteBook}
                 onUploadImage={uploadImage}
+                onShare={(book) => { setSharingBook(book); setSelectedBook(null); }}
                 existingBooks={books}
+              />
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {sharingBook && (
+              <ShareBookXModal
+                book={sharingBook}
+                onClose={() => setSharingBook(null)}
               />
             )}
           </AnimatePresence>

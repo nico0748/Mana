@@ -5,6 +5,7 @@ import { Pencil, Trash, X, ExternalLink } from 'lucide-react';
 import { BookForm } from './BookForm';
 import { motion } from 'framer-motion';
 import { buildAmazonLink } from '../../lib/affiliate';
+import { XLogoIcon } from './XLogoIcon';
 
 interface BookDetailModalProps {
   book: Book;
@@ -13,6 +14,7 @@ interface BookDetailModalProps {
   onUpdate: (id: string, data: Partial<Book>) => Promise<unknown>;
   onDelete: (id: string) => Promise<void>;
   onUploadImage: (file: File) => Promise<string>;
+  onShare?: (book: Book) => void;
   existingBooks?: Book[];
 }
 
@@ -23,6 +25,7 @@ export const BookDetailModal: React.FC<BookDetailModalProps> = ({
   onUpdate,
   onDelete,
   onUploadImage,
+  onShare,
   existingBooks,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -143,6 +146,16 @@ export const BookDetailModal: React.FC<BookDetailModalProps> = ({
                   >
                     <ExternalLink className="w-4 h-4" /> Amazon
                   </a>
+                )}
+                {onShare && (
+                  <Button
+                    variant="outline"
+                    onClick={() => onShare(book)}
+                    className="flex-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 hover:text-zinc-900 border-zinc-100"
+                  >
+                    <XLogoIcon className="w-4 h-4 mr-2" />
+                    X で紹介
+                  </Button>
                 )}
                 <Button onClick={() => setIsEditing(true)} className="flex-1">
                   <Pencil className="w-4 h-4 mr-2" />

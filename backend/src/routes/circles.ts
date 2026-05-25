@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import { prisma } from '../prisma';
 import { guardLimit } from '../lib/enforceLimit';
-import { sanitizeHttpUrl } from '../lib/url';
+import { sanitizeHttpUrl, sanitizeImageUrl } from '../lib/url';
 import { normalizeFields } from '../lib/text';
 
 const router = Router();
 
-// Circle の自由入力テキスト。xUrl は URL のため別途 sanitizeHttpUrl で検証する。
-// menuImageUrl は Base64 のため除外。status は列挙値で除外。
+// Circle の自由入力テキスト。xUrl / menuImageUrl は URL のため別途 sanitize 系で検証する。
+// status は列挙値で除外。
 const CIRCLE_TEXT_FIELDS = ['name', 'author', 'hall', 'block', 'number'] as const;
 
 const toCircle = (c: any) => ({
@@ -19,14 +19,18 @@ const toCircle = (c: any) => ({
   updatedAt: c.updatedAt instanceof Date ? c.updatedAt.getTime() : c.updatedAt,
 });
 
-// xUrl は <a href> に流れ込むため、http(s):// 以外のスキームを撥ねる必須のサーバ側ガード。
+// xUrl は <a href>、menuImageUrl は <img src> / <a href> に流れ込むため、
+// スキームを必ずサーバ側で検証する。
 // 不正な値（例: javascript:alert(1)）は黙って null に落として保存させる。
 function sanitizeCircleInput<T extends Record<string, any>>(data: T): T {
-  if ('xUrl' in data && data.xUrl !== undefined && data.xUrl !== null && data.xUrl !== '') {
-    const safe = sanitizeHttpUrl(data.xUrl);
-    return { ...data, xUrl: safe ?? null };
+  const out: Record<string, any> = { ...data };
+  if ('xUrl' in out && out.xUrl !== undefined && out.xUrl !== null && out.xUrl !== '') {
+    out.xUrl = sanitizeHttpUrl(out.xUrl) ?? null;
   }
-  return data;
+  if ('menuImageUrl' in out && out.menuImageUrl !== undefined && out.menuImageUrl !== null && out.menuImageUrl !== '') {
+    out.menuImageUrl = sanitizeImageUrl(out.menuImageUrl) ?? null;
+  }
+  return out as T;
 }
 
 // 1 行で「xUrl の安全検証」と「テキストフィールドの NFC 正規化」を順に適用するヘルパ。

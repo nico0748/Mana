@@ -31,17 +31,36 @@ app.disable('x-powered-by');
 // Cloudflare 経由の場合は CF-Connecting-IP を信頼する
 app.set('trust proxy', 1);
 
-const corsOrigin = process.env.CORS_ORIGIN;
-app.use(cors({
-  origin: corsOrigin ?? '*',
-  credentials: !!corsOrigin,
-}));
+// CORS: CORS_ORIGIN（カンマ区切りで複数可）が指定された場合のみ、その origin に対して
+// CORS を許可する。本番の Docker 構成では frontend(Nginx) → backend が同一オリジン経由で
+// プロキシされるため、デフォルトでは CORS を一切有効化しない（オープンな `*` フォールバックは廃止）。
+// 開発時に http://localhost:5173 等から直接叩く場合は CORS_ORIGIN を明示すること。
+const corsOrigins = (process.env.CORS_ORIGIN ?? '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+if (corsOrigins.length > 0) {
+  app.use(
+    cors({
+      origin: corsOrigins,
+      credentials: true,
+    }),
+  );
+} else if (process.env.NODE_ENV !== 'production') {
+  console.warn('[cors] CORS_ORIGIN is not set; cross-origin requests are disabled. ' +
+    'Set CORS_ORIGIN to a comma-separated list of allowed origins for browser dev servers.');
+}
 
 // Stripe Webhook は raw body 必須かつ認証不要なので、
 // express.json と authenticate より前にマウントする。
+// Stripe の webhook payload は通常 数十KB なのでアプリ全体の JSON 上限とは別に小さく保つ。
 app.use('/api/webhook/stripe', webhookRouter);
 
-app.use(express.json({ limit: '50mb' })); // large for image data URLs
+// 画像は R2 へ直接 PUT に移行済みのため、JSON ボディは常識的なサイズに絞る。
+// VenueMap.imageDataUrl 等の旧 Base64 経路を残す間は数 MB の余裕を持たせるが、
+// 50mb（旧設定）は DoS の温床になるため許容しない。
+app.use(express.json({ limit: '2mb' }));
 
 // 公開エンドポイント (認証不要)。authenticate より前にマウントする。
 app.use('/api/public/announcements', publicAnnouncementsRouter);

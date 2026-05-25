@@ -1,11 +1,20 @@
 import { Router } from 'express';
 import { prisma } from '../prisma';
 import { normalizeFields } from '../lib/text';
+import { sanitizeImageUrl } from '../lib/url';
 
 const router = Router();
 
 // CircleItem のテキストフィールド。coverUrl は URL なので除外、status 系も列挙値。
 const ITEM_TEXT_FIELDS = ['title', 'type'] as const;
+
+function prepareItemData<T extends Record<string, any>>(rest: T): T {
+  const out = normalizeFields(rest, ITEM_TEXT_FIELDS);
+  if ('coverUrl' in out && out.coverUrl !== undefined && out.coverUrl !== null && out.coverUrl !== '') {
+    (out as any).coverUrl = sanitizeImageUrl(out.coverUrl) ?? null;
+  }
+  return out;
+}
 
 router.get('/', async (req, res) => {
   const uid = (req as any).uid as string;
@@ -26,7 +35,7 @@ router.post('/', async (req, res) => {
     res.status(403).json({ error: 'Forbidden' });
     return;
   }
-  const data = normalizeFields(rest, ITEM_TEXT_FIELDS);
+  const data = prepareItemData(rest);
   const item = await prisma.circleItem.create({ data });
   res.status(201).json(item);
 });
@@ -48,7 +57,7 @@ router.put('/:id', async (req, res) => {
   for (const key of allowed) {
     if (key in req.body) filtered[key] = req.body[key];
   }
-  const data = normalizeFields(filtered, ITEM_TEXT_FIELDS);
+  const data = prepareItemData(filtered as Record<string, any>);
   const updated = await prisma.circleItem.update({
     where: { id: req.params.id },
     data,

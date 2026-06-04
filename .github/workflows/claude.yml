@@ -1,0 +1,39 @@
+name: Claude Code
+
+# Issue / PR で @claude とメンションされたら起動し、
+# 内容を解析して修正 PR を作成する。
+# 例: ZAP scan が作成した Issue に「@claude このアラートを修正して」とコメントする
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  issues:
+    types: [opened, assigned]
+
+jobs:
+  claude:
+    # @claude を含むイベントのときだけ実行（無駄な起動・課金を防ぐ）
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'issues' && contains(github.event.issue.body, '@claude'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write       # ブランチ作成・ファイル変更
+      pull-requests: write  # PR 作成
+      issues: write         # Issue へ返信
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Claude Code
+        uses: anthropics/claude-code-action@v1
+        with:
+          # Claude Pro / Max サブスクで動かす（従量課金なし）
+          # トークンは `claude setup-token` で生成し、Secret 名 CLAUDE_CODE_OAUTH_TOKEN で登録する
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # @claude メンションに応答（trigger_phrase のデフォルトが "@claude"）
+          # CLAUDE.md のブランチ運用ルールに従い、修正は feature/* や fix/* ブランチ + PR で行われる
+          claude_args: "--max-turns 15"

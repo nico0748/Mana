@@ -1,0 +1,13 @@
+# OWASP ZAP Baseline Scan ルール設定ファイル（タブ区切り）
+#
+# 形式: <ルールID>	<WARN|IGNORE|FAIL>	(任意メモ)
+#   - IGNORE : そのルールを無視（誤検知の抑制に使う）
+#   - WARN   : 警告として出す（デフォルト）
+#   - FAIL   : 検知時にワークフローを失敗させる
+#
+# ルールID は ZAP のレポート（HTML / Issue）に記載される番号を参照する。
+# 例）レポートで頻出する Informational なアラートを抑制したい場合に追記する:
+# 10096	IGNORE	(Timestamp Disclosure - 誤検知が多いため抑制)
+# 10027	IGNORE	(Information Disclosure - Suspicious Comments)
+#
+# ※ 列の区切りは必ずタブ文字にすること（スペース不可）

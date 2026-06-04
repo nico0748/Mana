@@ -1,0 +1,53 @@
+name: ZAP Baseline Scan
+
+# OWASP ZAP Baseline Scan による脆弱性診断の自動化
+# - Baseline Scan は受動（パッシブ）スキャンのため、対象サイトへ攻撃的なリクエストは送らない
+# - スキャン対象は自社で構築・運用しているサイトのみに限定すること
+on:
+  # main への push（マージ）時に実行
+  push:
+    branches: [main]
+  # 週次スキャン（毎週月曜 00:00 UTC = 月曜 09:00 JST）
+  # 依存ライブラリの新規脆弱性などを継続的に検知する
+  schedule:
+    - cron: "0 0 * * 1"
+  # 任意のタイミングで手動実行
+  workflow_dispatch:
+
+# action-baseline はスキャン結果を Issue として書き込むため issues: write が必要
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  zap_baseline:
+    name: OWASP ZAP Baseline Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          # スキャン対象の本番URL
+          target: "https://doujin-pp.com"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # 現行のメンテナンス済みイメージ（旧 owasp/zap2docker-stable は非推奨）
+          docker_name: "ghcr.io/zaproxy/zaproxy:stable"
+          # -a : alpha 版を含む受動スキャンルールを有効化
+          # -j : Ajax Spider を有効化（React SPA のクライアントレンダリング画面も巡回）
+          # -z : ZAP オプション。アラート最大件数の制限を緩和
+          cmd_options: >-
+            -a
+            -j
+            -z "-config alert.maxInstances=0"
+          # 誤検知の抑制ルールを置く場合はこのファイルを使う（任意）
+          rules_file_name: ".zap/rules.tsv"
+          # WARN レベルのアラートでワークフローを失敗させない
+          # （Baseline は警告が多く出るため。FAIL レベルのみ気にする運用）
+          fail_action: false
+          # スキャン結果を Issue として自動作成・更新する
+          allow_issue_writing: true
+          # Actions の Artifact 名
+          artifact_name: zap-baseline-report

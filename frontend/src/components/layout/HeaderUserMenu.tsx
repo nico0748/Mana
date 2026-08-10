@@ -8,6 +8,7 @@ export const HeaderUserMenu: React.FC = () => {
   const { user, logout } = useAuth();
   const [open, setOpen] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement | null>(null);
+  const triggerRef = React.useRef<HTMLButtonElement | null>(null);
 
   React.useEffect(() => {
     if (!open) return;
@@ -17,7 +18,10 @@ export const HeaderUserMenu: React.FC = () => {
       }
     };
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key === 'Escape') {
+        setOpen(false);
+        triggerRef.current?.focus();
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     document.addEventListener('keydown', handleKey);
@@ -37,9 +41,11 @@ export const HeaderUserMenu: React.FC = () => {
   return (
     <div ref={containerRef} className="relative">
       <button
+        ref={triggerRef}
         onClick={() => setOpen((v) => !v)}
         aria-label="アカウントメニュー"
         aria-expanded={open}
+        aria-haspopup="menu"
         className="flex items-center justify-center w-9 h-9 rounded-full ring-1 ring-zinc-700 hover:ring-zinc-500 transition-colors overflow-hidden bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50"
       >
         {user.photoURL ? (
@@ -64,12 +70,13 @@ export const HeaderUserMenu: React.FC = () => {
               aria-hidden
             />
 
-            <div className="rounded-2xl bg-zinc-900 border border-zinc-800 shadow-2xl shadow-black/40 overflow-hidden">
+            <div role="menu" aria-label="アカウントメニュー" className="rounded-2xl bg-zinc-900 border border-zinc-800 shadow-2xl shadow-black/40 overflow-hidden">
               <Link
                 to="/account"
                 onClick={() => setOpen(false)}
                 className="flex items-center gap-3 px-4 py-3 border-b border-zinc-800 hover:bg-zinc-800/60 transition-colors text-left"
                 aria-label="アカウント設定を開く"
+                role="menuitem"
               >
                 {user.photoURL ? (
                   <img src={user.photoURL} alt="" className="w-10 h-10 rounded-full flex-shrink-0" />
@@ -90,6 +97,7 @@ export const HeaderUserMenu: React.FC = () => {
 
               <button
                 onClick={handleLogout}
+                role="menuitem"
                 className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
               >
                 <LogOut className="w-4 h-4" />

@@ -10,6 +10,7 @@ import {
 import type { Circle, CircleItem, DoujinEvent, VenueMap, EventTemplate } from '../types';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { Dialog } from '../components/ui/Dialog';
 import { PageSidebar } from '../components/layout/PageSidebar';
 import {
   parseCirclesFile, parseCirclesJson, downloadCirclesTemplate,
@@ -115,36 +116,28 @@ const AddToLibraryModal: React.FC<AddToLibraryModalProps> = ({ item, circle, onC
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 40 }}
-        className="relative w-full max-w-md bg-zinc-900 rounded-xl border border-zinc-800 p-6 z-10"
-      >
+    <Dialog label="蔵書に追加" onClose={onClose} className="max-w-md p-6">
         <h2 className="text-lg font-bold text-zinc-100 mb-1">蔵書に追加</h2>
         <p className="text-sm text-zinc-500 mb-4">同人誌・所持として蔵書に登録します</p>
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label className="block text-sm text-zinc-400 mb-1">タイトル</label>
-            <Input value={title} onChange={e => setTitle(e.target.value)} required />
+            <label htmlFor="library-title" className="block text-sm text-zinc-400 mb-1">タイトル</label>
+            <Input id="library-title" value={title} onChange={e => setTitle(e.target.value)} required />
           </div>
           <div>
-            <label className="block text-sm text-zinc-400 mb-1">著者 / サークル名</label>
-            <Input value={author} onChange={e => setAuthor(e.target.value)} />
+            <label htmlFor="library-author" className="block text-sm text-zinc-400 mb-1">著者 / サークル名</label>
+            <Input id="library-author" value={author} onChange={e => setAuthor(e.target.value)} />
           </div>
           <div>
-            <label className="block text-sm text-zinc-400 mb-1">価格（円）</label>
-            <Input type="number" min="0" value={price} onChange={e => setPrice(Number(e.target.value))} />
+            <label htmlFor="library-price" className="block text-sm text-zinc-400 mb-1">価格（円）</label>
+            <Input id="library-price" type="number" min="0" value={price} onChange={e => setPrice(Number(e.target.value))} />
           </div>
           <div className="flex gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">キャンセル</Button>
             <Button type="submit" className="flex-1" isLoading={loading}>蔵書に追加</Button>
           </div>
         </form>
-      </motion.div>
-    </div>
+    </Dialog>
   );
 };
 
@@ -234,6 +227,7 @@ const CircleCard: React.FC<CircleCardProps> = ({
                   target="_blank"
                   rel="noopener noreferrer"
                   title="X (Twitter) を開く"
+                  aria-label={`${circle.name} の X を開く`}
                   className="p-2 text-sky-500 hover:text-sky-300 hover:bg-zinc-800 rounded-full transition-all duration-150 active:scale-90"
                 >
                   <ExternalLink className="w-4 h-4" />
@@ -243,6 +237,7 @@ const CircleCard: React.FC<CircleCardProps> = ({
                 <button
                   onClick={() => openXShare(buildCircleShareText(circle, items, eventName))}
                   title="Xで共有（代理購入依頼）"
+                  aria-label={`${circle.name} を X で共有`}
                   className="p-2 text-zinc-500 hover:text-sky-400 hover:bg-zinc-800 rounded-full transition-all duration-150 active:scale-90"
                 >
                   <Share2 className="w-4 h-4" />
@@ -252,17 +247,21 @@ const CircleCard: React.FC<CircleCardProps> = ({
                 onClick={() => onEdit(circle)}
                 className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-full transition-all duration-150 active:scale-90"
                 title="編集"
+                aria-label={`${circle.name} を編集`}
               >
                 <Pencil className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setExpanded(e => !e)}
+                aria-label={expanded ? `${circle.name} の詳細を閉じる` : `${circle.name} の詳細を開く`}
+                aria-expanded={expanded}
                 className="p-2 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-full transition-all duration-150 active:scale-90"
               >
                 {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </button>
               <button
                 onClick={() => onDelete(circle.id)}
+                aria-label={`${circle.name} を削除`}
                 className="p-2 text-zinc-600 hover:text-red-400 hover:bg-zinc-800 rounded-full transition-all duration-150 active:scale-90"
               >
                 <Trash2 className="w-4 h-4" />
@@ -447,23 +446,16 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ onAdd, onClose }) => {
     : [];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 40 }}
-        className="relative w-full max-w-md bg-zinc-900 rounded-xl border border-zinc-800 p-6 z-10"
-      >
+    <Dialog label="サークルを追加" onClose={onClose} className="max-w-md p-6">
         <h2 className="text-lg font-bold text-zinc-100 mb-4">サークルを追加</h2>
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label className="block text-sm text-zinc-400 mb-1">サークル名 *</label>
-            <Input name="name" value={form.name} onChange={handleChange} placeholder="サークル名" required />
+            <label htmlFor="circle-name" className="block text-sm text-zinc-400 mb-1">サークル名 *</label>
+            <Input id="circle-name" name="name" value={form.name} onChange={handleChange} placeholder="サークル名" required />
           </div>
           <div>
-            <label className="block text-sm text-zinc-400 mb-1">作者名</label>
-            <Input name="author" value={form.author} onChange={handleChange} placeholder="作者名" />
+            <label htmlFor="circle-author" className="block text-sm text-zinc-400 mb-1">作者名</label>
+            <Input id="circle-author" name="author" value={form.author} onChange={handleChange} placeholder="作者名" />
             {matchingBooks.length > 0 && (
               <div className="mt-1.5 px-3 py-2 bg-blue-400/5 border border-blue-400/20 rounded-lg">
                 <p className="text-xs text-blue-400 font-medium mb-1">
@@ -482,29 +474,28 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ onAdd, onClose }) => {
           </div>
           <div className="grid grid-cols-3 gap-2">
             <div>
-              <label className="block text-sm text-zinc-400 mb-1">ホール</label>
-              <Input name="hall" value={form.hall} onChange={handleChange} placeholder="東1" />
+              <label htmlFor="circle-hall" className="block text-sm text-zinc-400 mb-1">ホール</label>
+              <Input id="circle-hall" name="hall" value={form.hall} onChange={handleChange} placeholder="東1" />
             </div>
             <div>
-              <label className="block text-sm text-zinc-400 mb-1">ブロック</label>
-              <Input name="block" value={form.block} onChange={handleChange} placeholder="A" />
+              <label htmlFor="circle-block" className="block text-sm text-zinc-400 mb-1">ブロック</label>
+              <Input id="circle-block" name="block" value={form.block} onChange={handleChange} placeholder="A" />
             </div>
             <div>
-              <label className="block text-sm text-zinc-400 mb-1">番号</label>
-              <Input name="number" value={form.number} onChange={handleChange} placeholder="01a" />
+              <label htmlFor="circle-number" className="block text-sm text-zinc-400 mb-1">番号</label>
+              <Input id="circle-number" name="number" value={form.number} onChange={handleChange} placeholder="01a" />
             </div>
           </div>
           <div>
-            <label className="block text-sm text-zinc-400 mb-1">X (Twitter)</label>
-            <Input name="xUrl" value={form.xUrl} onChange={handleChange} placeholder="https://x.com/example" />
+            <label htmlFor="circle-x-url" className="block text-sm text-zinc-400 mb-1">X (Twitter)</label>
+            <Input id="circle-x-url" name="xUrl" value={form.xUrl} onChange={handleChange} placeholder="https://x.com/example" />
           </div>
           <div className="flex gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">キャンセル</Button>
             <Button type="submit" className="flex-1">追加</Button>
           </div>
         </form>
-      </motion.div>
-    </div>
+    </Dialog>
   );
 };
 
@@ -541,14 +532,7 @@ const EditCircleModal: React.FC<EditCircleModalProps> = ({ circle, onSave, onClo
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 40 }}
-        className="relative w-full max-w-md bg-zinc-900 rounded-xl border border-zinc-800 p-6 z-10"
-      >
+    <Dialog label="サークルを編集" onClose={onClose} className="max-w-md p-6">
         <h2 className="text-lg font-bold text-zinc-100 mb-4">サークルを編集</h2>
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
@@ -582,8 +566,7 @@ const EditCircleModal: React.FC<EditCircleModalProps> = ({ circle, onSave, onClo
             <Button type="submit" className="flex-1">保存</Button>
           </div>
         </form>
-      </motion.div>
-    </div>
+    </Dialog>
   );
 };
 
@@ -608,14 +591,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ circleId, onAdd, onClose })
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 40 }}
-        className="relative w-full max-w-md bg-zinc-900 rounded-xl border border-zinc-800 p-6 z-10"
-      >
+    <Dialog label="アイテムを追加" onClose={onClose} className="max-w-md p-6">
         <h2 className="text-lg font-bold text-zinc-100 mb-4">アイテムを追加</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -707,8 +683,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ circleId, onAdd, onClose })
             <Button type="submit" className="flex-1">追加</Button>
           </div>
         </form>
-      </motion.div>
-    </div>
+    </Dialog>
   );
 };
 
@@ -770,14 +745,7 @@ const ImportCirclesModal: React.FC<ImportCirclesModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 40 }}
-        className="relative w-full max-w-md bg-zinc-900 rounded-2xl border border-zinc-800 p-6 z-10 space-y-4"
-      >
+    <Dialog label="サークルをインポート" onClose={onClose} className="max-w-md rounded-2xl p-6 space-y-4">
         <div>
           <h2 className="text-lg font-bold text-zinc-100 mb-1">サークルをインポート</h2>
           <p className="text-xs text-zinc-500">
@@ -876,8 +844,7 @@ const ImportCirclesModal: React.FC<ImportCirclesModalProps> = ({
             </Button>
           </div>
         </form>
-      </motion.div>
-    </div>
+    </Dialog>
   );
 };
 
@@ -920,14 +887,7 @@ const EditItemModal: React.FC<EditItemModalProps> = ({ item, onSave, onClose }) 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 40 }}
-        className="relative w-full max-w-md bg-zinc-900 rounded-xl border border-zinc-800 p-6 z-10"
-      >
+    <Dialog label="アイテムを編集" onClose={onClose} className="max-w-md p-6">
         <h2 className="text-lg font-bold text-zinc-100 mb-4">アイテムを編集</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -1026,8 +986,7 @@ const EditItemModal: React.FC<EditItemModalProps> = ({ item, onSave, onClose }) 
             <Button type="submit" className="flex-1" disabled={saving}>{saving ? '保存中...' : '保存'}</Button>
           </div>
         </form>
-      </motion.div>
-    </div>
+    </Dialog>
   );
 };
 
@@ -1052,14 +1011,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onAdd, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 40 }}
-        className="relative w-full max-w-md bg-zinc-900 rounded-xl border border-zinc-800 p-6 z-10"
-      >
+    <Dialog label="即売会を追加" onClose={onClose} className="max-w-md p-6">
         <h2 className="text-lg font-bold text-zinc-100 mb-4">即売会を追加</h2>
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
@@ -1094,8 +1046,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onAdd, onClose }) => {
             <Button type="submit" className="flex-1">追加</Button>
           </div>
         </form>
-      </motion.div>
-    </div>
+    </Dialog>
   );
 };
 
@@ -1125,14 +1076,7 @@ const EditEventModal: React.FC<EditEventModalProps> = ({ event, onSave, onClose 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 40 }}
-        className="relative w-full max-w-md bg-zinc-900 rounded-xl border border-zinc-800 p-6 z-10"
-      >
+    <Dialog label="即売会を編集" onClose={onClose} className="max-w-md p-6">
         <h2 className="text-lg font-bold text-zinc-100 mb-4">即売会を編集</h2>
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
@@ -1166,8 +1110,7 @@ const EditEventModal: React.FC<EditEventModalProps> = ({ event, onSave, onClose 
             <Button type="submit" className="flex-1">保存</Button>
           </div>
         </form>
-      </motion.div>
-    </div>
+    </Dialog>
   );
 };
 
@@ -1226,13 +1169,7 @@ const SubmitTemplateModal: React.FC<SubmitTemplateModalProps> = ({ event, onClos
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 16 }}
-        className="w-full max-w-md bg-zinc-900 rounded-2xl border border-zinc-800 p-6 space-y-4"
-      >
+    <Dialog label="テンプレート申請" onClose={onClose} className="max-w-md rounded-2xl p-6 space-y-4">
         {stage === 'confirm' && (
           <>
             <div className="flex items-center gap-2 text-violet-300">
@@ -1350,8 +1287,7 @@ const SubmitTemplateModal: React.FC<SubmitTemplateModalProps> = ({ event, onClos
             </div>
           </>
         )}
-      </motion.div>
-    </div>
+    </Dialog>
   );
 };
 

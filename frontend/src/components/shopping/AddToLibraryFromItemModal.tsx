@@ -1,9 +1,9 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { BookForm } from '../books/BookForm';
 import { booksApi, circleItemsApi } from '../../lib/api';
 import { useUpgradeModal, isPlanLimitError } from '../../contexts/UpgradeModalContext';
 import type { Book, Circle, CircleItem } from '../../types';
+import { Dialog } from '../ui/Dialog';
 
 interface Props {
   item: CircleItem;
@@ -51,14 +51,7 @@ export const AddToLibraryFromItemModal: React.FC<Props> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 40 }}
-        className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto z-10"
-      >
+    <Dialog label="蔵書に追加" onClose={onClose} className="max-w-xl max-h-[90vh] overflow-y-auto bg-transparent border-0">
         <div className="px-1 pb-2">
           <h2 className="text-lg font-bold text-zinc-100">蔵書に追加</h2>
           <p className="text-xs text-zinc-500">
@@ -72,7 +65,6 @@ export const AddToLibraryFromItemModal: React.FC<Props> = ({
           onCancel={onClose}
           onUploadImage={fileToDataUrl}
         />
-      </motion.div>
-    </div>
+    </Dialog>
   );
 };

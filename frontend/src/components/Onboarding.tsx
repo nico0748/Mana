@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BookOpen, ShoppingBag, Navigation, ChevronRight, Lock } from 'lucide-react';
 import { Button } from './ui/Button';
+import { Dialog } from './ui/Dialog';
 
 export const ONBOARDING_KEY = 'doujin-pp-onboarded';
 
@@ -26,9 +27,9 @@ const slides = [
   },
   {
     icon: <Lock className="w-14 h-14 text-emerald-500" />,
-    title: '蔵書管理 & 完全オフライン',
+    title: '蔵書管理 & オフライン対応',
     description:
-      'バーコードで即登録。同人誌も商業誌もすべて一棚に。アカウント不要・データはすべてあなたのデバイスに保存されます。',
+      'バーコードで即登録。同人誌も商業誌もすべて一棚に。通信が不安定な会場でも、主要な操作を続けられます。',
   },
 ];
 
@@ -64,7 +65,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/95 backdrop-blur-sm px-6">
+    <Dialog label="同人++ の使い方" onClose={onComplete} className="max-w-sm bg-transparent border-0">
       <div className="w-full max-w-sm flex flex-col items-center">
         <AnimatePresence mode="wait" custom={direction}>
           <motion.div
@@ -95,6 +96,8 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
             <button
               key={i}
               onClick={() => goTo(i)}
+              aria-label={`${i + 1} 枚目の案内を表示`}
+              aria-current={i === index ? 'step' : undefined}
               className={`h-1.5 rounded-full transition-all duration-300 ${
                 i === index ? 'w-6 bg-emerald-500' : 'w-1.5 bg-zinc-700 hover:bg-zinc-600'
               }`}
@@ -104,7 +107,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
 
         {/* Buttons */}
         <div className="w-full space-y-3">
-          <Button className="w-full h-12" onClick={next}>
+          <Button autoFocus className="w-full h-12" onClick={next}>
             {isLast ? (
               'はじめる'
             ) : (
@@ -123,7 +126,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
           )}
         </div>
       </div>
-    </div>
+    </Dialog>
   );
 };
 

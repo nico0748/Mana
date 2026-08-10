@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { X, FileJson, Download, Check, Loader, MapPin, Users2 } from 'lucide-react';
 import { eventTemplatesApi } from '../../lib/api';
 import type { EventTemplate } from '../../types';
+import { Dialog } from '../ui/Dialog';
 
 export interface TemplateImportOptions {
   includeCircles: boolean;
@@ -43,21 +43,14 @@ const TemplateImportModal: React.FC<Props> = ({ onClose, onImport }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 40 }}
-        className="relative w-full max-w-lg bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden z-10"
-      >
+    <Dialog label="テンプレートから読み込む" onClose={onClose} className="max-w-lg rounded-2xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
           <div className="flex items-center gap-2">
             <FileJson size={16} className="text-violet-400" />
             <h2 className="font-semibold text-zinc-100 text-sm">テンプレートから読み込む</h2>
           </div>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-zinc-800 text-zinc-500 hover:text-zinc-300 transition-colors">
+          <button onClick={onClose} aria-label="テンプレート読み込みを閉じる" className="p-2 rounded-lg hover:bg-zinc-800 text-zinc-500 hover:text-zinc-300 transition-colors">
             <X size={16} />
           </button>
         </div>
@@ -96,14 +89,14 @@ const TemplateImportModal: React.FC<Props> = ({ onClose, onImport }) => {
           </label>
 
           {isLoading && (
-            <div className="flex items-center gap-2 text-zinc-500 text-sm py-6">
+            <div role="status" aria-live="polite" className="flex items-center gap-2 text-zinc-500 text-sm py-6">
               <Loader size={14} className="animate-spin" />
               読み込み中…
             </div>
           )}
 
           {error && (
-            <div className="px-4 py-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm">
+            <div role="alert" className="px-4 py-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm">
               テンプレート一覧の取得に失敗しました。
             </div>
           )}
@@ -167,8 +160,7 @@ const TemplateImportModal: React.FC<Props> = ({ onClose, onImport }) => {
             </div>
           )}
         </div>
-      </motion.div>
-    </div>
+    </Dialog>
   );
 };
 

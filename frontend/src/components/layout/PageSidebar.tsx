@@ -1,6 +1,7 @@
 import React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
+import { useDialogAccessibility } from '../../hooks/useDialogAccessibility';
 
 interface PageSidebarProps {
   /** モバイルでの開閉状態 */
@@ -13,6 +14,7 @@ interface PageSidebarProps {
 }
 
 export const PageSidebar: React.FC<PageSidebarProps> = ({ open, onClose, footer, children }) => {
+  const drawerRef = useDialogAccessibility<HTMLElement>(onClose, open);
   const inner = (
     <>
       <div className="flex-1 overflow-y-auto p-4">
@@ -42,8 +44,14 @@ export const PageSidebar: React.FC<PageSidebarProps> = ({ open, onClose, footer,
               transition={{ duration: 0.15 }}
               className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
               onClick={onClose}
+              aria-hidden="true"
             />
             <motion.aside
+              ref={drawerRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="ツールメニュー"
+              tabIndex={-1}
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
@@ -54,7 +62,8 @@ export const PageSidebar: React.FC<PageSidebarProps> = ({ open, onClose, footer,
                 <span className="text-sm font-semibold text-zinc-200">ツール</span>
                 <button
                   onClick={onClose}
-                  className="p-1.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-md transition-colors"
+                  aria-label="ツールメニューを閉じる"
+                  className="p-2.5 text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 rounded-md transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
-import { AnimatePresence, motion, type Easing } from "framer-motion";
+import { AnimatePresence, MotionConfig, motion, type Easing } from "framer-motion";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { updateProfile } from "firebase/auth";
 import { queryClient, persistOptions } from "./lib/queryClient";
@@ -21,7 +21,7 @@ import Onboarding, { ONBOARDING_KEY } from "./components/Onboarding";
 import { InstallBanner } from "./components/InstallBanner";
 import { SyncStatusHost } from "./components/SyncStatusHost";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { AppSettingsProvider } from "./contexts/AppSettingsContext";
+import { AppSettingsProvider, useAppSettings } from "./contexts/AppSettingsContext";
 import { UpgradeModalProvider } from "./contexts/UpgradeModalContext";
 import { LoginPage, SocialTermsModal } from "./pages/LoginPage";
 
@@ -159,8 +159,10 @@ function AuthGate() {
 }
 
 function AppRoot() {
+  const { settings } = useAppSettings();
+
   return (
-    <>
+    <MotionConfig reducedMotion={settings.reduceMotion ? "always" : "user"}>
       <Routes>
         <Route path="/about" element={<LandingPage />} />
         <Route path="/templates" element={<TemplatesPage />} />
@@ -171,7 +173,7 @@ function AppRoot() {
       <SyncStatusHost />
       {/* PWA インストールバナーは全ルートで共通（ログイン前のランディングからも誘導したい） */}
       <InstallBanner />
-    </>
+    </MotionConfig>
   );
 }
 

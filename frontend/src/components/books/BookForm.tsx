@@ -19,8 +19,8 @@ const SectionLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   <p className="text-[11px] font-bold text-zinc-500 uppercase tracking-widest mb-2.5">{children}</p>
 );
 
-const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
-  <label className="block text-xs text-zinc-400 mb-1">
+const FieldLabel: React.FC<{ children: React.ReactNode; htmlFor: string; required?: boolean }> = ({ children, htmlFor, required }) => (
+  <label htmlFor={htmlFor} className="block text-xs text-zinc-400 mb-1">
     {children}
     {required && <span className="ml-0.5 text-red-400">*</span>}
   </label>
@@ -211,6 +211,7 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
             key={t}
             type="button"
             onClick={() => setFormData(prev => ({ ...prev, type: t }))}
+            aria-pressed={formData.type === t}
             className={`px-5 py-1.5 text-sm font-medium rounded-lg transition-colors ${
               formData.type === t
                 ? "bg-zinc-600 text-zinc-100 shadow"
@@ -230,6 +231,7 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
+            aria-label="カバー画像を選択"
             className="w-16 h-24 flex-shrink-0 rounded-lg border border-zinc-700 overflow-hidden flex items-center justify-center hover:border-zinc-500 transition-colors bg-zinc-800 group"
           >
             {formData.coverUrl ? (
@@ -250,7 +252,7 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
               {uploading ? "処理中..." : "画像を選択"}
             </Button>
             <div>
-              <FieldLabel>または画像URL</FieldLabel>
+              <FieldLabel htmlFor="coverUrl">または画像URL</FieldLabel>
               <Input name="coverUrl" value={formData.coverUrl} onChange={handleChange} placeholder="https://..." />
             </div>
           </div>
@@ -264,11 +266,11 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
 
           {/* タイトル */}
           <div>
-            <FieldLabel required>タイトル</FieldLabel>
+            <FieldLabel htmlFor="title" required>タイトル</FieldLabel>
             <div className="flex gap-2">
               <Input name="title" value={formData.title} onChange={handleChange} required placeholder="タイトルを入力" />
               <Button type="button" variant="outline" size="icon" onClick={handleTitleSearch}
-                title="タイトルで表紙を検索" disabled={!formData.title || uploading}>
+                title="タイトルで表紙を検索" aria-label="タイトルで表紙を検索" disabled={!formData.title || uploading}>
                 <Search className="h-4 w-4" />
               </Button>
             </div>
@@ -277,7 +279,7 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
           {/* サークル名（同人誌のみ）。同人誌では著者名 と どちらか必須。 */}
           {isDoujin && (
             <div>
-              <FieldLabel required>サークル名</FieldLabel>
+              <FieldLabel htmlFor="circleName" required>サークル名</FieldLabel>
               <div className="relative">
                 <Input
                   name="circleName"
@@ -300,7 +302,7 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
 
           {/* 著者名: 商業誌は必須、同人誌はサークル名と択一 */}
           <div>
-            <FieldLabel required>著者名</FieldLabel>
+            <FieldLabel htmlFor="author" required>著者名</FieldLabel>
             <div className="relative">
               <Input
                 name="author"
@@ -327,15 +329,15 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
 
           {/* ISBN */}
           <div>
-            <FieldLabel>ISBN</FieldLabel>
+            <FieldLabel htmlFor="isbn">ISBN</FieldLabel>
             <div className="flex gap-2">
               <Input name="isbn" value={formData.isbn} onChange={handleChange} placeholder="ISBN（任意）" />
               <Button type="button" variant="outline" size="icon"
-                onClick={() => fetchBookData(formData.isbn)} title="ISBNで書籍情報を取得">
+                onClick={() => fetchBookData(formData.isbn)} title="ISBNで書籍情報を取得" aria-label="ISBNで書籍情報を取得">
                 <Search className="h-4 w-4" />
               </Button>
               <Button type="button" variant="outline" size="icon"
-                onClick={() => setShowScanner(true)} title="バーコードスキャン">
+                onClick={() => setShowScanner(true)} title="バーコードスキャン" aria-label="バーコードをスキャン">
                 <Scan className="h-4 w-4" />
               </Button>
             </div>
@@ -344,7 +346,7 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
           {/* シリーズ・ジャンル（商業誌・同人誌共通）。datalist で既存値を補完表示する */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <FieldLabel>シリーズ</FieldLabel>
+              <FieldLabel htmlFor="series">シリーズ</FieldLabel>
               <Input
                 name="series"
                 value={formData.series}
@@ -365,7 +367,7 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
               </datalist>
             </div>
             <div>
-              <FieldLabel>ジャンル</FieldLabel>
+              <FieldLabel htmlFor="genre">ジャンル</FieldLabel>
               <Input
                 name="genre"
                 value={formData.genre}
@@ -394,11 +396,11 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
           {!isDoujin && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <FieldLabel>カテゴリ</FieldLabel>
+                <FieldLabel htmlFor="category">カテゴリ</FieldLabel>
                 <Input name="category" value={formData.category} onChange={handleChange} placeholder="例: Tech, Manga" />
               </div>
               <div>
-                <FieldLabel>NDCコード</FieldLabel>
+                <FieldLabel htmlFor="ndcCode">NDCコード</FieldLabel>
                 <Input name="ndcCode" value={formData.ndcCode} onChange={handleChange}
                   placeholder="例: 913.6" list="ndc-suggestions" />
                 <datalist id="ndc-suggestions">
@@ -426,13 +428,13 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
           {/* 同人誌: タグ */}
           {isDoujin && (
             <div>
-              <FieldLabel>タグ</FieldLabel>
+              <FieldLabel htmlFor="tag-input">タグ</FieldLabel>
               {tags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mb-2">
                   {tags.map(tag => (
                     <span key={tag} className="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-violet-400/10 text-violet-300 border border-violet-400/25">
                       {tag}
-                      <button type="button" onClick={() => removeTag(tag)} className="hover:text-red-400 transition-colors">
+                      <button type="button" onClick={() => removeTag(tag)} aria-label={`${tag} を削除`} className="hover:text-red-400 transition-colors">
                         <X className="w-3 h-3" />
                       </button>
                     </span>
@@ -441,6 +443,7 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
               )}
               <div className="flex gap-2">
                 <Input
+                  id="tag-input"
                   value={tagInput}
                   onChange={e => setTagInput(e.target.value)}
                   onKeyDown={handleTagKeyDown}
@@ -460,7 +463,7 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
                     <option key={t} value={t} />
                   ))}
                 </datalist>
-                <Button type="button" variant="outline" size="icon" onClick={addTag} disabled={!tagInput.trim()}>
+                <Button type="button" variant="outline" size="icon" onClick={addTag} aria-label="タグを追加" disabled={!tagInput.trim()}>
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
@@ -474,7 +477,7 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
         <SectionLabel>管理情報</SectionLabel>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <FieldLabel>ステータス</FieldLabel>
+            <FieldLabel htmlFor="status">ステータス</FieldLabel>
             <select name="status" value={formData.status} onChange={handleChange} className={selectClass}>
               <option value="owned">所持</option>
               <option value="lending">貸出中</option>
@@ -484,7 +487,7 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
             </select>
           </div>
           <div>
-            <FieldLabel>
+            <FieldLabel htmlFor="price">
               価格
               {formData.status === "borrowed" && <span className="ml-1 text-blue-400 font-normal">（浮いた金額）</span>}
             </FieldLabel>
@@ -496,7 +499,9 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
       {/* ── メモ ───────────────────────────────────────────────────────────── */}
       <div>
         <SectionLabel>メモ</SectionLabel>
+        <label htmlFor="memo" className="sr-only">メモ</label>
         <textarea
+          id="memo"
           name="memo"
           value={formData.memo}
           onChange={handleChange}

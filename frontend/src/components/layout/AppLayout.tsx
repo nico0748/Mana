@@ -114,6 +114,8 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
                   <Link
                     key={tab.path}
                     to={tab.path}
+                    aria-label={tab.label}
+                    aria-current={active ? 'page' : undefined}
                     className={clsx(
                       'relative flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-medium transition-all duration-200',
                       active
@@ -157,6 +159,7 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
               <Link
                 key={tab.path}
                 to={tab.path}
+                aria-current={active ? 'page' : undefined}
                 className="relative flex flex-col items-center justify-center gap-0.5 flex-1 h-full"
               >
                 {active && (

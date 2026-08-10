@@ -57,7 +57,7 @@ export const BookGridCard: React.FC<Props> = ({ book, onSelect, onEdit, onDelete
             <button
               onClick={() => onShare(book)}
               className="p-1 text-zinc-200 hover:text-zinc-50 bg-zinc-900/80 hover:bg-zinc-700 rounded-md backdrop-blur"
-              title="X で紹介"
+              title="Xで紹介"
             >
               <XLogoIcon className="h-3 w-3" />
             </button>

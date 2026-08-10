@@ -27,7 +27,7 @@ const slides = [
   },
   {
     icon: <Lock className="w-14 h-14 text-emerald-500" />,
-    title: '蔵書管理 & オフライン対応',
+    title: '蔵書管理とオフライン対応',
     description:
       'バーコードで即登録。同人誌も商業誌もすべて一棚に。通信が不安定な会場でも、主要な操作を続けられます。',
   },

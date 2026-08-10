@@ -65,7 +65,7 @@ const TemplateImportModal: React.FC<Props> = ({ onClose, onImport }) => {
 
           <p className="text-xs text-zinc-500 mb-3">
             ユーザーが申請し運営が承認したテンプレートです。
-            読み込むと即売会・ホール一覧・マップ画像が自動作成されます。
+            読み込むと即売会・ホール一覧・会場マップが自動作成されます。
           </p>
 
           {/* オプション */}
@@ -83,7 +83,7 @@ const TemplateImportModal: React.FC<Props> = ({ onClose, onImport }) => {
                 サークル情報も一緒に取り込む
               </div>
               <p className="text-xs text-zinc-500 mt-0.5 leading-relaxed">
-                オフにすると即売会とホールマップだけが取り込まれ、サークルは作成されません。
+                オフにすると即売会と会場マップだけが取り込まれ、サークルは作成されません。
               </p>
             </div>
           </label>

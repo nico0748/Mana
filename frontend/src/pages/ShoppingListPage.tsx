@@ -42,7 +42,7 @@ const formatDate = (dateStr: string) => {
   return `${y}年${m}月${d}日`;
 };
 
-// ─── X (Twitter) share helpers ─────────────────────────────────────────────
+// ─── X 共有ヘルパー ────────────────────────────────────────────────────────
 
 function openXShare(text: string) {
   const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
@@ -79,7 +79,7 @@ function buildEventShareText(event: DoujinEvent, circles: Circle[], circleItems:
     });
     if (items.length > 2) lines.push(`  他${items.length - 2}点`);
   });
-  if (pendingCircles.length > 5) lines.push(`他${pendingCircles.length - 5}サークル...`);
+  if (pendingCircles.length > 5) lines.push(`ほか${pendingCircles.length - 5}サークル`);
   lines.push('');
   lines.push('代理購入できる方はDMください🙏');
   lines.push('#同人イベント #代理購入');
@@ -118,7 +118,7 @@ const AddToLibraryModal: React.FC<AddToLibraryModalProps> = ({ item, circle, onC
   return (
     <Dialog label="蔵書に追加" onClose={onClose} className="max-w-md p-6">
         <h2 className="text-lg font-bold text-zinc-100 mb-1">蔵書に追加</h2>
-        <p className="text-sm text-zinc-500 mb-4">同人誌・所持として蔵書に登録します</p>
+        <p className="text-sm text-zinc-500 mb-4">同人誌として本棚に追加します</p>
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
             <label htmlFor="library-title" className="block text-sm text-zinc-400 mb-1">タイトル</label>
@@ -226,7 +226,7 @@ const CircleCard: React.FC<CircleCardProps> = ({
                   href={circle.xUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  title="X (Twitter) を開く"
+                  title="Xを開く"
                   aria-label={`${circle.name} の X を開く`}
                   className="p-2 text-sky-500 hover:text-sky-300 hover:bg-zinc-800 rounded-full transition-all duration-150 active:scale-90"
                 >
@@ -236,8 +236,8 @@ const CircleCard: React.FC<CircleCardProps> = ({
               {items.length > 0 && (
                 <button
                   onClick={() => openXShare(buildCircleShareText(circle, items, eventName))}
-                  title="Xで共有（代理購入依頼）"
-                  aria-label={`${circle.name} を X で共有`}
+                  title="Xで共有（代理購入を依頼）"
+                  aria-label={`${circle.name} をXで共有`}
                   className="p-2 text-zinc-500 hover:text-sky-400 hover:bg-zinc-800 rounded-full transition-all duration-150 active:scale-90"
                 >
                   <Share2 className="w-4 h-4" />
@@ -429,7 +429,7 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ onAdd, onClose }) => {
     if (!form.name) return;
     const { xUrl, ...rest } = form;
     if (xUrl && !isSafeHttpUrl(xUrl)) {
-      alert('X (Twitter) の URL は http:// または https:// で始まる正しい URL を入力してください。');
+      alert('XのURLは、http:// または https:// から始まるURLを入力してください。');
       return;
     }
     onAdd({ ...rest, ...(xUrl ? { xUrl } : {}) });
@@ -466,7 +466,7 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ onAdd, onClose }) => {
                     <li key={b.id} className="text-xs text-zinc-400 truncate">・{b.title}</li>
                   ))}
                   {matchingBooks.length > 3 && (
-                    <li className="text-xs text-zinc-500">他 {matchingBooks.length - 3} 冊...</li>
+                    <li className="text-xs text-zinc-500">ほか {matchingBooks.length - 3} 冊</li>
                   )}
                 </ul>
               </div>
@@ -487,7 +487,7 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ onAdd, onClose }) => {
             </div>
           </div>
           <div>
-            <label htmlFor="circle-x-url" className="block text-sm text-zinc-400 mb-1">X (Twitter)</label>
+            <label htmlFor="circle-x-url" className="block text-sm text-zinc-400 mb-1">XのプロフィールURL</label>
             <Input id="circle-x-url" name="xUrl" value={form.xUrl} onChange={handleChange} placeholder="https://x.com/example" />
           </div>
           <div className="flex gap-2 pt-2">
@@ -524,7 +524,7 @@ const EditCircleModal: React.FC<EditCircleModalProps> = ({ circle, onSave, onClo
     if (!form.name) return;
     const { xUrl, ...rest } = form;
     if (xUrl && !isSafeHttpUrl(xUrl)) {
-      alert('X (Twitter) の URL は http:// または https:// で始まる正しい URL を入力してください。');
+      alert('XのURLは、http:// または https:// から始まるURLを入力してください。');
       return;
     }
     onSave(circle.id, { ...rest, xUrl: xUrl || undefined });
@@ -558,7 +558,7 @@ const EditCircleModal: React.FC<EditCircleModalProps> = ({ circle, onSave, onClo
             </div>
           </div>
           <div>
-            <label className="block text-sm text-zinc-400 mb-1">X (Twitter)</label>
+            <label className="block text-sm text-zinc-400 mb-1">XのプロフィールURL</label>
             <Input name="xUrl" value={form.xUrl} onChange={handleChange} placeholder="https://x.com/example" />
           </div>
           <div className="flex gap-2 pt-2">
@@ -983,7 +983,7 @@ const EditItemModal: React.FC<EditItemModalProps> = ({ item, onSave, onClose }) 
           </div>
           <div className="flex gap-2 pt-1">
             <Button type="button" variant="outline" onClick={onClose} className="flex-1" disabled={saving}>キャンセル</Button>
-            <Button type="submit" className="flex-1" disabled={saving}>{saving ? '保存中...' : '保存'}</Button>
+            <Button type="submit" className="flex-1" disabled={saving}>{saving ? '保存中…' : '保存'}</Button>
           </div>
         </form>
     </Dialog>
@@ -1207,7 +1207,7 @@ const SubmitTemplateModal: React.FC<SubmitTemplateModalProps> = ({ event, onClos
                 ) : eventMaps.length === 0 ? (
                   <div className="flex items-start gap-1.5 text-xs text-amber-400">
                     <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                    <span>この即売会にはホールマップが登録されていません。空のテンプレートとして申請されます（先にマップを登録することを推奨）。</span>
+                    <span>この即売会には会場マップが登録されていないため、空のテンプレートとして申請されます。先に会場マップを登録することをおすすめします。</span>
                   </div>
                 ) : (
                   <div className="flex flex-wrap gap-1.5">
@@ -1379,7 +1379,7 @@ const EventCard: React.FC<EventCardProps> = ({
             {circles.length > 0 && (
               <button
                 onClick={() => openXShare(buildEventShareText(event, circles, circleItems))}
-                title="Xで共有（代理購入依頼）"
+                title="Xで共有（代理購入を依頼）"
                 className="p-2 text-zinc-500 hover:text-sky-400 hover:bg-zinc-800 rounded-lg transition-colors"
               >
                 <Share2 className="w-4 h-4" />
@@ -1556,7 +1556,7 @@ const ShoppingListPage: React.FC = () => {
   const [pendingImport, setPendingImport] = useState<{ rows: ImportRow[]; sourceLabel: string } | null>(null);
 
   if (eventsLoading || circlesLoading) {
-    return <div className="text-center py-8 text-zinc-400">読み込み中...</div>;
+    return <div className="text-center py-8 text-zinc-400">読み込み中…</div>;
   }
 
   const allItems = circleItems ?? [];
@@ -1883,7 +1883,7 @@ const ShoppingListPage: React.FC = () => {
     <div className="space-y-2.5">
       <div className="mb-3">
         <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-0.5">データ管理</p>
-        <p className="text-xs text-zinc-600">買い物リストのエクスポート・インポート</p>
+        <p className="text-xs text-zinc-600">買い物リストのデータを出力・取り込む</p>
       </div>
 
       {/* エクスポートドロップダウン */}
@@ -2000,7 +2000,7 @@ const ShoppingListPage: React.FC = () => {
         className="w-full flex items-center justify-center gap-2"
       >
         <FileDown className="w-3.5 h-3.5" />
-        テンプレートをDL (CSV/Excel)
+        テンプレートをダウンロード（CSV / Excel）
       </Button>
       <p className="text-xs text-zinc-700 text-center pt-1">テンプレートのフォーマットに合わせてご記入ください</p>
     </div>

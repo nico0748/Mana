@@ -668,7 +668,7 @@ const MapPage: React.FC = () => {
 
   const handleDeleteMap = async () => {
     if (!currentMap) return;
-    if (!confirm(`${selectedHall} のマップ画像を削除しますか？`)) return;
+    if (!confirm(`${selectedHall} の会場マップを削除しますか？`)) return;
     await venueMapsApi.delete(currentMap.id);
     queryClient.invalidateQueries({ queryKey: ['venueMaps'] });
     setEditMode(false);
@@ -994,7 +994,7 @@ const MapPage: React.FC = () => {
             <div className="flex items-center gap-1 flex-shrink-0">
               <label className="cursor-pointer flex items-center gap-1 px-2.5 py-1.5 text-xs text-zinc-400 hover:text-zinc-100 bg-zinc-800 hover:bg-zinc-700 rounded-md transition-colors">
                 <Upload className="w-3.5 h-3.5" />
-                {currentMap ? '更新' : 'MAP登録'}
+                {currentMap ? '更新' : '会場マップを登録'}
                 <input
                   type="file"
                   accept="image/*,application/pdf"
@@ -1055,7 +1055,7 @@ const MapPage: React.FC = () => {
                   <button
                     onClick={handleDeleteMap}
                     className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-red-400 hover:text-red-300 bg-zinc-800 hover:bg-red-950 rounded-md transition-colors"
-                    title="マップ削除"
+                    title="会場マップを削除"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -1088,7 +1088,7 @@ const MapPage: React.FC = () => {
             <img
               ref={imgCallbackRef}
               src={currentMap.imageDataUrl}
-              alt={`${selectedHall}マップ`}
+              alt={`${selectedHall}の会場マップ`}
               className={clsx(
                 'absolute inset-0 w-full h-full object-contain',
                 imageBox ? 'invisible' : 'visible'
@@ -1120,7 +1120,7 @@ const MapPage: React.FC = () => {
               >
                 <img
                   src={currentMap.imageDataUrl}
-                  alt={`${selectedHall}マップ`}
+                  alt={`${selectedHall}の会場マップ`}
                   className="w-full h-full block"
                   draggable={false}
                 />
@@ -1392,7 +1392,7 @@ const MapPage: React.FC = () => {
             <MapPin className="w-12 h-12" />
             <p className="text-sm">
               {selectedHall
-                ? `${selectedHall} のマップを登録してください`
+                ? `${selectedHall} の会場マップを登録してください`
                 : 'ホールを選択してください'}
             </p>
             {selectedHall && (

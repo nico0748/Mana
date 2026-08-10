@@ -88,7 +88,7 @@ const TemplatesPage: React.FC = () => {
           <p className="text-zinc-400 text-base sm:text-lg leading-relaxed max-w-2xl">
             ユーザーが作成し、運営が承認した即売会テンプレートを掲載しています。
             アプリのマップページから「テンプレートから読み込む」を選ぶと、
-            イベント名・日程・会場マップ画像が一括で取り込まれます。
+            イベント名・日程・会場マップがまとめて取り込まれます。
           </p>
         </motion.div>
       </header>
@@ -146,7 +146,7 @@ const TemplatesPage: React.FC = () => {
                 {[
                   { step: '01', title: 'アプリにログイン', text: '同人++ にログインしてマップページを開きます。' },
                   { step: '02', title: '読み込む', text: '「テンプレートから読み込む」を選び、利用したいテンプレートをタップします。' },
-                  { step: '03', title: '完了', text: '即売会・ホール一覧・マップ画像が自動で作成されます。' },
+                  { step: '03', title: '完了', text: '即売会・ホール一覧・会場マップが自動で作成されます。' },
                   { step: '04', title: '自分の即売会も申請できます', text: '作成したイベントの編集メニューから「テンプレート申請」を選ぶと、運営の承認後にここに掲載されます。' },
                 ].map(({ step, title, text }) => (
                   <li key={step} className="flex items-start gap-4">

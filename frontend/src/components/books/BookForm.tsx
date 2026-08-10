@@ -249,11 +249,11 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
               disabled={uploading}
               className="w-full"
             >
-              {uploading ? "処理中..." : "画像を選択"}
+              {uploading ? "処理中…" : "画像を選択"}
             </Button>
             <div>
               <FieldLabel htmlFor="coverUrl">または画像URL</FieldLabel>
-              <Input name="coverUrl" value={formData.coverUrl} onChange={handleChange} placeholder="https://..." />
+              <Input name="coverUrl" value={formData.coverUrl} onChange={handleChange} placeholder="https://…" />
             </div>
           </div>
         </div>
@@ -507,7 +507,7 @@ export const BookForm: React.FC<BookFormProps> = (props) => {
           onChange={handleChange}
           rows={3}
           className="w-full bg-zinc-800 border border-zinc-700 text-zinc-100 rounded-lg p-3 text-sm placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-white/10 focus:border-zinc-500 resize-none transition-colors"
-          placeholder="自由にメモを入力..."
+          placeholder="自由にメモを入力…"
         />
       </div>
 

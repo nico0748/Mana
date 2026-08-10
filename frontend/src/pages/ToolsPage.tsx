@@ -493,7 +493,7 @@ const PersonalizeContent: React.FC<{
           onClick={reset}
           className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
         >
-          設定をリセット
+          すべての設定をリセット
         </button>
       </div>
     </div>
@@ -506,18 +506,18 @@ const DataContent: React.FC = () => (
     <Card>
       <SettingRow
         icon={<Database className="w-4 h-4" />}
-        label="蔵書データのエクスポート・インポート"
+        label="蔵書データを出力・取り込む"
         value="本棚ページ"
         onClick={() => window.location.assign('/')}
       />
       <SettingRow
         icon={<Database className="w-4 h-4" />}
-        label="買い物リストのエクスポート・インポート"
+        label="買い物リストのデータを出力・取り込む"
         value="買い物ページ"
         onClick={() => window.location.assign('/shopping')}
       />
     </Card>
-    <p className="px-4 pt-3 text-xs text-zinc-600">各ページのサイドバーから JSON / CSV / Excel 形式でデータを管理できます。</p>
+    <p className="px-4 pt-3 text-xs text-zinc-600">各ページのサイドバーから、JSON / CSV / Excel形式でデータを出力・取り込めます。</p>
   </div>
 );
 

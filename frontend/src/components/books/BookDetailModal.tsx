@@ -144,7 +144,7 @@ export const BookDetailModal: React.FC<BookDetailModalProps> = ({
                     className="flex-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 hover:text-zinc-900 border-zinc-100"
                   >
                     <XLogoIcon className="w-4 h-4 mr-2" />
-                    X で紹介
+                    Xで紹介
                   </Button>
                 )}
                 <Button onClick={() => setIsEditing(true)} className="flex-1">

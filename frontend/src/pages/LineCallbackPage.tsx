@@ -51,7 +51,7 @@ const LineCallbackPage: React.FC = () => {
     <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
       <div className="flex flex-col items-center gap-3">
         <div className="w-6 h-6 rounded-full border-2 border-zinc-700 border-t-zinc-300 animate-spin" />
-        <p className="text-sm text-zinc-500">LINEでログイン中...</p>
+        <p className="text-sm text-zinc-500">LINEでログイン中…</p>
       </div>
     </div>
   );

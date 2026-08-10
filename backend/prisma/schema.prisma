@@ -36,6 +36,8 @@ model DoujinEvent {
   name      String
   date      String?
   budget    Int?
+  // MAP ヘッダーでの手動並べ替え順。null = 未設定で、開催日などの自動ソートにフォールバックする。
+  order     Int?
   circles   Circle[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt

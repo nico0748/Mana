@@ -4,6 +4,11 @@ export type Theme = 'dark' | 'light' | 'taupe';
 export type FontSize = 'normal' | 'large';
 export type MapMarkerSize = 'small' | 'normal' | 'large';
 export type BookViewMode = 'list' | 'box';
+/** MAP ヘッダーの即売会タブの並び順。date=開催日 / name=名前 / created=登録順 */
+export type MapEventSortKey = 'date' | 'name' | 'created';
+/** MAP ヘッダーのホールタブの並び順。name=名前（東1 < 東2 < 東10 の自然順）/ created=登録順 */
+export type MapHallSortKey = 'name' | 'created';
+export type SortDir = 'asc' | 'desc';
 
 export interface AppSettings {
   theme: Theme;
@@ -16,6 +21,15 @@ export interface AppSettings {
   showMapPinNumbers: boolean;
   /** 本棚の表示モード。list=テキストのみ (軽量) / box=表紙画像つき grid (仮想スクロール) */
   bookViewMode: BookViewMode;
+  mapEventSortKey: MapEventSortKey;
+  mapEventSortDir: SortDir;
+  mapHallSortKey: MapHallSortKey;
+  mapHallSortDir: SortDir;
+  /**
+   * ホールタブの手動並べ替え順。ホールは Circle / VenueMap から導出される文字列で
+   * エンティティを持たないため、即売会ID（未分類は空文字）をキーにここへ保存する。
+   */
+  mapHallOrder: Record<string, string[]>;
 }
 
 const DEFAULTS: AppSettings = {
@@ -27,6 +41,11 @@ const DEFAULTS: AppSettings = {
   mapMarkerSize: 'normal',
   showMapPinNumbers: true,
   bookViewMode: 'list',
+  mapEventSortKey: 'date',
+  mapEventSortDir: 'asc',
+  mapHallSortKey: 'name',
+  mapHallSortDir: 'asc',
+  mapHallOrder: {},
 };
 
 const STORAGE_KEY = 'doujin-pp-settings';

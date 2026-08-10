@@ -936,13 +936,20 @@ const ToolsPage: React.FC = () => {
     ? categories
     : categories.filter(c => c.id !== 'integration');
 
+  // 「連携」を開いたまま管理者権限が外れると、選択中のカテゴリがナビから消えて
+  // 見出しだけ残り中身が空になる。選択値をそのまま使わず、表示可能なものへ倒した
+  // 値を描画に使うことで、権限が変わった直後のフレームでもずれない。
+  const activeCategory: CategoryId = visibleCategories.some(c => c.id === selected)
+    ? selected
+    : visibleCategories[0].id;
+
   const handleSelect = (id: CategoryId) => {
     setSelected(id);
     setMobilePanel(true);
   };
 
   const renderContent = () => {
-    switch (selected) {
+    switch (activeCategory) {
       case 'personalize': return <PersonalizeContent settings={settings} update={update} reset={reset} />;
       case 'data':        return <DataContent />;
       // 管理者以外はナビに出さないが、権限が変わった直後などに備えて描画側でも塞ぐ
@@ -954,7 +961,7 @@ const ToolsPage: React.FC = () => {
     }
   };
 
-  const selectedCategory = categories.find(c => c.id === selected)!;
+  const selectedCategory = visibleCategories.find(c => c.id === activeCategory)!;
 
   const navList = (
     <nav className="py-2">
@@ -963,12 +970,12 @@ const ToolsPage: React.FC = () => {
           key={cat.id}
           onClick={() => handleSelect(cat.id)}
           className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
-            selected === cat.id
+            activeCategory === cat.id
               ? 'bg-zinc-800 text-zinc-100'
               : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200'
           }`}
         >
-          <span className={selected === cat.id ? 'text-zinc-300' : 'text-zinc-600'}>{cat.icon}</span>
+          <span className={activeCategory === cat.id ? 'text-zinc-300' : 'text-zinc-600'}>{cat.icon}</span>
           <span className="text-sm font-medium">{cat.label}</span>
           {/* モバイルのみ: 矢印 */}
           <ChevronRight className="w-4 h-4 ml-auto text-zinc-700 lg:hidden" />

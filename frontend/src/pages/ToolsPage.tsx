@@ -924,9 +924,17 @@ const AccountContent: React.FC<{ user: ReturnType<typeof useAuth>['user']; logou
 const ToolsPage: React.FC = () => {
   const { settings, update, reset } = useAppSettings();
   const { user, logout } = useAuth();
+  const { data: me } = useCurrentUser();
   const [selected, setSelected] = useState<CategoryId>('personalize');
   // モバイルでカテゴリを選択したかどうか
   const [mobilePanel, setMobilePanel] = useState(false);
+
+  // API キーは MCP 連携の検証中につき、当面は管理者のみ発行できる。
+  // サーバ側でも requireAdmin で弾いているので、ここは導線を出さないための出し分け。
+  const isAdmin = me?.user.role === 'admin';
+  const visibleCategories = isAdmin
+    ? categories
+    : categories.filter(c => c.id !== 'integration');
 
   const handleSelect = (id: CategoryId) => {
     setSelected(id);
@@ -937,7 +945,8 @@ const ToolsPage: React.FC = () => {
     switch (selected) {
       case 'personalize': return <PersonalizeContent settings={settings} update={update} reset={reset} />;
       case 'data':        return <DataContent />;
-      case 'integration': return <IntegrationContent />;
+      // 管理者以外はナビに出さないが、権限が変わった直後などに備えて描画側でも塞ぐ
+      case 'integration': return isAdmin ? <IntegrationContent /> : null;
       case 'feedback':    return <FeedbackContent />;
       case 'service':     return <ServiceContent />;
       case 'help':        return <HelpContent />;
@@ -949,7 +958,7 @@ const ToolsPage: React.FC = () => {
 
   const navList = (
     <nav className="py-2">
-      {categories.map(cat => (
+      {visibleCategories.map(cat => (
         <button
           key={cat.id}
           onClick={() => handleSelect(cat.id)}

@@ -71,8 +71,9 @@ app.use('/api/public/book-search', publicBookSearchRouter);
 
 app.use('/api', authenticate);
 app.use('/api/admin', adminRateLimit, requireAdmin, adminRouter);
-// /api/me/api-keys は /api/me より先に登録する（me 側の '/' ハンドラに吸われないように）
-app.use('/api/me/api-keys', apiKeysRouter);
+// /api/me/api-keys は /api/me より先に登録する（me 側の '/' ハンドラに吸われないように）。
+// API キーは MCP 連携の検証中につき、当面は管理者のみ発行できるようにしておく。
+app.use('/api/me/api-keys', requireAdmin, apiKeysRouter);
 app.use('/api/me', meRouter);
 app.use('/api/billing', billingRouter);
 app.use('/api/books', booksRouter);

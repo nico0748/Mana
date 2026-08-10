@@ -11,6 +11,9 @@ const MAX_ACTIVE_KEYS = 10;
 // キーの管理自体は API キーでは行わせない。
 // 許すと、漏れたキーで新しいキーを発行して元のキーを失効させても居座れてしまう。
 // ブラウザで Firebase 認証を通した本人だけが発行・失効できるようにする。
+//
+// なお、このルーターはマウント時に requireAdmin も通しているので現状ここには
+// 到達しないが、別の場所にマウントされても壊れないようルーター側にも残しておく。
 router.use((req, res, next) => {
   if (req.authMethod === 'apiKey') {
     res.status(403).json({ error: 'api_key_cannot_manage_keys' });

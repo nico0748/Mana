@@ -33,11 +33,24 @@ function sanitizeCircleInput<T extends Record<string, any>>(data: T): T {
   return out as T;
 }
 
+// normalizeText は「空文字は未入力」とみなして null を返すが、Circle のこれらの列は
+// Prisma 側で NOT NULL。空欄のまま送られてくると create/update が検証エラー（500）に
+// なるため、正規化後に null へ落ちた分を空文字へ戻す。
+// 実際「サークルを追加」ではサークル名以外が任意入力なので、ホール等を空欄にすると
+// この経路に入る。
+function coerceRequiredText<T extends Record<string, any>>(data: T): T {
+  const out: Record<string, any> = { ...data };
+  for (const field of CIRCLE_TEXT_FIELDS) {
+    if (field in out && out[field] === null) out[field] = '';
+  }
+  return out as T;
+}
+
 // 1 行で「xUrl の安全検証」と「テキストフィールドの NFC 正規化」を順に適用するヘルパ。
 // 触るフィールドが互いに重ならないので順序は実質どちらでも良いが、URL の検証を先に
 // やってから普通のテキスト正規化、という見通しのよい順番にしておく。
 function prepareCircleData<T extends Record<string, any>>(rest: T): T {
-  return normalizeFields(sanitizeCircleInput(rest), CIRCLE_TEXT_FIELDS);
+  return coerceRequiredText(normalizeFields(sanitizeCircleInput(rest), CIRCLE_TEXT_FIELDS));
 }
 
 router.get('/', async (req, res) => {

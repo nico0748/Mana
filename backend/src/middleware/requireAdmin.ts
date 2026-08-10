@@ -3,6 +3,18 @@ import rateLimit from 'express-rate-limit';
 
 export function requireAdmin(req: Request, res: Response, next: NextFunction) {
   const user = req.user;
+
+  // API キーは MCP サーバなど常駐クライアント向けの長期クレデンシャルなので、
+  // 万一漏れたときの被害を自分のデータの範囲に留めるため管理者操作には使わせない。
+  if (req.authMethod === 'apiKey') {
+    console.warn(
+      `[admin-guard] forbidden: api key cannot access admin routes ` +
+      `uid=${user?.firebaseUid ?? '<none>'} path=${req.method} ${req.originalUrl} ip=${req.ip}`,
+    );
+    res.status(403).json({ error: 'Forbidden' });
+    return;
+  }
+
   if (!user || user.role !== 'admin') {
     console.warn(
       `[admin-guard] forbidden: uid=${user?.firebaseUid ?? '<none>'} ` +

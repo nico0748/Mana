@@ -122,8 +122,30 @@ model User {
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
+  apiKeys              ApiKey[]
+
   @@index([stripeCustomerId])
   @@index([role])
+}
+
+// MCP サーバなど、ブラウザ外のクライアントから API を叩くための長期クレデンシャル。
+// Firebase ID トークンは有効期限 1 時間で自動更新もできないため、代替として用意する。
+model ApiKey {
+  id         String    @id @default(uuid())
+  user       User      @relation(fields: [userId], references: [firebaseUid], onDelete: Cascade)
+  userId     String
+  // 用途がわかる表示名（"Claude Code の MCP" など）
+  name       String
+  // 平文は発行時に一度返すだけで保存しない。照合は SHA-256 ハッシュで行う。
+  keyHash    String    @unique
+  // 一覧画面でどのキーか見分けるための先頭数文字（例 "mana_sk_a1b2c3"）
+  prefix     String
+  lastUsedAt DateTime?
+  // 失効は物理削除ではなく日時記録。いつ切ったかを追えるようにする。
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
 }
 
 model Announcement {

@@ -6,7 +6,12 @@ import {
   ChevronRight, ChevronLeft,
   Sun, Moon, ImageIcon, Trash2, Type, Zap, ZapOff,
   Mail, Calendar, Shield, FileText, ExternalLink, LogOut, MapPin, Crown,
+  KeyRound, Copy, Check, Plus, AlertTriangle,
 } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { apiKeysApi, type ApiKeySummary } from '../lib/api';
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
 import { useAppSettings } from '../contexts/AppSettingsContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useCurrentUser } from '../hooks/useCurrentUser';
@@ -16,7 +21,7 @@ import { TOKUSHOHO_TEXT } from '../legal/tokushoho';
 
 // ── 型定義 ──────────────────────────────────────────────────────────────────
 
-type CategoryId = 'general' | 'personalize' | 'data' | 'feedback' | 'service' | 'help' | 'account';
+type CategoryId = 'general' | 'personalize' | 'data' | 'integration' | 'feedback' | 'service' | 'help' | 'account';
 
 interface Category {
   id: CategoryId;
@@ -28,6 +33,7 @@ const categories: Category[] = [
   { id: 'general',     label: '一般',           icon: <Settings      className="w-[18px] h-[18px]" /> },
   { id: 'personalize', label: 'パーソナライズ', icon: <Palette       className="w-[18px] h-[18px]" /> },
   { id: 'data',        label: 'データ',         icon: <Database      className="w-[18px] h-[18px]" /> },
+  { id: 'integration', label: '連携',           icon: <KeyRound      className="w-[18px] h-[18px]" /> },
   { id: 'feedback',    label: 'フィードバック', icon: <MessageSquare className="w-[18px] h-[18px]" /> },
   { id: 'service',     label: 'サービス',       icon: <Briefcase     className="w-[18px] h-[18px]" /> },
   { id: 'help',        label: 'ヘルプ',         icon: <HelpCircle    className="w-[18px] h-[18px]" /> },
@@ -308,6 +314,167 @@ const DataContent: React.FC = () => (
   </div>
 );
 
+// ── 連携（API キー） ─────────────────────────────────────────────────────────
+//
+// MCP サーバのようなブラウザ外のクライアントは Firebase ID トークン（有効期限 1 時間）
+// を更新できないため、失効可能な長期キーをここから発行する。
+// 平文はサーバに保存されないので、発行直後の一度しか表示できない。
+
+const fmtDate = (ms: number | null) =>
+  ms ? new Date(ms).toLocaleDateString('ja-JP', { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
+
+const ApiKeyRow: React.FC<{ apiKey: ApiKeySummary; onRevoke: (id: string) => void }> = ({ apiKey, onRevoke }) => {
+  const revoked = apiKey.revokedAt !== null;
+  return (
+    <div className="flex items-center justify-between gap-3 px-4 py-3">
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          <span className={`text-sm truncate ${revoked ? 'text-zinc-600 line-through' : 'text-zinc-200'}`}>
+            {apiKey.name}
+          </span>
+          {revoked && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500 flex-shrink-0">失効済み</span>
+          )}
+        </div>
+        <p className="text-xs text-zinc-600 font-mono truncate">{apiKey.prefix}…</p>
+        <p className="text-[11px] text-zinc-600 mt-0.5">
+          作成 {fmtDate(apiKey.createdAt)} ／ 最終利用 {fmtDate(apiKey.lastUsedAt)}
+        </p>
+      </div>
+      {!revoked && (
+        <button
+          onClick={() => onRevoke(apiKey.id)}
+          aria-label={`${apiKey.name} を失効`}
+          className="p-2 text-zinc-600 hover:text-red-400 hover:bg-zinc-800 rounded-lg transition-colors flex-shrink-0"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      )}
+    </div>
+  );
+};
+
+const IntegrationContent: React.FC = () => {
+  const queryClient = useQueryClient();
+  const { data: keys, isLoading } = useQuery({ queryKey: ['apiKeys'], queryFn: apiKeysApi.list });
+
+  const [name, setName] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [issued, setIssued] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || creating) return;
+    setCreating(true);
+    setError(null);
+    try {
+      const created = await apiKeysApi.create(name.trim());
+      setIssued(created.key);
+      setCopied(false);
+      setName('');
+      await queryClient.invalidateQueries({ queryKey: ['apiKeys'] });
+    } catch {
+      setError('キーの発行に失敗しました。時間をおいて再度お試しください。');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleRevoke = async (id: string) => {
+    if (!confirm('このキーを失効させますか？\nこのキーを使っている連携はすぐに動かなくなります。')) return;
+    try {
+      await apiKeysApi.revoke(id);
+      await queryClient.invalidateQueries({ queryKey: ['apiKeys'] });
+    } catch {
+      setError('キーの失効に失敗しました。');
+    }
+  };
+
+  const handleCopy = async () => {
+    if (!issued) return;
+    try {
+      await navigator.clipboard.writeText(issued);
+      setCopied(true);
+    } catch {
+      setError('クリップボードにコピーできませんでした。手動で選択してコピーしてください。');
+    }
+  };
+
+  return (
+    <div className="pb-8">
+      <SectionTitle>API キー</SectionTitle>
+      <div className="px-4 pb-3">
+        <p className="text-xs text-zinc-500 leading-relaxed">
+          Claude などの外部クライアントから、この端末のブラウザを経由せずに蔵書・買い物リストを
+          操作するためのキーです。キーはあなたのデータにのみアクセスでき、管理者操作には使えません。
+        </p>
+      </div>
+
+      {/* 発行直後だけ平文を表示する。リロードすると二度と見られない。 */}
+      {issued && (
+        <div className="mx-4 mb-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4">
+          <div className="flex items-start gap-2 mb-2">
+            <AlertTriangle className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-emerald-300 leading-relaxed">
+              このキーが表示されるのは今回だけです。閉じる前に控えてください。
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 min-w-0 text-xs font-mono text-zinc-200 bg-zinc-900 rounded-lg px-3 py-2 overflow-x-auto whitespace-nowrap">
+              {issued}
+            </code>
+            <Button type="button" variant="outline" size="icon" onClick={handleCopy} aria-label="キーをコピー">
+              {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+            </Button>
+          </div>
+          <button
+            onClick={() => setIssued(null)}
+            className="mt-3 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+          >
+            控えたので閉じる
+          </button>
+        </div>
+      )}
+
+      {error && (
+        <div role="alert" className="mx-4 mb-4 px-4 py-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm">
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleCreate} className="px-4 flex gap-2">
+        <div className="flex-1">
+          <label htmlFor="api-key-name" className="sr-only">キーの用途</label>
+          <Input
+            id="api-key-name"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            placeholder="用途がわかる名前（例: Claude Code）"
+            maxLength={60}
+          />
+        </div>
+        <Button type="submit" isLoading={creating} disabled={!name.trim()}>
+          <Plus className="w-4 h-4 mr-1" />
+          発行
+        </Button>
+      </form>
+
+      <SectionTitle>発行済みのキー</SectionTitle>
+      <Card>
+        {isLoading ? (
+          <div role="status" aria-live="polite" className="px-4 py-6 text-sm text-zinc-500">読み込み中…</div>
+        ) : !keys?.length ? (
+          <div className="px-4 py-6 text-sm text-zinc-500">まだキーがありません。</div>
+        ) : (
+          keys.map(k => <ApiKeyRow key={k.id} apiKey={k} onRevoke={handleRevoke} />)
+        )}
+      </Card>
+    </div>
+  );
+};
+
 const FeedbackContent: React.FC = () => (
   <div className="pb-6">
     <SectionTitle>フィードバック</SectionTitle>
@@ -561,6 +728,7 @@ const ToolsPage: React.FC = () => {
       case 'general':     return <GeneralContent settings={settings} update={update} />;
       case 'personalize': return <PersonalizeContent settings={settings} update={update} reset={reset} />;
       case 'data':        return <DataContent />;
+      case 'integration': return <IntegrationContent />;
       case 'feedback':    return <FeedbackContent />;
       case 'service':     return <ServiceContent />;
       case 'help':        return <HelpContent />;

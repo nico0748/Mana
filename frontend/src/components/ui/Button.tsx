@@ -38,11 +38,11 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           "disabled:pointer-events-none disabled:opacity-50",
           "active:scale-[0.97]",
           // Variants
-          variant === "default"     && "bg-emerald-500 text-zinc-950 hover:bg-emerald-400 shadow-md shadow-emerald-900/40 hover:shadow-lg hover:shadow-emerald-900/50 font-semibold",
+          variant === "default"     && "app-accent bg-emerald-500 text-zinc-950 hover:bg-emerald-400 shadow-md shadow-emerald-900/40 hover:shadow-lg hover:shadow-emerald-900/50 font-semibold",
           variant === "outline"     && "border border-zinc-600 text-zinc-200 hover:bg-zinc-800 hover:border-zinc-500",
           variant === "ghost"       && "text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100",
           variant === "destructive" && "bg-red-600 text-white hover:bg-red-500 shadow-md shadow-red-950/40",
-          variant === "fab"         && "bg-emerald-500 text-zinc-950 shadow-xl shadow-emerald-900/50 hover:bg-emerald-400 hover:shadow-2xl h-14 w-14 rounded-2xl",
+          variant === "fab"         && "app-accent bg-emerald-500 text-zinc-950 shadow-xl shadow-emerald-900/50 hover:bg-emerald-400 hover:shadow-2xl h-14 w-14 rounded-2xl",
           // Sizes
           size === "default" && variant !== "fab" && "h-10 px-5 py-2",
           size === "sm"      && variant !== "fab" && "h-9 px-3 text-xs",

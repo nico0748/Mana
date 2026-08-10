@@ -145,6 +145,8 @@ const MapPage: React.FC = () => {
   const defaultHall = searchParams.get('hall');
   const { settings, update } = useAppSettings();
   const markerSize = settings.mapMarkerSize;
+  const markerShape = settings.mapMarkerShape;
+  const completedVisibility = settings.mapCompletedVisibility;
   const showPinNumbers = settings.showMapPinNumbers;
 
   // 二重ヘッダーの手動並べ替えモード（即売会・ホールで独立）
@@ -386,7 +388,11 @@ const MapPage: React.FC = () => {
   const hallCircles = eventCircles.filter(c => c.hall === selectedHall);
   const pendingCircles = hallCircles.filter(c => c.status === 'pending');
   const doneCircles = hallCircles.filter(c => c.status === 'bought' || c.status === 'soldout');
-  const pinnedCircles = hallCircles.filter(c => c.mapX != null && c.mapY != null);
+  const pinnedCircles = hallCircles.filter(c =>
+    c.mapX != null
+      && c.mapY != null
+      && (completedVisibility !== 'hidden' || c.status === 'pending'),
+  );
 
   const currentMap = (venueMaps ?? []).find(
     m => m.hall === selectedHall && m.eventId === (selectedEventId ?? undefined)
@@ -1124,6 +1130,7 @@ const MapPage: React.FC = () => {
                   const isHighlighted = circle.id === highlightId;
                   const isEditSelected = editMode && selectedCircleId === circle.id;
                   const isBumped = isHighlighted || isEditSelected;
+                  const isCompleted = circle.status !== 'pending';
 
                   // ピンサイズは数字あり/なしに関わらず常に旧仕様（小さなドット）を維持。
                   // 数字ありモードでは、その小さなドットの中央に小さなフォントで番号を表示する。
@@ -1185,7 +1192,8 @@ const MapPage: React.FC = () => {
                         />
                       )}
                       <span className={clsx(
-                        'rounded-full border shadow-lg transition-all',
+                        markerShape === 'circle' ? 'rounded-full' : 'rounded-md',
+                        'border shadow-lg transition-all',
                         showPinNumbers
                           // 数字の色は zinc-900（ほぼ黒）。背景の白いマップに白文字だと滲んで読めず、
                           // また黄ピン (pending) では白文字のコントラスト比が 1.7:1 で WCAG AA も不合格。
@@ -1199,6 +1207,7 @@ const MapPage: React.FC = () => {
                           : isEditSelected
                             ? clsx(statusColor[circle.status] ?? 'bg-zinc-600 border-zinc-500', 'ring-2 ring-white/80')
                             : statusColor[circle.status] ?? 'bg-zinc-600 border-zinc-500',
+                        completedVisibility === 'muted' && isCompleted && 'opacity-35 grayscale',
                       )}>
                         {showPinNumbers ? priorityNumber : null}
                       </span>

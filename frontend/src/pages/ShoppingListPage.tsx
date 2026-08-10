@@ -199,7 +199,7 @@ const CircleCard: React.FC<CircleCardProps> = ({
           'border-zinc-800'
         }`}
       >
-        <div className="p-4">
+        <div className="p-4 density-card">
           <div className="flex items-start justify-between gap-2">
             {/* 優先順位バッジ: 即売会配下のサークルのみ表示（並び順 = order に連動） */}
             {circleIndex !== undefined && (

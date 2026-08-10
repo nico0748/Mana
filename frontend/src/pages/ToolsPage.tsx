@@ -1,10 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Settings, Database, Palette, MessageSquare,
+  Database, Palette, MessageSquare,
   Briefcase, HelpCircle, User,
   ChevronRight, ChevronLeft,
-  Sun, Moon, ImageIcon, Trash2, Type, Zap, ZapOff,
+  Sun, Moon, ImageIcon, Trash2, Type, Zap, ZapOff, Monitor,
   Mail, Calendar, Shield, FileText, ExternalLink, LogOut, MapPin, Crown,
   KeyRound, Copy, Check, Plus, AlertTriangle,
 } from 'lucide-react';
@@ -21,7 +21,7 @@ import { TOKUSHOHO_TEXT } from '../legal/tokushoho';
 
 // ── 型定義 ──────────────────────────────────────────────────────────────────
 
-type CategoryId = 'general' | 'personalize' | 'data' | 'integration' | 'feedback' | 'service' | 'help' | 'account';
+type CategoryId = 'personalize' | 'data' | 'integration' | 'feedback' | 'service' | 'help' | 'account';
 
 interface Category {
   id: CategoryId;
@@ -30,8 +30,7 @@ interface Category {
 }
 
 const categories: Category[] = [
-  { id: 'general',     label: '一般',           icon: <Settings      className="w-[18px] h-[18px]" /> },
-  { id: 'personalize', label: 'パーソナライズ', icon: <Palette       className="w-[18px] h-[18px]" /> },
+  { id: 'personalize', label: '表示と操作',     icon: <Palette       className="w-[18px] h-[18px]" /> },
   { id: 'data',        label: 'データ',         icon: <Database      className="w-[18px] h-[18px]" /> },
   { id: 'integration', label: '連携',           icon: <KeyRound      className="w-[18px] h-[18px]" /> },
   { id: 'feedback',    label: 'フィードバック', icon: <MessageSquare className="w-[18px] h-[18px]" /> },
@@ -49,14 +48,8 @@ const SettingRow: React.FC<{
   onClick?: () => void;
   right?: React.ReactNode;
   danger?: boolean;
-}> = ({ icon, label, value, onClick, right, danger }) => (
-  <button
-    onClick={onClick}
-    disabled={!onClick && !right}
-    className={`w-full flex items-center justify-between px-4 py-3.5 text-left transition-colors ${
-      onClick ? 'hover:bg-zinc-800/60 cursor-pointer' : 'cursor-default'
-    }`}
-  >
+}> = ({ icon, label, value, onClick, right, danger }) => {
+  const content = <>
     <div className="flex items-center gap-3">
       {icon && <span className={danger ? 'text-red-400' : 'text-zinc-500'}>{icon}</span>}
       <span className={`text-sm ${danger ? 'text-red-400' : 'text-zinc-200'}`}>{label}</span>
@@ -69,8 +62,13 @@ const SettingRow: React.FC<{
         </div>
       )
     )}
-  </button>
-);
+  </>;
+  const className = `w-full flex items-center justify-between px-4 py-3.5 text-left transition-colors ${
+    onClick ? 'hover:bg-zinc-800/60 cursor-pointer' : ''
+  }`;
+
+  return onClick ? <button onClick={onClick} className={className}>{content}</button> : <div className={className}>{content}</div>;
+};
 
 const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <p className="px-4 pt-5 pb-1.5 text-xs font-semibold text-zinc-500 uppercase tracking-wider">{children}</p>
@@ -84,40 +82,66 @@ const Card: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 
 // ── カテゴリ別コンテンツ ─────────────────────────────────────────────────────
 
-const GeneralContent: React.FC<{
+const ThemeSettings: React.FC<{
   settings: ReturnType<typeof useAppSettings>['settings'];
   update: ReturnType<typeof useAppSettings>['update'];
 }> = ({ settings, update }) => (
-  <div className="pb-6">
-    <SectionTitle>外観</SectionTitle>
+  <>
+    <SectionTitle>テーマ</SectionTitle>
     <Card>
       <div className="px-4 py-3.5 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="text-zinc-500">
-            {settings.theme === 'dark' ? <Moon className="w-4 h-4" /> :
+            {settings.theme === 'system' ? <Monitor className="w-4 h-4" /> :
+             settings.theme === 'dark' ? <Moon className="w-4 h-4" /> :
              settings.theme === 'taupe' ? <Palette className="w-4 h-4" /> :
              <Sun className="w-4 h-4" />}
           </span>
           <span className="text-sm text-zinc-200">テーマ</span>
         </div>
         <div className="flex gap-0.5 bg-zinc-800 rounded-lg p-0.5">
-          {(['dark', 'light', 'taupe'] as const).map((t) => (
+          {(['system', 'dark', 'light', 'taupe'] as const).map((t) => (
             <button
               key={t}
               onClick={() => update({ theme: t })}
+              aria-pressed={settings.theme === t}
               className={`px-2.5 py-1 rounded-md text-xs transition-colors ${
                 settings.theme === t
                   ? 'bg-zinc-600 text-zinc-100'
                   : 'text-zinc-500 hover:text-zinc-400'
               }`}
             >
-              {t === 'dark' ? 'ダーク' : t === 'light' ? 'ライト' : 'トープ'}
+              {t === 'system' ? '自動' : t === 'dark' ? 'ダーク' : t === 'light' ? 'ライト' : 'トープ'}
             </button>
           ))}
         </div>
       </div>
     </Card>
-  </div>
+    <SectionTitle>アクセントカラー</SectionTitle>
+    <Card>
+      <div className="px-4 py-3.5 flex items-center justify-between gap-3">
+        <span className="text-sm text-zinc-200">主要ボタンの色</span>
+        <div className="flex bg-zinc-800 rounded-lg p-0.5 gap-0.5">
+          {([
+            { value: 'emerald', label: '緑', color: 'bg-emerald-500' },
+            { value: 'violet', label: '紫', color: 'bg-violet-500' },
+            { value: 'blue', label: '青', color: 'bg-blue-500' },
+          ] as const).map(({ value, label, color }) => (
+            <button
+              key={value}
+              onClick={() => update({ accentColor: value })}
+              aria-pressed={settings.accentColor === value}
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs transition-colors ${settings.accentColor === value ? 'bg-zinc-600 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+            >
+              <span className={`w-2.5 h-2.5 rounded-full ${color}`} />
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </Card>
+    <p className="px-4 pt-2 text-xs text-zinc-500">「自動」は端末の外観設定に合わせます。</p>
+  </>
 );
 
 const PersonalizeContent: React.FC<{
@@ -140,6 +164,7 @@ const PersonalizeContent: React.FC<{
 
   return (
     <div className="pb-6">
+      <ThemeSettings settings={settings} update={update} />
       <SectionTitle>背景</SectionTitle>
       <Card>
         <div className="px-4 py-3.5">
@@ -181,6 +206,58 @@ const PersonalizeContent: React.FC<{
                 />
                 <span className="text-xs text-zinc-400 w-8 text-right tabular-nums">{settings.backgroundOpacity}%</span>
               </div>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs text-zinc-500">表示位置</span>
+                <div className="flex bg-zinc-800 rounded-lg p-0.5 gap-0.5">
+                  {([
+                    { value: 'top', label: '上' },
+                    { value: 'center', label: '中央' },
+                    { value: 'bottom', label: '下' },
+                  ] as const).map(({ value, label }) => (
+                    <button
+                      key={value}
+                      onClick={() => update({ backgroundPosition: value })}
+                      aria-pressed={settings.backgroundPosition === value}
+                      className={`px-2.5 py-1 text-xs rounded-md transition-colors ${settings.backgroundPosition === value ? 'bg-zinc-600 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs text-zinc-500">ぼかし</span>
+                <div className="flex bg-zinc-800 rounded-lg p-0.5 gap-0.5">
+                  {([0, 4, 8] as const).map(value => (
+                    <button
+                      key={value}
+                      onClick={() => update({ backgroundBlur: value })}
+                      aria-pressed={settings.backgroundBlur === value}
+                      className={`px-2.5 py-1 text-xs rounded-md transition-colors ${settings.backgroundBlur === value ? 'bg-zinc-600 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    >
+                      {value === 0 ? 'なし' : `${value}px`}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs text-zinc-500">画像の収まり</span>
+                <div className="flex bg-zinc-800 rounded-lg p-0.5 gap-0.5">
+                  {([
+                    { value: 'cover', label: '全面' },
+                    { value: 'contain', label: '全体' },
+                  ] as const).map(({ value, label }) => (
+                    <button
+                      key={value}
+                      onClick={() => update({ backgroundFit: value })}
+                      aria-pressed={settings.backgroundFit === value}
+                      className={`px-2.5 py-1 text-xs rounded-md transition-colors ${settings.backgroundFit === value ? 'bg-zinc-600 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
           <input ref={bgImageRef} type="file" accept="image/*" onChange={handleBgImageUpload} className="hidden" />
@@ -194,7 +271,7 @@ const PersonalizeContent: React.FC<{
           label="フォントサイズ"
           right={
             <div className="flex bg-zinc-800 rounded-lg p-0.5 gap-0.5">
-              {(['normal', 'large'] as const).map(size => (
+              {(['normal', 'large', 'xlarge'] as const).map(size => (
                 <button
                   key={size}
                   onClick={() => update({ fontSize: size })}
@@ -203,7 +280,65 @@ const PersonalizeContent: React.FC<{
                     settings.fontSize === size ? 'bg-zinc-600 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
                   }`}
                 >
-                  {size === 'normal' ? '標準' : '大'}
+                  {size === 'normal' ? '標準' : size === 'large' ? '大' : '特大'}
+                </button>
+              ))}
+            </div>
+          }
+        />
+        <SettingRow
+          icon={<Type className="w-4 h-4" />}
+          label="行間"
+          right={
+            <div className="flex bg-zinc-800 rounded-lg p-0.5 gap-0.5">
+              {(['normal', 'relaxed'] as const).map(value => (
+                <button
+                  key={value}
+                  onClick={() => update({ readingSpacing: value })}
+                  aria-pressed={settings.readingSpacing === value}
+                  className={`px-3 py-1 text-xs rounded-md transition-colors ${settings.readingSpacing === value ? 'bg-zinc-600 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+                >
+                  {value === 'normal' ? '標準' : 'ゆったり'}
+                </button>
+              ))}
+            </div>
+          }
+        />
+      </Card>
+
+      <SectionTitle>コンテンツ表示</SectionTitle>
+      <Card>
+        <SettingRow
+          icon={<Database className="w-4 h-4" />}
+          label="本棚の初期表示"
+          right={
+            <div className="flex bg-zinc-800 rounded-lg p-0.5 gap-0.5">
+              {(['list', 'box'] as const).map(value => (
+                <button
+                  key={value}
+                  onClick={() => update({ bookViewMode: value })}
+                  aria-pressed={settings.bookViewMode === value}
+                  className={`px-3 py-1 text-xs rounded-md transition-colors ${settings.bookViewMode === value ? 'bg-zinc-600 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+                >
+                  {value === 'list' ? 'リスト' : '表紙'}
+                </button>
+              ))}
+            </div>
+          }
+        />
+        <SettingRow
+          icon={<Type className="w-4 h-4" />}
+          label="買い物リストの間隔"
+          right={
+            <div className="flex bg-zinc-800 rounded-lg p-0.5 gap-0.5">
+              {(['comfortable', 'compact'] as const).map(value => (
+                <button
+                  key={value}
+                  onClick={() => update({ contentDensity: value })}
+                  aria-pressed={settings.contentDensity === value}
+                  className={`px-3 py-1 text-xs rounded-md transition-colors ${settings.contentDensity === value ? 'bg-zinc-600 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+                >
+                  {value === 'comfortable' ? '標準' : 'コンパクト'}
                 </button>
               ))}
             </div>
@@ -256,6 +391,49 @@ const PersonalizeContent: React.FC<{
             </button>
           }
         />
+        <SettingRow
+          icon={<MapPin className="w-4 h-4" />}
+          label="完了済みピン"
+          right={
+            <div className="flex bg-zinc-800 rounded-lg p-0.5 gap-0.5">
+              {([
+                { value: 'show', label: '表示' },
+                { value: 'muted', label: '薄く' },
+                { value: 'hidden', label: '隠す' },
+              ] as const).map(({ value, label }) => (
+                <button
+                  key={value}
+                  onClick={() => update({ mapCompletedVisibility: value })}
+                  aria-pressed={settings.mapCompletedVisibility === value}
+                  className={`px-2.5 py-1 text-xs rounded-md transition-colors ${settings.mapCompletedVisibility === value ? 'bg-zinc-600 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          }
+        />
+        <SettingRow
+          icon={<MapPin className="w-4 h-4" />}
+          label="ピンの形"
+          right={
+            <div className="flex bg-zinc-800 rounded-lg p-0.5 gap-0.5">
+              {([
+                { value: 'circle', label: '丸' },
+                { value: 'rounded', label: '角丸' },
+              ] as const).map(({ value, label }) => (
+                <button
+                  key={value}
+                  onClick={() => update({ mapMarkerShape: value })}
+                  aria-pressed={settings.mapMarkerShape === value}
+                  className={`px-3 py-1 text-xs rounded-md transition-colors ${settings.mapMarkerShape === value ? 'bg-zinc-600 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          }
+        />
       </Card>
 
       <SectionTitle>アクセシビリティ</SectionTitle>
@@ -279,9 +457,38 @@ const PersonalizeContent: React.FC<{
             </button>
           }
         />
+        <SettingRow
+          icon={<Palette className="w-4 h-4" />}
+          label="高コントラスト"
+          right={
+            <button
+              type="button"
+              role="switch"
+              aria-checked={settings.highContrast}
+              aria-label="高コントラスト"
+              onClick={() => update({ highContrast: !settings.highContrast })}
+              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${settings.highContrast ? 'bg-zinc-100' : 'bg-zinc-700'}`}
+            >
+              <span
+                aria-hidden
+                className={`inline-block h-4 w-4 rounded-full shadow-sm transition-transform ${settings.highContrast ? 'translate-x-6 bg-zinc-900' : 'translate-x-1 bg-zinc-100'}`}
+              />
+            </button>
+          }
+        />
       </Card>
 
-      <div className="px-4 pt-5">
+      <div className="px-4 pt-5 flex items-center gap-4">
+        <button
+          onClick={() => update({
+            theme: 'dark', accentColor: 'emerald', highContrast: false, backgroundImageDataUrl: null, backgroundOpacity: 30,
+            backgroundBlur: 0, backgroundPosition: 'center', backgroundFit: 'cover', fontSize: 'normal', readingSpacing: 'normal',
+            contentDensity: 'comfortable',
+          })}
+          className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+        >
+          表示設定を初期化
+        </button>
         <button
           onClick={reset}
           className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
@@ -717,7 +924,7 @@ const AccountContent: React.FC<{ user: ReturnType<typeof useAuth>['user']; logou
 const ToolsPage: React.FC = () => {
   const { settings, update, reset } = useAppSettings();
   const { user, logout } = useAuth();
-  const [selected, setSelected] = useState<CategoryId>('general');
+  const [selected, setSelected] = useState<CategoryId>('personalize');
   // モバイルでカテゴリを選択したかどうか
   const [mobilePanel, setMobilePanel] = useState(false);
 
@@ -728,7 +935,6 @@ const ToolsPage: React.FC = () => {
 
   const renderContent = () => {
     switch (selected) {
-      case 'general':     return <GeneralContent settings={settings} update={update} />;
       case 'personalize': return <PersonalizeContent settings={settings} update={update} reset={reset} />;
       case 'data':        return <DataContent />;
       case 'integration': return <IntegrationContent />;

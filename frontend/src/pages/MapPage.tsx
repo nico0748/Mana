@@ -7,15 +7,17 @@ import {
   Upload, MapPin, Edit2, Check, X, History,
   Trash2, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus,
   RotateCcw, RotateCw, Crop, FileJson,
-  Maximize2, Minimize2,
+  Maximize2, Minimize2, ArrowUp, ArrowDown, MoveHorizontal,
 } from 'lucide-react';
 import { eventsApi, circlesApi, venueMapsApi, circleItemsApi } from '../lib/api';
 import { applyCircleStatusChange, applyItemStatusChange } from '../lib/offlineMutations';
 import { renderPdfPageToDataUrl } from '../lib/pdfUtils';
-import type { CircleItem, EventTemplate } from '../types';
+import type { CircleItem, DoujinEvent, EventTemplate } from '../types';
 import { clsx } from 'clsx';
 import TemplateImportModal from '../components/map/TemplateImportModal';
 import { useAppSettings } from '../contexts/AppSettingsContext';
+import type { MapEventSortKey, MapHallSortKey, SortDir } from '../contexts/AppSettingsContext';
+import { sortEvents, sortHalls, todayKey, moveItem, isManuallyOrdered, isPastEvent } from '../lib/mapHeaderSort';
 
 const statusColor: Record<string, string> = {
   pending: 'bg-yellow-400 border-yellow-200',
@@ -29,14 +31,125 @@ const statusLabel: Record<string, string> = {
   soldout: '完売',
 };
 
+const EVENT_SORT_KEYS: MapEventSortKey[] = ['date', 'name', 'created'];
+const EVENT_SORT_LABEL: Record<MapEventSortKey, string> = {
+  date: '開催日', name: '名前', created: '登録順',
+};
+const HALL_SORT_KEYS: MapHallSortKey[] = ['name', 'created'];
+const HALL_SORT_LABEL: Record<MapHallSortKey, string> = {
+  name: '名前', created: '登録順',
+};
+
+const tabBtn = 'px-2.5 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap flex-shrink-0';
+const toolBtn = 'flex items-center justify-center px-2 py-1 rounded-md text-xs text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-colors flex-shrink-0';
+
+interface SortControlsProps {
+  /** aria-label 用の対象名。「即売会」「ホール」 */
+  target: string;
+  sortLabel: string;
+  dir: SortDir;
+  /** 手動並べ替え順が保存済みか。true の間は基準・方向の指定は効かない */
+  hasManualOrder: boolean;
+  reorderMode: boolean;
+  onCycleKey: () => void;
+  onToggleDir: () => void;
+  onToggleReorder: () => void;
+  onResetOrder: () => void;
+}
+
+/** 二重ヘッダー右端の並べ替えコントロール（基準切り替え・昇降順・手動並べ替え） */
+const SortControls: React.FC<SortControlsProps> = ({
+  target, sortLabel, dir, hasManualOrder, reorderMode,
+  onCycleKey, onToggleDir, onToggleReorder, onResetOrder,
+}) => (
+  <div className="flex items-center gap-0.5 flex-shrink-0">
+    {hasManualOrder ? (
+      <button
+        onClick={onResetOrder}
+        className={toolBtn}
+        title={`${target}の手動並べ替えを解除して自動ソートに戻す`}
+        aria-label={`${target}の手動並べ替えを解除`}
+      >
+        手動 <RotateCcw className="w-3 h-3 ml-1" />
+      </button>
+    ) : (
+      <>
+        <button
+          onClick={onCycleKey}
+          className={toolBtn}
+          title={`${target}の並び順: ${sortLabel}（クリックで切り替え）`}
+          aria-label={`${target}の並び順を切り替え。現在: ${sortLabel}`}
+        >
+          {sortLabel}
+        </button>
+        <button
+          onClick={onToggleDir}
+          className={toolBtn}
+          title={dir === 'asc' ? '昇順' : '降順'}
+          aria-label={`${target}を${dir === 'asc' ? '降順' : '昇順'}に切り替え`}
+        >
+          {dir === 'asc' ? <ArrowUp className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />}
+        </button>
+      </>
+    )}
+    <button
+      onClick={onToggleReorder}
+      aria-pressed={reorderMode}
+      title={`${target}を手動で並べ替え`}
+      aria-label={`${target}の手動並べ替えモード`}
+      className={clsx(
+        'flex items-center justify-center p-1.5 rounded-md transition-colors flex-shrink-0',
+        reorderMode
+          ? 'bg-emerald-500/15 text-emerald-400'
+          : 'text-zinc-600 hover:text-zinc-300 hover:bg-zinc-800'
+      )}
+    >
+      <MoveHorizontal className="w-3.5 h-3.5" />
+    </button>
+  </div>
+);
+
+interface ReorderArrowsProps {
+  label: string;
+  canMoveLeft: boolean;
+  canMoveRight: boolean;
+  onMove: (delta: -1 | 1) => void;
+}
+
+/** 手動並べ替えモード中、各タブの右に出る ◀ ▶ */
+const ReorderArrows: React.FC<ReorderArrowsProps> = ({ label, canMoveLeft, canMoveRight, onMove }) => (
+  <>
+    <button
+      onClick={() => onMove(-1)}
+      disabled={!canMoveLeft}
+      aria-label={`${label} を前へ移動`}
+      className="p-0.5 rounded hover:bg-black/20 disabled:opacity-30 disabled:cursor-not-allowed"
+    >
+      <ChevronLeft className="w-3 h-3" />
+    </button>
+    <button
+      onClick={() => onMove(1)}
+      disabled={!canMoveRight}
+      aria-label={`${label} を後ろへ移動`}
+      className="p-0.5 rounded hover:bg-black/20 disabled:opacity-30 disabled:cursor-not-allowed"
+    >
+      <ChevronRight className="w-3 h-3" />
+    </button>
+  </>
+);
+
 const MapPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const highlightId = searchParams.get('highlight');
   const defaultHall = searchParams.get('hall');
-  const { settings } = useAppSettings();
+  const { settings, update } = useAppSettings();
   const markerSize = settings.mapMarkerSize;
   const showPinNumbers = settings.showMapPinNumbers;
+
+  // 二重ヘッダーの手動並べ替えモード（即売会・ホールで独立）
+  const [eventReorderMode, setEventReorderMode] = useState(false);
+  const [hallReorderMode, setHallReorderMode] = useState(false);
 
   const [editMode, setEditMode] = useState(false);
   const [selectedCircleId, setSelectedCircleId] = useState<string | null>(null);
@@ -180,6 +293,15 @@ const MapPage: React.FC = () => {
   const { data: venueMaps } = useQuery({ queryKey: ['venueMaps'], queryFn: venueMapsApi.list });
   const { data: circleItems } = useQuery({ queryKey: ['circleItems'], queryFn: circleItemsApi.list });
 
+  // ── 即売会タブの並び順 ──────────────────────────────────────────────────────
+  // 開催日を過ぎた即売会は未実施の後ろへ自動的に送る。手動並べ替え済みならそちらが最優先。
+  const today = useMemo(() => todayKey(), []);
+  const eventsManuallyOrdered = isManuallyOrdered(events ?? []);
+  const sortedEvents = useMemo(
+    () => sortEvents(events ?? [], settings.mapEventSortKey, settings.mapEventSortDir, today),
+    [events, settings.mapEventSortKey, settings.mapEventSortDir, today],
+  );
+
   // Auto-select event
   useEffect(() => {
     if (selectedEventId !== null) return;
@@ -187,8 +309,9 @@ const MapPage: React.FC = () => {
     const urlEventId = searchParams.get('eventId');
     if (urlEventId) { setSelectedEventId(urlEventId); return; }
     const hasOrphans = circles.some(c => !c.eventId) || venueMaps.some(m => !m.eventId);
-    if (!hasOrphans && events.length > 0) {
-      setSelectedEventId(events[0].id);
+    if (!hasOrphans && sortedEvents.length > 0) {
+      // 並べ替え後の先頭 = 直近の未実施イベントを既定で開く
+      setSelectedEventId(sortedEvents[0].id);
     }
   }, [events?.length, circles?.length, venueMaps?.length]);
 
@@ -198,8 +321,11 @@ const MapPage: React.FC = () => {
     (circles ?? []).some(c => !c.eventId) ||
     (venueMaps ?? []).some(m => !m.eventId);
 
-  const eventCircles = (circles ?? []).filter(c =>
-    selectedEventId !== null ? c.eventId === selectedEventId : !c.eventId
+  const eventCircles = useMemo(
+    () => (circles ?? []).filter(c =>
+      selectedEventId !== null ? c.eventId === selectedEventId : !c.eventId
+    ),
+    [circles, selectedEventId],
   );
 
   // 即売会全体での優先順位（買い物リストの番号と完全一致させる）。
@@ -211,11 +337,23 @@ const MapPage: React.FC = () => {
     return map;
   }, [eventCircles]);
 
-  const hallsFromCircles = eventCircles.map(c => c.hall).filter(Boolean) as string[];
-  const hallsFromMaps = (venueMaps ?? [])
-    .filter(m => selectedEventId !== null ? m.eventId === selectedEventId : !m.eventId)
-    .map(m => m.hall);
-  const halls = [...new Set([...hallsFromCircles, ...hallsFromMaps])];
+  // ホールは Circle / VenueMap から導出される文字列。この配列の順序が「登録順」になる。
+  const halls = useMemo(() => {
+    const fromCircles = eventCircles.map(c => c.hall).filter(Boolean) as string[];
+    const fromMaps = (venueMaps ?? [])
+      .filter(m => selectedEventId !== null ? m.eventId === selectedEventId : !m.eventId)
+      .map(m => m.hall);
+    return [...new Set([...fromCircles, ...fromMaps])];
+  }, [eventCircles, venueMaps, selectedEventId]);
+
+  // ホールの手動並べ替え順は即売会ごとに持つ（未分類は空文字キー）
+  const hallOrderKey = selectedEventId ?? '';
+  const manualHallOrder = settings.mapHallOrder[hallOrderKey];
+  const hallsManuallyOrdered = !!manualHallOrder?.length;
+  const sortedHalls = useMemo(
+    () => sortHalls(halls, settings.mapHallSortKey, settings.mapHallSortDir, manualHallOrder),
+    [halls, settings.mapHallSortKey, settings.mapHallSortDir, manualHallOrder],
+  );
 
   const [selectedHall, setSelectedHall] = useState<string>(defaultHall ?? '');
 
@@ -228,13 +366,14 @@ const MapPage: React.FC = () => {
     setSelectedCircleId(null);
     setCropMode(false);
     setCropRect(null);
+    setHallReorderMode(false);
   }, [selectedEventId]);
 
   useEffect(() => {
-    if (!selectedHall && halls.length > 0) {
-      setSelectedHall(defaultHall ?? halls[0]);
+    if (!selectedHall && sortedHalls.length > 0) {
+      setSelectedHall(defaultHall ?? sortedHalls[0]);
     }
-  }, [halls.length, defaultHall, selectedHall]);
+  }, [sortedHalls, defaultHall, selectedHall]);
 
   useEffect(() => {
     setPdfFile(null);
@@ -558,6 +697,49 @@ const MapPage: React.FC = () => {
     setShowAddHall(false);
   };
 
+  // ── 二重ヘッダーの並べ替え ──────────────────────────────────────────────────
+
+  const cycleEventSortKey = () => {
+    const i = EVENT_SORT_KEYS.indexOf(settings.mapEventSortKey);
+    update({ mapEventSortKey: EVENT_SORT_KEYS[(i + 1) % EVENT_SORT_KEYS.length] });
+  };
+
+  const cycleHallSortKey = () => {
+    const i = HALL_SORT_KEYS.indexOf(settings.mapHallSortKey);
+    update({ mapHallSortKey: HALL_SORT_KEYS[(i + 1) % HALL_SORT_KEYS.length] });
+  };
+
+  const moveEvent = (id: string, delta: -1 | 1) => {
+    const next = moveItem(sortedEvents, sortedEvents.findIndex(e => e.id === id), delta);
+    if (!next) return;
+    // 並べ替えは連打されるので、まず楽観更新して待ち時間をなくす。
+    // 失敗しても最後の invalidate でサーバの値に戻るため、ここではログのみ。
+    queryClient.setQueryData<DoujinEvent[]>(['events'], next.map((e, i) => ({ ...e, order: i })));
+    void eventsApi.reorder(next.map(e => e.id))
+      .catch(err => console.error('即売会の並べ替えに失敗しました', err))
+      .finally(() => queryClient.invalidateQueries({ queryKey: ['events'] }));
+  };
+
+  const resetEventOrder = () => {
+    void eventsApi.resetOrder()
+      .then(() => setEventReorderMode(false))
+      .catch(err => console.error('即売会の並べ替え解除に失敗しました', err))
+      .finally(() => queryClient.invalidateQueries({ queryKey: ['events'] }));
+  };
+
+  const moveHall = (hall: string, delta: -1 | 1) => {
+    const next = moveItem(sortedHalls, sortedHalls.indexOf(hall), delta);
+    if (!next) return;
+    update({ mapHallOrder: { ...settings.mapHallOrder, [hallOrderKey]: next } });
+  };
+
+  const resetHallOrder = () => {
+    const rest = { ...settings.mapHallOrder };
+    delete rest[hallOrderKey];
+    update({ mapHallOrder: rest });
+    setHallReorderMode(false);
+  };
+
   const handleTemplateImport = async (
     template: EventTemplate,
     options: { includeCircles: boolean } = { includeCircles: false },
@@ -628,8 +810,9 @@ const MapPage: React.FC = () => {
         {hasOrphanData && (
           <button
             onClick={() => setSelectedEventId(null)}
+            aria-current={selectedEventId === null ? 'true' : undefined}
             className={clsx(
-              'px-2.5 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap flex-shrink-0',
+              tabBtn,
               selectedEventId === null
                 ? 'bg-emerald-500 text-zinc-900'
                 : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
@@ -638,21 +821,60 @@ const MapPage: React.FC = () => {
             未分類
           </button>
         )}
-        {(events ?? []).map(event => (
-          <button
-            key={event.id}
-            onClick={() => setSelectedEventId(event.id)}
-            className={clsx(
-              'px-2.5 py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap flex-shrink-0',
-              selectedEventId === event.id
-                ? 'bg-emerald-500 text-zinc-900'
-                : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
-            )}
-          >
-            {event.name}
-          </button>
-        ))}
+        {sortedEvents.map((event, i) => {
+          const isActive = selectedEventId === event.id;
+          const past = isPastEvent(event, today);
+          return (
+            <div
+              key={event.id}
+              className={clsx(
+                'flex items-center flex-shrink-0 rounded-md',
+                eventReorderMode && (isActive ? 'bg-emerald-500' : 'bg-zinc-800'),
+              )}
+            >
+              <button
+                onClick={() => setSelectedEventId(event.id)}
+                aria-current={isActive ? 'true' : undefined}
+                title={past ? `${event.name}（開催済み）` : event.name}
+                className={clsx(
+                  tabBtn,
+                  isActive
+                    ? 'bg-emerald-500 text-zinc-900'
+                    : clsx('bg-zinc-800 hover:text-zinc-200', past ? 'text-zinc-600' : 'text-zinc-400'),
+                  eventReorderMode && 'pr-1',
+                )}
+              >
+                {event.name}
+                {/* 開催済みは末尾に送られるので、理由がわかるよう控えめに印を付ける */}
+                {past && <span className="ml-1 text-[10px] opacity-70">済</span>}
+              </button>
+              {eventReorderMode && (
+                <div className={clsx('flex items-center pr-1', isActive ? 'text-zinc-900' : 'text-zinc-400')}>
+                  <ReorderArrows
+                    label={event.name}
+                    canMoveLeft={i > 0}
+                    canMoveRight={i < sortedEvents.length - 1}
+                    onMove={delta => moveEvent(event.id, delta)}
+                  />
+                </div>
+              )}
+            </div>
+          );
+        })}
         <div className="flex-1" />
+        {sortedEvents.length > 1 && (
+          <SortControls
+            target="即売会"
+            sortLabel={EVENT_SORT_LABEL[settings.mapEventSortKey]}
+            dir={settings.mapEventSortDir}
+            hasManualOrder={eventsManuallyOrdered}
+            reorderMode={eventReorderMode}
+            onCycleKey={cycleEventSortKey}
+            onToggleDir={() => update({ mapEventSortDir: settings.mapEventSortDir === 'asc' ? 'desc' : 'asc' })}
+            onToggleReorder={() => setEventReorderMode(v => !v)}
+            onResetOrder={resetEventOrder}
+          />
+        )}
         <button
           onClick={() => setShowTemplateModal(true)}
           title="テンプレートから読み込む"
@@ -669,25 +891,47 @@ const MapPage: React.FC = () => {
 
           {/* Hall tabs */}
           <div className="flex gap-1 flex-1 overflow-x-auto items-center min-w-0">
-            {halls.length === 0 && !showAddHall ? (
+            {sortedHalls.length === 0 && !showAddHall ? (
               <span className="text-xs text-zinc-500 py-1.5 whitespace-nowrap">
                 ホールを追加するか、サークルを登録するとタブが表示されます
               </span>
             ) : (
-              halls.map(hall => (
-                <button
-                  key={hall}
-                  onClick={() => setSelectedHall(hall)}
-                  className={clsx(
-                    'px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap flex-shrink-0',
-                    selectedHall === hall
-                      ? 'bg-emerald-500 text-zinc-900'
-                      : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
-                  )}
-                >
-                  {hall || '未設定'}
-                </button>
-              ))
+              sortedHalls.map((hall, i) => {
+                const isActive = selectedHall === hall;
+                return (
+                  <div
+                    key={hall}
+                    className={clsx(
+                      'flex items-center flex-shrink-0 rounded-md',
+                      hallReorderMode && (isActive ? 'bg-emerald-500' : 'bg-zinc-800'),
+                    )}
+                  >
+                    <button
+                      onClick={() => setSelectedHall(hall)}
+                      aria-current={isActive ? 'true' : undefined}
+                      className={clsx(
+                        'px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap flex-shrink-0',
+                        isActive
+                          ? 'bg-emerald-500 text-zinc-900'
+                          : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200',
+                        hallReorderMode && 'pr-1',
+                      )}
+                    >
+                      {hall || '未設定'}
+                    </button>
+                    {hallReorderMode && (
+                      <div className={clsx('flex items-center pr-1', isActive ? 'text-zinc-900' : 'text-zinc-400')}>
+                        <ReorderArrows
+                          label={hall || '未設定'}
+                          canMoveLeft={i > 0}
+                          canMoveRight={i < sortedHalls.length - 1}
+                          onMove={delta => moveHall(hall, delta)}
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })
             )}
 
             {showAddHall ? (
@@ -724,6 +968,20 @@ const MapPage: React.FC = () => {
               </button>
             )}
           </div>
+
+          {sortedHalls.length > 1 && (
+            <SortControls
+              target="ホール"
+              sortLabel={HALL_SORT_LABEL[settings.mapHallSortKey]}
+              dir={settings.mapHallSortDir}
+              hasManualOrder={hallsManuallyOrdered}
+              reorderMode={hallReorderMode}
+              onCycleKey={cycleHallSortKey}
+              onToggleDir={() => update({ mapHallSortDir: settings.mapHallSortDir === 'asc' ? 'desc' : 'asc' })}
+              onToggleReorder={() => setHallReorderMode(v => !v)}
+              onResetOrder={resetHallOrder}
+            />
+          )}
 
           {/* Image tools */}
           {selectedHall && (

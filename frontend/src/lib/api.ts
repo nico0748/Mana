@@ -56,6 +56,11 @@ export const eventsApi = {
   update: (id: string, data: Partial<Pick<DoujinEvent, 'name' | 'date' | 'budget'>>) =>
     req<DoujinEvent>(`/events/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id: string) => req<void>(`/events/${id}`, { method: 'DELETE' }),
+  /** MAP ヘッダーの手動並べ替えを一括保存する。ids の並びがそのまま order になる */
+  reorder: (ids: string[]) =>
+    req<DoujinEvent[]>('/events/reorder', { method: 'PUT', body: JSON.stringify({ ids }) }),
+  /** 手動並べ替えを解除し、自動ソートに戻す */
+  resetOrder: () => req<DoujinEvent[]>('/events/reorder/reset', { method: 'PUT' }),
 };
 
 // ── Circles ────────────────────────────────────────────────────────────────

@@ -20,7 +20,9 @@ router.get('/', async (req, res) => {
   const uid = (req as any).uid as string;
   const events = await prisma.doujinEvent.findMany({
     where: { userId: uid },
-    orderBy: { createdAt: 'asc' },
+    // 手動並べ替え済みのものを先頭に。order 未設定（= 自動ソート対象）は末尾にまとめ、
+    // 並び順の最終的な決定はクライアント側（開催日 / 名前 / 登録順）に委ねる。
+    orderBy: [{ order: { sort: 'asc', nulls: 'last' } }, { createdAt: 'asc' }],
   });
   res.json(events.map(toEvent));
 });
@@ -32,6 +34,47 @@ router.post('/', async (req, res) => {
   const data = normalizeFields(rest, EVENT_TEXT_FIELDS);
   const event = await prisma.doujinEvent.create({ data: { ...data, userId: uid } });
   res.status(201).json(toEvent(event));
+});
+
+// 手動並べ替えの一括保存。ids の並び順をそのまま order に割り当てる。
+// `/:id` より先に定義しないと id = "reorder" として解釈されてしまう。
+router.put('/reorder', async (req, res) => {
+  const uid = (req as any).uid as string;
+  const { ids } = req.body ?? {};
+
+  if (!Array.isArray(ids) || ids.some(id => typeof id !== 'string')) {
+    return res.status(400).json({ error: 'ids must be an array of strings' });
+  }
+  if (new Set(ids).size !== ids.length) {
+    return res.status(400).json({ error: 'ids must be unique' });
+  }
+
+  // updateMany に userId を含めることで、他ユーザーの即売会は 0 件更新となり書き換わらない。
+  await prisma.$transaction(
+    ids.map((id: string, index: number) =>
+      prisma.doujinEvent.updateMany({
+        where: { id, userId: uid },
+        data: { order: index },
+      })
+    )
+  );
+
+  const events = await prisma.doujinEvent.findMany({
+    where: { userId: uid },
+    orderBy: [{ order: { sort: 'asc', nulls: 'last' } }, { createdAt: 'asc' }],
+  });
+  res.json(events.map(toEvent));
+});
+
+// 手動並べ替えの解除。全件の order を null に戻し、自動ソートへフォールバックさせる。
+router.put('/reorder/reset', async (req, res) => {
+  const uid = (req as any).uid as string;
+  await prisma.doujinEvent.updateMany({ where: { userId: uid }, data: { order: null } });
+  const events = await prisma.doujinEvent.findMany({
+    where: { userId: uid },
+    orderBy: { createdAt: 'asc' },
+  });
+  res.json(events.map(toEvent));
 });
 
 router.put('/:id', async (req, res) => {

@@ -28,6 +28,8 @@ export interface DoujinEvent {
   name: string;
   date?: string;   // ISO date string e.g. "2024-12-30"
   budget?: number;
+  /** MAP ヘッダーの手動並べ替え順。未設定なら開催日などの自動ソートが使われる */
+  order?: number | null;
   createdAt: number;
   updatedAt: number;
 }

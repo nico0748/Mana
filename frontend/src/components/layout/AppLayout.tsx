@@ -80,10 +80,16 @@ export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children })
       {/* 背景画像 */}
       {settings.backgroundImageDataUrl && (
         <div
-          className="fixed inset-0 z-0 bg-cover bg-center pointer-events-none"
+          className={clsx(
+            'fixed inset-0 z-0 pointer-events-none bg-no-repeat',
+            settings.backgroundFit === 'cover' ? 'bg-cover' : 'bg-contain',
+            settings.backgroundBlur > 0 && 'scale-105',
+          )}
           style={{
             backgroundImage: `url(${settings.backgroundImageDataUrl})`,
             opacity: settings.backgroundOpacity / 100,
+            backgroundPosition: settings.backgroundPosition,
+            filter: settings.backgroundBlur > 0 ? `blur(${settings.backgroundBlur}px)` : undefined,
           }}
         />
       )}

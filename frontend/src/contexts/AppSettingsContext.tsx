@@ -1,8 +1,15 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-export type Theme = 'dark' | 'light' | 'taupe';
-export type FontSize = 'normal' | 'large';
+export type Theme = 'system' | 'dark' | 'light' | 'taupe';
+export type FontSize = 'normal' | 'large' | 'xlarge';
 export type MapMarkerSize = 'small' | 'normal' | 'large';
+export type MapMarkerShape = 'circle' | 'rounded';
+export type MapCompletedVisibility = 'show' | 'muted' | 'hidden';
+export type ContentDensity = 'comfortable' | 'compact';
+export type ReadingSpacing = 'normal' | 'relaxed';
+export type BackgroundPosition = 'center' | 'top' | 'bottom';
+export type BackgroundFit = 'cover' | 'contain';
+export type AccentColor = 'emerald' | 'violet' | 'blue';
 export type BookViewMode = 'list' | 'box';
 /** MAP ヘッダーの即売会タブの並び順。date=開催日 / name=名前 / created=登録順 */
 export type MapEventSortKey = 'date' | 'name' | 'created';
@@ -12,11 +19,20 @@ export type SortDir = 'asc' | 'desc';
 
 export interface AppSettings {
   theme: Theme;
+  accentColor: AccentColor;
+  highContrast: boolean;
   backgroundImageDataUrl: string | null;
   backgroundOpacity: number;
+  backgroundBlur: 0 | 4 | 8;
+  backgroundPosition: BackgroundPosition;
+  backgroundFit: BackgroundFit;
   fontSize: FontSize;
+  readingSpacing: ReadingSpacing;
+  contentDensity: ContentDensity;
   reduceMotion: boolean;
   mapMarkerSize: MapMarkerSize;
+  mapMarkerShape: MapMarkerShape;
+  mapCompletedVisibility: MapCompletedVisibility;
   /** マップのサークルピンに優先順位番号を表示するか（買い物リストの番号と連動） */
   showMapPinNumbers: boolean;
   /** 本棚の表示モード。list=テキストのみ (軽量) / box=表紙画像つき grid (仮想スクロール) */
@@ -34,11 +50,20 @@ export interface AppSettings {
 
 const DEFAULTS: AppSettings = {
   theme: 'dark',
+  accentColor: 'emerald',
+  highContrast: false,
   backgroundImageDataUrl: null,
   backgroundOpacity: 30,
+  backgroundBlur: 0,
+  backgroundPosition: 'center',
+  backgroundFit: 'cover',
   fontSize: 'normal',
+  readingSpacing: 'normal',
+  contentDensity: 'comfortable',
   reduceMotion: false,
   mapMarkerSize: 'normal',
+  mapMarkerShape: 'circle',
+  mapCompletedVisibility: 'show',
   showMapPinNumbers: true,
   bookViewMode: 'list',
   mapEventSortKey: 'date',
@@ -95,22 +120,42 @@ export const AppSettingsProvider: React.FC<{ children: React.ReactNode }> = ({ c
   // Apply theme class to <html>
   useEffect(() => {
     const html = document.documentElement;
-    if (settings.theme === 'light' || settings.theme === 'taupe') {
-      html.setAttribute('data-theme', settings.theme);
-    } else {
-      html.removeAttribute('data-theme');
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: light)');
+    const applyTheme = () => {
+      const resolvedTheme = settings.theme === 'system'
+        ? (mediaQuery.matches ? 'light' : 'dark')
+        : settings.theme;
+      if (resolvedTheme === 'light' || resolvedTheme === 'taupe') {
+        html.setAttribute('data-theme', resolvedTheme);
+      } else {
+        html.removeAttribute('data-theme');
+      }
+    };
+
+    applyTheme();
+    if (settings.theme === 'system') {
+      mediaQuery.addEventListener('change', applyTheme);
+      return () => mediaQuery.removeEventListener('change', applyTheme);
     }
   }, [settings.theme]);
 
   // Apply font-size class
   useEffect(() => {
     const html = document.documentElement;
-    if (settings.fontSize === 'large') {
-      html.style.fontSize = '18px';
-    } else {
-      html.style.fontSize = '';
-    }
+    html.style.fontSize = settings.fontSize === 'large'
+      ? '18px'
+      : settings.fontSize === 'xlarge'
+        ? '20px'
+        : '';
   }, [settings.fontSize]);
+
+  useEffect(() => {
+    const html = document.documentElement;
+    html.classList.toggle('high-contrast', settings.highContrast);
+    html.dataset.contentDensity = settings.contentDensity;
+    html.dataset.readingSpacing = settings.readingSpacing;
+    html.dataset.accent = settings.accentColor;
+  }, [settings.highContrast, settings.contentDensity, settings.readingSpacing, settings.accentColor]);
 
   return (
     <AppSettingsContext.Provider value={{ settings, update, reset }}>

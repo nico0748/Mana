@@ -443,6 +443,7 @@ export const BookList: React.FC = () => {
                   <button
                     key={type}
                     onClick={() => { setSelectedType(type); setSelectedCategory(null); }}
+                    aria-pressed={isActive}
                     className={clsx(
                       'flex-1 relative flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-all duration-200',
                       i === 0 ? '' : 'border-l border-zinc-800',
@@ -504,6 +505,7 @@ export const BookList: React.FC = () => {
             <div className="flex gap-2">
               <Input
                 placeholder="タイトルや著者で検索..."
+                aria-label="蔵書を検索"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="flex-grow"
@@ -511,6 +513,7 @@ export const BookList: React.FC = () => {
               <select
                 value={sortField}
                 onChange={(e) => setSortField(e.target.value as SortField)}
+                aria-label="並び順の項目"
                 className="bg-zinc-900 border border-zinc-700 text-zinc-200 rounded-xl py-2 pl-3 pr-8 text-sm hover:border-zinc-500 focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-white/10 transition-all"
               >
                 <option value="createdAt">日付</option>
@@ -520,6 +523,7 @@ export const BookList: React.FC = () => {
               </select>
               <button
                 onClick={() => setSortDirection(d => d === 'asc' ? 'desc' : 'asc')}
+                aria-label={sortDirection === 'asc' ? '昇順' : '降順'}
                 className="flex items-center justify-center w-10 h-10 rounded-xl border border-zinc-700 bg-zinc-900 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 hover:border-zinc-500 transition-all flex-shrink-0 active:scale-95"
                 title={sortDirection === 'asc' ? '昇順' : '降順'}
               >

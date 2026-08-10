@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
 import { X, Download, AlertCircle } from 'lucide-react';
 import type { Book } from '../../types';
 import { Button } from '../ui/Button';
+import { Dialog } from '../ui/Dialog';
 import {
   buildBookShareTemplate,
   coverUrlToFile,
@@ -57,15 +57,7 @@ export const ShareBookXModal: React.FC<Props> = ({ book, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} aria-hidden />
-
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="relative w-full max-w-lg bg-zinc-900 rounded-2xl shadow-2xl border border-zinc-800 overflow-hidden z-10"
-      >
+    <Dialog label="X で紹介" onClose={onClose} className="max-w-lg rounded-2xl shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
           <h2 className="text-base font-semibold text-zinc-100">X で紹介</h2>
           <button
@@ -154,7 +146,6 @@ export const ShareBookXModal: React.FC<Props> = ({ book, onClose }) => {
             {sharing ? '投稿中…' : 'X で投稿'}
           </Button>
         </div>
-      </motion.div>
-    </div>
+    </Dialog>
   );
 };

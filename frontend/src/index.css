@@ -36,7 +36,12 @@ body {
 
 /* ── Motion: Reduced motion support ─────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  .md-ripple { animation: none; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* ── Light theme ─────────────────────────────────────────── */
@@ -57,7 +62,8 @@ body {
  *    #4682B4  border-h    (Steel Blue / Pattern 2)
  *    #4169E1  accent      (Royal Blue / Pattern 3) → CTA, focus, links
  *    #2A52BE  accent-h    (Royal Blue 深化)
- *    #4682B4  text-2      (Steel Blue / Pattern 2) ✅ AA on #F5F5F5 (4.3:1)
+ *    #35638A  text-2      (Steel Blue 深色) ✅ AA on #F5F5F5 (5.8:1)
+ *    #526F86  text-muted  (Steel Blue muted) ✅ AA on #F5F5F5 (4.8:1)
  *    #191970  text-1      (Midnight Blue / Pattern 3) ✅ AAA on #F5F5F5 (14.5:1)
  *
  *  Status colors (cool bg に映える vivid):
@@ -77,8 +83,8 @@ body {
   --lt-border-hover:  #4682B4;
   --lt-border-focus:  #4169E1;
   --lt-text-1:        #191970;
-  --lt-text-2:        #4682B4;
-  --lt-text-muted:    #88AAC4;
+  --lt-text-2:        #35638A;
+  --lt-text-muted:    #526F86;
   --lt-accent:        #4169E1;
   --lt-accent-hover:  #2A52BE;
   --lt-btn-text:      #FFFFFF;
@@ -244,9 +250,10 @@ body {
  *    #f0e0cc  hover/nav   L=88%
  *    #e8d5c0  border      L=82%
  *    #d4a574  border-h    L=65%
- *    #c4622d  accent      L=47%  → CTA, focus, links
- *    #a8501f  accent-h    L=39%
- *    #8a6a50  text-2      L=42%  ✅ AA
+ *    #963c18  accent      → CTA, focus, links
+ *    #763014  accent-h
+ *    #6a4b34  text-2      ✅ AA
+ *    #765e4b  text-muted  ✅ AA
  *    #2d1a0a  text-1      L=11%  ✅ AAA
  */
 [data-theme="taupe"] {
@@ -261,10 +268,10 @@ body {
   --lt-border-hover:  #d4a574;
   --lt-border-focus:  #c4622d;
   --lt-text-1:        #2d1a0a;
-  --lt-text-2:        #8a6a50;
-  --lt-text-muted:    #b89880;
-  --lt-accent:        #c4622d;
-  --lt-accent-hover:  #a8501f;
+  --lt-text-2:        #6A4B34;
+  --lt-text-muted:    #765E4B;
+  --lt-accent:        #963C18;
+  --lt-accent-hover:  #763014;
   --lt-btn-text:      #fff8f0;
   /* status — muted to harmonize with warm bg */
   --lt-success:       #3d7a52;

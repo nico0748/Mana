@@ -146,13 +146,14 @@ const PersonalizeContent: React.FC<{
               {settings.backgroundImageDataUrl && (
                 <button
                   onClick={() => update({ backgroundImageDataUrl: null })}
+                  aria-label="背景画像を削除"
                   className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-zinc-800 rounded-lg transition-colors"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               )}
-              <button
-                onClick={() => bgImageRef.current?.click()}
+                <button
+                  onClick={() => bgImageRef.current?.click()}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-800 text-zinc-200 border border-zinc-700 hover:bg-zinc-700 transition-colors"
               >
                 選択
@@ -191,6 +192,7 @@ const PersonalizeContent: React.FC<{
                 <button
                   key={size}
                   onClick={() => update({ fontSize: size })}
+                  aria-pressed={settings.fontSize === size}
                   className={`px-3 py-1 text-xs rounded-md font-medium transition-colors ${
                     settings.fontSize === size ? 'bg-zinc-600 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
                   }`}
@@ -218,6 +220,7 @@ const PersonalizeContent: React.FC<{
                 <button
                   key={value}
                   onClick={() => update({ mapMarkerSize: value })}
+                  aria-pressed={settings.mapMarkerSize === value}
                   className={`px-3 py-1 text-xs rounded-md font-medium transition-colors ${
                     settings.mapMarkerSize === value ? 'bg-zinc-600 text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
                   }`}
@@ -236,6 +239,7 @@ const PersonalizeContent: React.FC<{
               type="button"
               role="switch"
               aria-checked={settings.showMapPinNumbers}
+              aria-label="ピンに優先順位番号を表示"
               onClick={() => update({ showMapPinNumbers: !settings.showMapPinNumbers })}
               className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${settings.showMapPinNumbers ? 'bg-emerald-500' : 'bg-zinc-700'}`}
             >
@@ -258,6 +262,7 @@ const PersonalizeContent: React.FC<{
               type="button"
               role="switch"
               aria-checked={settings.reduceMotion}
+              aria-label="アニメーション削減"
               onClick={() => update({ reduceMotion: !settings.reduceMotion })}
               className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${settings.reduceMotion ? 'bg-zinc-500' : 'bg-zinc-700'}`}
             >

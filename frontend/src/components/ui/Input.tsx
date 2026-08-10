@@ -4,10 +4,13 @@ import { cn } from "../../lib/utils"
 export type InputProps = React.InputHTMLAttributes<HTMLInputElement>;
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, ...props }, ref) => {
+  ({ className, type, id, name, 'aria-label': ariaLabel, ...props }, ref) => {
     return (
       <input
         type={type}
+        id={id ?? name}
+        name={name}
+        aria-label={ariaLabel}
         className={cn(
           "flex h-10 w-full rounded-xl border border-zinc-700 bg-zinc-800/50 px-4 py-2",
           "text-sm text-zinc-100 placeholder:text-zinc-600",

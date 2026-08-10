@@ -3,9 +3,9 @@ import type { Book } from '../../types';
 import { Button } from '../ui/Button';
 import { Pencil, Trash, X, ExternalLink } from 'lucide-react';
 import { BookForm } from './BookForm';
-import { motion } from 'framer-motion';
 import { buildAmazonLink } from '../../lib/affiliate';
 import { XLogoIcon } from './XLogoIcon';
+import { Dialog } from '../ui/Dialog';
 
 interface BookDetailModalProps {
   book: Book;
@@ -31,23 +31,12 @@ export const BookDetailModal: React.FC<BookDetailModalProps> = ({
   const [isEditing, setIsEditing] = useState(false);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-        aria-hidden="true"
-      />
-
-      <motion.div
-        layoutId={`book-${book.id}`}
-        className="relative w-full max-w-2xl bg-zinc-900 rounded-xl shadow-2xl overflow-hidden z-10 border border-zinc-800"
-        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-      >
+    <Dialog label={isEditing ? '本を編集' : book.title} onClose={onClose} className="max-w-2xl shadow-2xl overflow-hidden">
         {isEditing ? (
           <div className="p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-zinc-100">本を編集</h2>
-              <button onClick={() => setIsEditing(false)} className="p-1 rounded-full hover:bg-zinc-800">
+              <button onClick={() => setIsEditing(false)} aria-label="編集を閉じる" className="p-2 rounded-full hover:bg-zinc-800">
                 <X className="w-5 h-5 text-zinc-400" />
               </button>
             </div>
@@ -92,6 +81,7 @@ export const BookDetailModal: React.FC<BookDetailModalProps> = ({
                 </div>
                 <button
                   onClick={onClose}
+                  aria-label="本の詳細を閉じる"
                   className="p-2 rounded-full text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
                 >
                   <X className="h-5 w-5" />
@@ -177,7 +167,6 @@ export const BookDetailModal: React.FC<BookDetailModalProps> = ({
             </div>
           </div>
         )}
-      </motion.div>
-    </div>
+    </Dialog>
   );
 };

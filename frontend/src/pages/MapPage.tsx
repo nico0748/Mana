@@ -23,6 +23,12 @@ const statusColor: Record<string, string> = {
   soldout: 'bg-red-500 border-red-400',
 };
 
+const statusLabel: Record<string, string> = {
+  pending: '未購入',
+  bought: '購入済',
+  soldout: '完売',
+};
+
 const MapPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
@@ -880,16 +886,19 @@ const MapPage: React.FC = () => {
                   return (
                   <div
                     key={circle.id}
-                    className="absolute"
+                    className="absolute group"
                     style={{
                       left: `${circle.mapX}%`,
                       top: `${circle.mapY}%`,
                       transform: 'translate(-50%, -50%)',
                     }}
                   >
-                    <div
-                      className="relative group"
+                    <button
+                      type="button"
+                      className="relative flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
                       data-pin-id={circle.id}
+                      aria-label={`${circle.name}、${circle.hall} ${circle.block}-${circle.number}、${statusLabel[circle.status] ?? '未購入'}`}
+                      aria-pressed={clickedPopup?.circleId === circle.id || isEditSelected}
                       onClick={e => {
                         e.stopPropagation();
                         if (editMode) {
@@ -912,12 +921,12 @@ const MapPage: React.FC = () => {
                     >
                       {isHighlighted && (
                         <motion.div
-                          className="absolute inset-0 rounded-full bg-emerald-500/50"
+                          className="absolute inset-[14px] rounded-full bg-emerald-500/50"
                           animate={{ scale: [1, 2.5, 1], opacity: [0.8, 0, 0.8] }}
                           transition={{ repeat: Infinity, duration: 1.5 }}
                         />
                       )}
-                      <div className={clsx(
+                      <span className={clsx(
                         'rounded-full border shadow-lg transition-all',
                         showPinNumbers
                           // 数字の色は zinc-900（ほぼ黒）。背景の白いマップに白文字だと滲んで読めず、
@@ -934,13 +943,14 @@ const MapPage: React.FC = () => {
                             : statusColor[circle.status] ?? 'bg-zinc-600 border-zinc-500',
                       )}>
                         {showPinNumbers ? priorityNumber : null}
-                      </div>
+                      </span>
+                    </button>
 
                       {/* Hover preview (desktop): block・name のみのコンパクト tooltip。
                           クリック時の本ポップアップは createPortal で外側に描画される。
                           このピンの click popup が開いている間は隠す（重複防止） */}
                       {clickedPopup?.circleId !== circle.id && (
-                        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-150">
+                        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-events-none transition-opacity duration-150">
                           <div className="bg-zinc-800 text-zinc-100 text-xs rounded-lg shadow-xl border border-zinc-700 text-left min-w-[140px] max-w-[200px]">
                             <div className="px-2.5 py-1.5">
                               <div className="flex items-center gap-1.5">
@@ -960,13 +970,14 @@ const MapPage: React.FC = () => {
 
                       {editMode && (
                         <button
+                          type="button"
                           onClick={(e) => handleRemovePin(circle.id, e)}
-                          className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 rounded-full items-center justify-center hidden group-hover:flex shadow-md"
+                          aria-label={`${circle.name} のピンを削除`}
+                          className="absolute top-0 right-0 w-6 h-6 bg-red-500 rounded-full items-center justify-center hidden group-hover:flex group-focus-within:flex shadow-md focus-visible:flex"
                         >
                           <X className="w-2.5 h-2.5 text-white" />
                         </button>
                       )}
-                    </div>
                   </div>
                   );
                 })}

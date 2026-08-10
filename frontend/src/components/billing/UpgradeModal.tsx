@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Crown, X, Check } from 'lucide-react';
 import { type ResourceKey } from '../../lib/api';
 import { Button } from '../ui/Button';
+import { useDialogAccessibility } from '../../hooks/useDialogAccessibility';
 
 interface Props {
   open: boolean;
@@ -29,6 +30,7 @@ const PRO_FEATURES = [
 
 export const UpgradeModal: React.FC<Props> = ({ open, onClose, resource, limit, current }) => {
   const [interval, setInterval] = useState<'monthly' | 'yearly'>('monthly');
+  const dialogRef = useDialogAccessibility<HTMLDivElement>(onClose, open);
 
   if (!open) return null;
 
@@ -38,13 +40,18 @@ export const UpgradeModal: React.FC<Props> = ({ open, onClose, resource, limit, 
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Pro プランへのアップグレード"
+        tabIndex={-1}
         className="w-full max-w-md bg-zinc-900 rounded-2xl border border-violet-500/40 shadow-2xl shadow-violet-900/30 overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         <div className="relative p-6 pb-4 bg-gradient-to-br from-violet-600/20 to-transparent">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-1 rounded-md text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
+            className="absolute top-4 right-4 p-2.5 rounded-md text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
             aria-label="閉じる"
           >
             <X className="w-4 h-4" />
@@ -72,6 +79,7 @@ export const UpgradeModal: React.FC<Props> = ({ open, onClose, resource, limit, 
           <div className="grid grid-cols-2 gap-2 p-1 bg-zinc-800/60 rounded-xl">
             <button
               onClick={() => setInterval('monthly')}
+              aria-pressed={interval === 'monthly'}
               className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
                 interval === 'monthly'
                   ? 'bg-zinc-700 text-zinc-100'
@@ -82,6 +90,7 @@ export const UpgradeModal: React.FC<Props> = ({ open, onClose, resource, limit, 
             </button>
             <button
               onClick={() => setInterval('yearly')}
+              aria-pressed={interval === 'yearly'}
               className={`py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
                 interval === 'yearly'
                   ? 'bg-zinc-700 text-zinc-100'

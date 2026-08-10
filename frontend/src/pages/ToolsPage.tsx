@@ -356,7 +356,7 @@ const ApiKeyRow: React.FC<{ apiKey: ApiKeySummary; onRevoke: (id: string) => voi
 
 const IntegrationContent: React.FC = () => {
   const queryClient = useQueryClient();
-  const { data: keys, isLoading } = useQuery({ queryKey: ['apiKeys'], queryFn: apiKeysApi.list });
+  const { data: keys, isLoading, isError } = useQuery({ queryKey: ['apiKeys'], queryFn: apiKeysApi.list });
 
   const [name, setName] = useState('');
   const [creating, setCreating] = useState(false);
@@ -465,6 +465,9 @@ const IntegrationContent: React.FC = () => {
       <Card>
         {isLoading ? (
           <div role="status" aria-live="polite" className="px-4 py-6 text-sm text-zinc-500">読み込み中…</div>
+        ) : isError ? (
+          // 取得失敗を「キーが 0 本」と見せると、既にあるのに重複発行されてしまう
+          <div role="alert" className="px-4 py-6 text-sm text-rose-400">キーの一覧を取得できませんでした。</div>
         ) : !keys?.length ? (
           <div className="px-4 py-6 text-sm text-zinc-500">まだキーがありません。</div>
         ) : (

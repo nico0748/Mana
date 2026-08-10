@@ -38,6 +38,29 @@ async function req<T>(path: string, options?: RequestInit): Promise<T> {
   return res.json();
 }
 
+// ── API keys ───────────────────────────────────────────────────────────────
+// MCP サーバなどブラウザ外のクライアント向け長期クレデンシャル。
+// 平文はサーバに保存されないため、発行レスポンス以外では取得できない。
+export interface ApiKeySummary {
+  id: string;
+  name: string;
+  prefix: string;
+  lastUsedAt: number | null;
+  revokedAt: number | null;
+  createdAt: number;
+}
+
+export const apiKeysApi = {
+  list: () => req<ApiKeySummary[]>('/me/api-keys'),
+  /** 平文キーは戻り値の `key` に一度だけ含まれる */
+  create: (name: string) =>
+    req<ApiKeySummary & { key: string }>('/me/api-keys', {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    }),
+  revoke: (id: string) => req<void>(`/me/api-keys/${id}`, { method: 'DELETE' }),
+};
+
 // ── Books ──────────────────────────────────────────────────────────────────
 export const booksApi = {
   list: () => req<Book[]>('/books'),

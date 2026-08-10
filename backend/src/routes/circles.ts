@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Response } from 'express';
 import { prisma } from '../prisma';
 import { guardLimit } from '../lib/enforceLimit';
 import { sanitizeHttpUrl, sanitizeImageUrl } from '../lib/url';
@@ -33,11 +33,38 @@ function sanitizeCircleInput<T extends Record<string, any>>(data: T): T {
   return out as T;
 }
 
+// name 以外は UI 上も任意入力。normalizeText は「空文字は未入力」とみなして null を
+// 返すが、Circle のこれらの列は Prisma 側で NOT NULL なので、空欄で送られてくると
+// create/update が検証エラー（500）になる。正規化後に null へ落ちた分を空文字へ戻す。
+// name はここに含めない。空文字に均してしまうと NOT NULL をすり抜けて
+// 名無しのサークルが保存できてしまうため、下の requireName で 400 にする。
+const CIRCLE_OPTIONAL_TEXT_FIELDS = ['author', 'hall', 'block', 'number'] as const;
+
+function coerceOptionalText<T extends Record<string, any>>(data: T): T {
+  const out: Record<string, any> = { ...data };
+  for (const field of CIRCLE_OPTIONAL_TEXT_FIELDS) {
+    if (field in out && out[field] === null) out[field] = '';
+  }
+  return out as T;
+}
+
+/**
+ * サークル名の必須チェック。正規化後に null（= 空欄や空白のみ）なら 400 を返す。
+ * PUT は部分更新なので、name を送ってきたときだけ検証する。
+ * 検証に通らなければ res を送信済みにして false を返す。
+ */
+function requireName(data: Record<string, any>, res: Response, opts: { partial: boolean }): boolean {
+  if (opts.partial && !('name' in data)) return true;
+  if (typeof data.name === 'string' && data.name.length > 0) return true;
+  res.status(400).json({ error: 'name_required' });
+  return false;
+}
+
 // 1 行で「xUrl の安全検証」と「テキストフィールドの NFC 正規化」を順に適用するヘルパ。
 // 触るフィールドが互いに重ならないので順序は実質どちらでも良いが、URL の検証を先に
 // やってから普通のテキスト正規化、という見通しのよい順番にしておく。
 function prepareCircleData<T extends Record<string, any>>(rest: T): T {
-  return normalizeFields(sanitizeCircleInput(rest), CIRCLE_TEXT_FIELDS);
+  return coerceOptionalText(normalizeFields(sanitizeCircleInput(rest), CIRCLE_TEXT_FIELDS));
 }
 
 router.get('/', async (req, res) => {
@@ -54,6 +81,7 @@ router.post('/', async (req, res) => {
   if (!(await guardLimit(res, req.user!, 'circles'))) return;
   const { id, createdAt, updatedAt, userId, ...rest } = req.body;
   const data = prepareCircleData(rest);
+  if (!requireName(data, res, { partial: false })) return;
   const circle = await prisma.circle.create({ data: { ...data, userId: uid } });
   res.status(201).json(toCircle(circle));
 });
@@ -63,11 +91,18 @@ router.post('/bulk', async (req, res) => {
   const uid = (req as any).uid as string;
   const rows: any[] = req.body;
   if (!(await guardLimit(res, req.user!, 'circles', rows.length))) return;
+
+  // 1 行でも名前が空なら取り込み全体を止める。名無しのサークルが混ざると
+  // 買い物リスト上で識別できなくなるため、部分的に通すより差し戻す方がよい。
+  const prepared = rows.map(({ id, createdAt, updatedAt, userId, ...rest }) => prepareCircleData(rest));
+  const blankAt = prepared.findIndex(d => typeof d.name !== 'string' || d.name.length === 0);
+  if (blankAt >= 0) {
+    res.status(400).json({ error: 'name_required', row: blankAt });
+    return;
+  }
+
   const circles = await prisma.$transaction(
-    rows.map(({ id, createdAt, updatedAt, userId, ...rest }) => {
-      const data = prepareCircleData(rest);
-      return prisma.circle.create({ data: { ...data, userId: uid } });
-    })
+    prepared.map(data => prisma.circle.create({ data: { ...data, userId: uid } }))
   );
   res.status(201).json(circles.map(toCircle));
 });
@@ -76,6 +111,7 @@ router.put('/:id', async (req, res) => {
   const uid = (req as any).uid as string;
   const { id, createdAt, updatedAt, userId, ...rest } = req.body;
   const data = prepareCircleData(rest);
+  if (!requireName(data, res, { partial: true })) return;
   const circle = await prisma.circle.update({
     where: { id: req.params.id, userId: uid },
     data,

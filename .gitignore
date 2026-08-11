@@ -18,6 +18,9 @@ dist-ssr
 frontend/.vite/
 .vite/
 
+# git worktree の置き場（リポジトリ内に作ると untracked として出続けるため）
+.worktrees/
+
 # 本番環境変数・ローカル作業メモ（絶対にコミットしない）
 .env.prod
 setup.md

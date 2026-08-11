@@ -95,7 +95,7 @@ function UsernameSetupModal({ onComplete }: { onComplete: () => void }) {
             disabled={!name.trim() || saving}
             className="w-full py-2.5 bg-zinc-100 hover:bg-white text-zinc-900 font-semibold text-sm rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {saving ? '保存中...' : '設定する'}
+            {saving ? '保存中…' : '設定する'}
           </button>
         </form>
       </div>

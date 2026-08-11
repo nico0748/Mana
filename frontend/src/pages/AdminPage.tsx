@@ -881,7 +881,7 @@ const TemplateRow: React.FC<{
                 type="text"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                placeholder="例: マップ画像の解像度が低い"
+                placeholder="例: 会場マップの解像度が低い"
                 className="w-full px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-100 text-xs placeholder-zinc-600 focus:outline-none focus:ring-2 focus:ring-red-500/40"
               />
             </div>

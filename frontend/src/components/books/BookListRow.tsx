@@ -77,7 +77,7 @@ export const BookListRow: React.FC<Props> = ({ book, onSelect, onEdit, onDelete,
           <button
             onClick={() => onShare(book)}
             className="p-1.5 text-zinc-500 hover:text-zinc-100 hover:bg-zinc-700 rounded-md transition-colors"
-            title="X で紹介"
+            title="Xで紹介"
           >
             <XLogoIcon className="h-3.5 w-3.5" />
           </button>

@@ -9,7 +9,7 @@ import { HeaderUserMenu } from './HeaderUserMenu';
 const tabs = [
   { label: '本棚',   path: '/',         icon: BookOpen   },
   { label: '買い物', path: '/shopping', icon: ShoppingBag },
-  { label: 'MAP',    path: '/map',      icon: Map        },
+  { label: 'マップ', path: '/map',      icon: Map        },
   { label: '設定', path: '/tools',    icon: Settings   },
 ];
 

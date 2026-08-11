@@ -343,7 +343,7 @@ export const LoginPage: React.FC = () => {
               disabled={loading || googleLoading || !canSubmit}
               className="w-full py-2.5 bg-zinc-100 hover:bg-white text-zinc-900 font-semibold text-sm rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? '処理中...' : mode === 'login' ? 'ログイン' : '確認メールを送信'}
+              {loading ? '処理中…' : mode === 'login' ? 'ログイン' : '確認メールを送信'}
             </button>
           </form>
 

@@ -42,7 +42,7 @@ const NavModePage: React.FC = () => {
   });
 
   if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen text-zinc-400">読み込み中...</div>;
+    return <div className="flex items-center justify-center min-h-screen text-zinc-400">読み込み中…</div>;
   }
 
   const total = circles.length;
@@ -134,7 +134,7 @@ const NavModePage: React.FC = () => {
             className="flex items-center gap-1 text-xs text-zinc-500 hover:text-emerald-500 transition-colors"
           >
             <Map className="w-3.5 h-3.5" />
-            MAP
+            マップ
           </Link>
           <span className="text-sm text-zinc-500">{currentIndex + 1} / {total}</span>
         </div>
@@ -220,7 +220,7 @@ const NavModePage: React.FC = () => {
             className="flex-1 h-12 text-red-400 border-red-900 hover:bg-red-950 hover:border-red-800"
             onClick={() => handleAction('soldout')}
           >
-            完売...
+            完売として記録
           </Button>
           <Button
             variant="outline"

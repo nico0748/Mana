@@ -263,7 +263,7 @@ export const BookList: React.FC = () => {
     <div className="space-y-2.5">
       <div className="mb-3">
         <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-0.5">データ同期</p>
-        <p className="text-xs text-zinc-600">本棚データのエクスポート・インポート</p>
+        <p className="text-xs text-zinc-600">本棚データを出力・取り込む</p>
       </div>
 
       {/* エクスポートドロップダウン */}
@@ -358,7 +358,7 @@ export const BookList: React.FC = () => {
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
-  if (loading) return <div className="text-center py-8 text-zinc-400">読み込み中...</div>;
+  if (loading) return <div className="text-center py-8 text-zinc-400">読み込み中…</div>;
   if (error) return <div className="text-center py-8 text-red-400">{error}</div>;
 
   // Active category breadcrumb label
@@ -504,7 +504,7 @@ export const BookList: React.FC = () => {
             {/* 検索 + ソート */}
             <div className="flex gap-2">
               <Input
-                placeholder="タイトルや著者で検索..."
+                placeholder="タイトルや著者で検索…"
                 aria-label="蔵書を検索"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}

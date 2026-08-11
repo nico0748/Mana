@@ -57,9 +57,9 @@ export const ShareBookXModal: React.FC<Props> = ({ book, onClose }) => {
   };
 
   return (
-    <Dialog label="X で紹介" onClose={onClose} className="max-w-lg rounded-2xl shadow-2xl overflow-hidden">
+    <Dialog label="Xで紹介" onClose={onClose} className="max-w-lg rounded-2xl shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
-          <h2 className="text-base font-semibold text-zinc-100">X で紹介</h2>
+          <h2 className="text-base font-semibold text-zinc-100">Xで紹介</h2>
           <button
             type="button"
             onClick={onClose}
@@ -88,13 +88,13 @@ export const ShareBookXModal: React.FC<Props> = ({ book, onClose }) => {
                 {coverState === 'ready' && !canShareWithImage && (
                   <p className="text-amber-400">
                     このブラウザでは画像の同時投稿に未対応です。
-                    「画像を保存」から端末に保存し、X 側で手動で添付してください。
+                    「画像を保存」から端末に保存し、X側で手動で添付してください。
                   </p>
                 )}
                 {coverState === 'unavailable' && (
                   <p className="text-amber-400">
                     表紙画像を取得できませんでした。
-                    テキストのみ X に流します。
+                    テキストのみXに投稿します。
                   </p>
                 )}
               </div>
@@ -143,7 +143,7 @@ export const ShareBookXModal: React.FC<Props> = ({ book, onClose }) => {
             disabled={sharing}
             className="flex-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 hover:text-zinc-900"
           >
-            {sharing ? '投稿中…' : 'X で投稿'}
+            {sharing ? '投稿中…' : 'Xに投稿'}
           </Button>
         </div>
     </Dialog>

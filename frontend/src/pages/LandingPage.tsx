@@ -44,7 +44,7 @@ const FEATURES = [
     icon: BookOpen,
     tag: '蔵書管理',
     title: '本棚を、\nデジタルで整理する',
-    desc: '商業誌・同人誌をまとめて一元管理。ISBN スキャンで冊子情報を自動取得、タグ・サークル名での絞り込み、所持・貸出・欲しいリストなど5つのステータスで状態を管理できます。CSV・Excel でのインポート/エクスポートにも対応。',
+    desc: '商業誌・同人誌をまとめて一元管理。ISBN スキャンで書誌情報を自動取得し、タグ・サークル名で絞り込めます。所持・貸出・欲しいリストなど5つのステータスで状態を管理でき、CSV・Excelでのインポート・エクスポートにも対応しています。',
     imageSide: 'right' as const,
     image: '/feature-books.png',
   },
@@ -52,7 +52,7 @@ const FEATURES = [
     icon: ShoppingCart,
     tag: '買い物リスト',
     title: 'イベント当日の\n買い物をスマートに',
-    desc: '即売会ごとにサークルとアイテムを登録。予算管理・購入ステータスのリアルタイム更新はもちろん、サークルの Twitter/X リンクやメニュー画像も一緒に保存できます。CSV/Excel でのサークルリスト取り込みにも対応。',
+    desc: '即売会ごとにサークルとアイテムを登録。予算管理・購入ステータスをリアルタイムで更新でき、サークルのXプロフィールURLやメニュー画像も保存できます。CSV / Excelでのサークルリスト取り込みにも対応しています。',
     imageSide: 'left' as const,
     image: '/feature-list-to-navi.png',
   },
@@ -68,7 +68,7 @@ const FEATURES = [
     icon: Settings,
     tag: 'データ管理',
     title: '慣れ親しんだ\nExcel から移行できる',
-    desc: 'CSV・Excel・JSON でのインポート/エクスポートに全機能で対応。長年使い続けてきたスプレッドシートのデータをそのまま取り込めます。公式テンプレートを使えば、イベント名・会場・ホール一覧が一発で作成されます。',
+    desc: 'すべての機能でCSV・Excel・JSONのインポート・エクスポートに対応。長年使い続けてきたスプレッドシートのデータをそのまま取り込めます。公式テンプレートを使えば、イベント名・日程・会場マップをまとめて取り込めます。',
     imageSide: 'left' as const,
     image: '/feature-data-to-list.png',
   },
@@ -96,7 +96,7 @@ const SYSTEM_DETAILS = [
     image: '/feature-list-to-navi.png',
     points: [
       { icon: Layers, label: '即売会単位の管理', desc: 'イベントごとにサークル一覧と予算枠を分離。複数イベントを並行管理しても混ざりません。' },
-      { icon: ImageIcon, label: 'メニュー画像 + X リンク', desc: '各サークルに新刊メニュー画像と Twitter/X URL を紐付け。当日「あれ何頒布だっけ？」を防ぎます。' },
+      { icon: ImageIcon, label: 'メニュー画像とXプロフィール', desc: '各サークルに新刊メニュー画像とXのプロフィールURLを登録。当日の「何を頒布している？」をすぐ確認できます。' },
       { icon: Navigation, label: 'ナビモードで巡回最適化', desc: '未購入のサークルだけを順番に案内。次に行くサークルを大きく表示し、近接サークルを優先表示します。' },
     ],
   },
@@ -119,9 +119,9 @@ const SYSTEM_DETAILS = [
     summary: 'スプレッドシート資産をそのまま活かしつつ、他ユーザーが作ったテンプレートで初期セットアップを瞬時に。',
     image: '/feature-data-to-list.png',
     points: [
-      { icon: Database, label: '全機能で I/O 対応', desc: '蔵書・サークル・頒布物・会場マップすべてに CSV / Excel / JSON のインポート・エクスポートを搭載。' },
-      { icon: FileJson, label: 'コミュニティテンプレート', desc: '他ユーザーが申請し運営が承認した即売会テンプレートを利用可能。イベント名・日程・マップ画像が一括で取り込まれます。' },
-      { icon: Tag, label: '自分のイベントも申請可能', desc: '買い物リストの即売会カードから申請ボタン → 運営承認後に TEMPLATE に掲載されます。' },
+      { icon: Database, label: 'すべてのデータを入出力', desc: '蔵書・サークル・頒布物・会場マップをCSV / Excel / JSONでインポート・エクスポートできます。' },
+      { icon: FileJson, label: 'コミュニティテンプレート', desc: '他ユーザーが申請し、運営が承認した即売会テンプレートを利用可能。イベント名・日程・会場マップをまとめて取り込めます。' },
+      { icon: Tag, label: '自分のイベントも申請可能', desc: '買い物リストの即売会カードから申請ボタン → 運営の承認後にテンプレート一覧へ掲載されます。' },
     ],
   },
 ];
@@ -734,7 +734,7 @@ const TemplateSection: React.FC = () => {
         <h2 className="text-2xl sm:text-3xl font-bold text-zinc-100">公開テンプレート</h2>
         <p className="text-sm text-zinc-500 mt-2 max-w-2xl mx-auto">
           ユーザーが申請し運営が承認した即売会テンプレートです。
-          アプリの「テンプレートから読み込む」を選ぶと、イベント名・日程・会場マップ画像が一括で取り込まれます。
+          アプリの「テンプレートから読み込む」を選ぶと、イベント名・日程・会場マップがまとめて取り込まれます。
         </p>
       </motion.div>
 

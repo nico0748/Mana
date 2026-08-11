@@ -84,7 +84,7 @@ const UnavailableListPage: React.FC = () => {
   };
 
   if (l1 || l2 || l3) {
-    return <div className="text-center py-8 text-zinc-400">読み込み中...</div>;
+    return <div className="text-center py-8 text-zinc-400">読み込み中…</div>;
   }
 
   const totalCount = soldoutEntries.length;

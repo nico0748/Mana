@@ -88,13 +88,13 @@ export const ShareBookXModal: React.FC<Props> = ({ book, onClose }) => {
                 {coverState === 'ready' && !canShareWithImage && (
                   <p className="text-amber-400">
                     このブラウザでは画像の同時投稿に未対応です。
-                    「画像を保存」から端末に保存し、X 側で手動で添付してください。
+                    「画像を保存」から端末に保存し、X側で手動で添付してください。
                   </p>
                 )}
                 {coverState === 'unavailable' && (
                   <p className="text-amber-400">
                     表紙画像を取得できませんでした。
-                    テキストのみ X に流します。
+                    テキストのみXに投稿します。
                   </p>
                 )}
               </div>

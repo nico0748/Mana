@@ -502,7 +502,7 @@ const PersonalizeContent: React.FC<{
 
 const DataContent: React.FC = () => (
   <div className="pb-6">
-    <SectionTitle>エクスポート / インポート</SectionTitle>
+    <SectionTitle>データの出力・取り込み</SectionTitle>
     <Card>
       <SettingRow
         icon={<Database className="w-4 h-4" />}

@@ -227,7 +227,7 @@ const CircleCard: React.FC<CircleCardProps> = ({
                   target="_blank"
                   rel="noopener noreferrer"
                   title="Xを開く"
-                  aria-label={`${circle.name} の X を開く`}
+                  aria-label={`${circle.name} のXを開く`}
                   className="p-2 text-sky-500 hover:text-sky-300 hover:bg-zinc-800 rounded-full transition-all duration-150 active:scale-90"
                 >
                   <ExternalLink className="w-4 h-4" />
@@ -2000,7 +2000,7 @@ const ShoppingListPage: React.FC = () => {
         className="w-full flex items-center justify-center gap-2"
       >
         <FileDown className="w-3.5 h-3.5" />
-        テンプレートをダウンロード（CSV / Excel）
+        テンプレートをダウンロード（Excel）
       </Button>
       <p className="text-xs text-zinc-700 text-center pt-1">テンプレートのフォーマットに合わせてご記入ください</p>
     </div>

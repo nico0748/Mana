@@ -5,6 +5,10 @@ export type FontSize = 'normal' | 'large' | 'xlarge';
 export type MapMarkerSize = 'small' | 'normal' | 'large';
 export type MapMarkerShape = 'circle' | 'rounded';
 export type MapCompletedVisibility = 'show' | 'muted' | 'hidden';
+/** MAP をドラッグしたときの挙動。circle=お品書きカードを動かす / map=地図をパン / lock=動かさない */
+export type MapDragMode = 'circle' | 'map' | 'lock';
+/** お品書きカードの位置（画像に対する百分率。余白に置けるよう 0-100 の外も許容する） */
+export interface MapCardPosition { x: number; y: number }
 export type ContentDensity = 'comfortable' | 'compact';
 export type ReadingSpacing = 'normal' | 'relaxed';
 export type BackgroundPosition = 'center' | 'top' | 'bottom';
@@ -46,6 +50,14 @@ export interface AppSettings {
    * エンティティを持たないため、即売会ID（未分類は空文字）をキーにここへ保存する。
    */
   mapHallOrder: Record<string, string[]>;
+  /** MAP にお品書きカードと引き出し線を重ねて表示するか */
+  mapShowCutCards: boolean;
+  mapDragMode: MapDragMode;
+  /**
+   * お品書きカードの手動配置。`${eventId}::${hall}` をキーに circleId → 座標。
+   * 未登録のサークルはピン位置から左右の余白へ自動配置する。
+   */
+  mapCardPositions: Record<string, Record<string, MapCardPosition>>;
 }
 
 const DEFAULTS: AppSettings = {
@@ -71,6 +83,9 @@ const DEFAULTS: AppSettings = {
   mapHallSortKey: 'name',
   mapHallSortDir: 'asc',
   mapHallOrder: {},
+  mapShowCutCards: false,
+  mapDragMode: 'circle',
+  mapCardPositions: {},
 };
 
 const STORAGE_KEY = 'doujin-pp-settings';

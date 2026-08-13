@@ -8,6 +8,7 @@ import {
   Trash2, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Plus,
   RotateCcw, RotateCw, Crop, FileJson,
   Maximize2, Minimize2, ArrowUp, ArrowDown, MoveHorizontal,
+  Image as ImageIcon, Download, Move, Lock, MoveDiagonal,
 } from 'lucide-react';
 import { eventsApi, circlesApi, venueMapsApi, circleItemsApi } from '../lib/api';
 import { applyCircleStatusChange, applyItemStatusChange } from '../lib/offlineMutations';
@@ -18,6 +19,10 @@ import TemplateImportModal from '../components/map/TemplateImportModal';
 import { useAppSettings } from '../contexts/AppSettingsContext';
 import type { MapEventSortKey, MapHallSortKey, SortDir } from '../contexts/AppSettingsContext';
 import { sortEvents, sortHalls, todayKey, moveItem, isManuallyOrdered, isPastEvent } from '../lib/mapHeaderSort';
+import { CircleCutCards } from '../components/map/CircleCutCards';
+import { cardPositionKey } from '../lib/mapCutCards';
+import { exportMapImage, safeFileName } from '../lib/mapExport';
+import type { MapCardPosition } from '../contexts/AppSettingsContext';
 
 const statusColor: Record<string, string> = {
   pending: 'bg-yellow-400 border-yellow-200',
@@ -148,6 +153,8 @@ const MapPage: React.FC = () => {
   const markerShape = settings.mapMarkerShape;
   const completedVisibility = settings.mapCompletedVisibility;
   const showPinNumbers = settings.showMapPinNumbers;
+  const showCutCards = settings.mapShowCutCards;
+  const dragMode = settings.mapDragMode;
 
   // 二重ヘッダーの手動並べ替えモード（即売会・ホールで独立）
   const [eventReorderMode, setEventReorderMode] = useState(false);
@@ -694,6 +701,105 @@ const MapPage: React.FC = () => {
     queryClient.invalidateQueries({ queryKey: ['circles'] });
   };
 
+  const selectedEventName =
+    sortedEvents.find(e => e.id === selectedEventId)?.name ?? '未分類';
+
+  // ── お品書きカード ────────────────────────────────────────────────────────
+
+  // カードを出すのはピンが打たれたサークル。お品書き画像が無いものは名前カードになる。
+  const cardCircles = showCutCards ? pinnedCircles : [];
+  const cardKey = cardPositionKey(selectedEventId, selectedHall);
+  const savedCardPositions = settings.mapCardPositions[cardKey];
+  const imageAspect = imgNaturalSize ? imgNaturalSize.w / imgNaturalSize.h : 1;
+
+  const moveCard = (circleId: string, pos: MapCardPosition) => {
+    update({
+      mapCardPositions: {
+        ...settings.mapCardPositions,
+        [cardKey]: { ...settings.mapCardPositions[cardKey], [circleId]: pos },
+      },
+    });
+  };
+
+  const resetCardPositions = () => {
+    const rest = { ...settings.mapCardPositions };
+    delete rest[cardKey];
+    update({ mapCardPositions: rest });
+  };
+
+  // ── 表示倍率のフィット ────────────────────────────────────────────────────
+
+  // zoom=1 で画像全体が収まる（object-contain 相当）ので、全体表示は等倍に戻すだけ。
+  const fitWhole = () => { setZoom(1); setPan({ x: 0, y: 0 }); };
+
+  // 横幅いっぱいまで拡大する。縦長の画像ほど倍率が大きくなる。
+  const fitWidth = () => {
+    if (!imageBox || !outerSize) return;
+    const next = Math.min(4, Math.max(1, outerSize.w / imageBox.w));
+    setZoom(next);
+    setPan({ x: 0, y: 0 });
+  };
+
+  // ── 地図のドラッグパン ────────────────────────────────────────────────────
+
+  const panDrag = useRef<
+    { x: number; y: number; panX: number; panY: number; active: boolean } | null
+  >(null);
+
+  // 押した瞬間にポインタを捕捉するとピンのクリックを奪ってしまうので、
+  // 一定距離動かして「ドラッグの意図あり」と判断できてから捕捉する。
+  const PAN_DRAG_THRESHOLD_PX = 4;
+
+  const handleMapPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    // 配置編集・切り抜き中は既存の操作を優先する
+    if (dragMode !== 'map' || editMode || cropMode) return;
+    panDrag.current = { x: e.clientX, y: e.clientY, panX: pan.x, panY: pan.y, active: false };
+  };
+
+  const handleMapPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const d = panDrag.current;
+    if (!d) return;
+    const dx = e.clientX - d.x;
+    const dy = e.clientY - d.y;
+    if (!d.active) {
+      if (Math.hypot(dx, dy) < PAN_DRAG_THRESHOLD_PX) return;
+      d.active = true;
+      (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    }
+    setPan(clampPan(d.panX + dx, d.panY + dy));
+  };
+
+  const handleMapPointerUp = () => { panDrag.current = null; };
+
+  // ── 画像として保存 ────────────────────────────────────────────────────────
+
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportImage = async () => {
+    if (!currentMap || exporting) return;
+    setExporting(true);
+    try {
+      const { skippedImages } = await exportMapImage({
+        mapImageUrl: currentMap.imageDataUrl,
+        circles: pinnedCircles,
+        cardCircles,
+        savedPositions: savedCardPositions,
+        showPinNumbers,
+        priorityById: eventPriorityById,
+        fileName: `${safeFileName([selectedEventName, selectedHall])}.png`,
+      });
+      if (skippedImages > 0) {
+        // 外部ホストの画像は CORS 次第で canvas に描けない。落とさず知らせるだけにする。
+        alert(`${skippedImages} 件のお品書き画像は読み込めなかったため、サークル名で書き出しました。`);
+      }
+    } catch (err) {
+      console.error('[map] 画像の書き出しに失敗しました', err);
+      alert('画像の書き出しに失敗しました。');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const handleAddHall = (e: React.FormEvent) => {
     e.preventDefault();
     const name = newHallName.trim();
@@ -1078,7 +1184,15 @@ const MapPage: React.FC = () => {
         {currentMap ? (
           <div
             ref={mapOuterRef}
-            className={clsx('w-full h-full bg-zinc-950 overflow-hidden relative', (editMode && selectedCircleId) || cropMode ? 'cursor-crosshair' : '')}
+            className={clsx(
+              'w-full h-full bg-zinc-950 overflow-hidden relative',
+              (editMode && selectedCircleId) || cropMode ? 'cursor-crosshair'
+                : dragMode === 'map' ? 'cursor-grab active:cursor-grabbing' : '',
+            )}
+            onPointerDown={handleMapPointerDown}
+            onPointerMove={handleMapPointerMove}
+            onPointerUp={handleMapPointerUp}
+            onPointerCancel={handleMapPointerUp}
             // ネイティブ pinch-zoom を無効化 (iOS Safari でピン位置がズレる原因のため)。
             // ズームは右上の +/- ボタン、移動は zoom>1 時に出る方向ボタンで操作。
             // タップは touch-action の影響を受けない。
@@ -1112,6 +1226,8 @@ const MapPage: React.FC = () => {
                   height: `${imageBox.h}px`,
                   transform: `translate(calc(-50% + ${pan.x}px), calc(-50% + ${pan.y}px)) scale(${zoom})`,
                   transformOrigin: 'center center',
+                  // カードは画像の外（左右の余白）に出るのではみ出しを許可する
+                  overflow: 'visible',
                 }}
                 onClick={handleMapClick}
                 onPointerDown={handleCropPointerDown}
@@ -1124,6 +1240,20 @@ const MapPage: React.FC = () => {
                   className="w-full h-full block"
                   draggable={false}
                 />
+
+                {/* お品書きカードと引き出し線。ピンより先に描いてピンを前面に残す */}
+                {showCutCards && imageBox && cardCircles.length > 0 && (
+                  <CircleCutCards
+                    circles={cardCircles}
+                    saved={savedCardPositions}
+                    imageAspect={imageAspect}
+                    draggable={dragMode === 'circle' && !editMode && !cropMode}
+                    zoom={zoom}
+                    imageSize={{ w: imageBox.w, h: imageBox.h }}
+                    onMove={moveCard}
+                    onSelect={id => setSelectedCircleId(id)}
+                  />
+                )}
 
                 {/* Pins */}
                 {pinnedCircles.map(circle => {
@@ -1342,6 +1472,89 @@ const MapPage: React.FC = () => {
                 title="ズームアウト"
                 aria-label="ズームアウト"
               >−</button>
+
+              {/* フィット操作 */}
+              <button
+                onClick={fitWidth}
+                className="w-10 h-10 bg-zinc-900/90 text-zinc-50 hover:bg-zinc-800 rounded-lg flex items-center justify-center shadow-lg border border-zinc-600/80 backdrop-blur-sm transition-colors"
+                title="横幅に合わせる"
+                aria-label="横幅に合わせる"
+              >
+                <MoveHorizontal className="w-5 h-5" />
+              </button>
+              <button
+                onClick={fitWhole}
+                className="w-10 h-10 bg-zinc-900/90 text-zinc-50 hover:bg-zinc-800 rounded-lg flex items-center justify-center shadow-lg border border-zinc-600/80 backdrop-blur-sm transition-colors"
+                title="全体を表示"
+                aria-label="全体を表示"
+              >
+                <MoveDiagonal className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* 左上: お品書き表示 / ドラッグ対象 / 画像保存 */}
+            <div className="absolute top-3 left-3 z-10 flex flex-col gap-1.5">
+              <button
+                onClick={() => update({ mapShowCutCards: !showCutCards })}
+                aria-pressed={showCutCards}
+                className={clsx(
+                  'w-10 h-10 rounded-lg flex items-center justify-center shadow-lg border backdrop-blur-sm transition-colors',
+                  showCutCards
+                    ? 'bg-emerald-500/90 text-zinc-950 border-emerald-400'
+                    : 'bg-zinc-900/90 text-zinc-50 hover:bg-zinc-800 border-zinc-600/80',
+                )}
+                title={showCutCards ? 'お品書きを隠す' : 'お品書きを表示'}
+                aria-label={showCutCards ? 'お品書きを隠す' : 'お品書きを表示'}
+              >
+                <ImageIcon className="w-5 h-5" />
+              </button>
+
+              <button
+                onClick={handleExportImage}
+                disabled={exporting}
+                className="w-10 h-10 bg-zinc-900/90 text-zinc-50 hover:bg-zinc-800 rounded-lg flex items-center justify-center shadow-lg border border-zinc-600/80 backdrop-blur-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                title="表示中のマップを画像として保存"
+                aria-label="マップを画像として保存"
+              >
+                <Download className="w-5 h-5" />
+              </button>
+
+              {/* ドラッグしたときに何が動くか。カードを置いたあと誤操作で
+                  ずらさないよう「固定」に切り替えられるようにしている。 */}
+              <div className="flex flex-col rounded-lg overflow-hidden border border-zinc-600/80 shadow-lg backdrop-blur-sm">
+                {([
+                  { value: 'circle', label: 'サークル', icon: <Move className="w-4 h-4" /> },
+                  { value: 'map', label: '地図', icon: <MoveHorizontal className="w-4 h-4" /> },
+                  { value: 'lock', label: '固定', icon: <Lock className="w-4 h-4" /> },
+                ] as const).map(({ value, label, icon }) => (
+                  <button
+                    key={value}
+                    onClick={() => update({ mapDragMode: value })}
+                    aria-pressed={dragMode === value}
+                    title={`ドラッグで${label}を動かす`}
+                    aria-label={`ドラッグ対象: ${label}`}
+                    className={clsx(
+                      'w-10 h-8 flex items-center justify-center transition-colors',
+                      dragMode === value
+                        ? 'bg-zinc-100 text-zinc-900'
+                        : 'bg-zinc-900/90 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800',
+                    )}
+                  >
+                    {icon}
+                  </button>
+                ))}
+              </div>
+
+              {showCutCards && savedCardPositions && Object.keys(savedCardPositions).length > 0 && (
+                <button
+                  onClick={resetCardPositions}
+                  className="w-10 h-10 bg-zinc-900/90 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-50 rounded-lg flex items-center justify-center shadow-lg border border-zinc-600/80 backdrop-blur-sm transition-colors"
+                  title="カードの配置を自動に戻す"
+                  aria-label="カードの配置を自動に戻す"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </button>
+              )}
             </div>
 
             {/* Pan controls — zoom > 1 のとき表示。zoom/fullscreen ボタンと統一スタイル */}

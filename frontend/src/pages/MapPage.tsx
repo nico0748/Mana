@@ -1402,11 +1402,12 @@ const MapPage: React.FC = () => {
                           : 'opacity-85',
                         showPinNumbers ? numFontClass : null,
                         sizeClass,
+                        // 配置編集で選択中のピンに輪を出していたが、視界の邪魔になるのでやめた。
+                        // 選択中であることは、ピンが一回り大きくなること（isBumped）と
+                        // 上部の「「〇〇」の位置をタップ」バナーで分かる。
                         isHighlighted
                           ? 'bg-emerald-500 border-emerald-200 ring-2 ring-emerald-500/50'
-                          : isEditSelected
-                            ? clsx(statusColor[circle.status] ?? 'bg-zinc-600 border-zinc-500', 'ring-2 ring-white/80')
-                            : statusColor[circle.status] ?? 'bg-zinc-600 border-zinc-500',
+                          : statusColor[circle.status] ?? 'bg-zinc-600 border-zinc-500',
                         completedVisibility === 'muted' && isCompleted && 'opacity-35 grayscale',
                       )}>
                         {showPinNumbers ? priorityNumber : null}

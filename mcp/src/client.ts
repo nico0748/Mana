@@ -10,6 +10,8 @@ export interface DoujinEvent {
   date?: string;
   budget?: number;
   order?: number | null;
+  /** 色に付けた名前。{ red: '代理購入' } の形 */
+  colorLabels?: Record<string, string> | null;
   createdAt: number;
   updatedAt: number;
 }
@@ -24,7 +26,12 @@ export interface Circle {
   number: string;
   order: number;
   status: 'pending' | 'bought' | 'soldout';
+  /** 色分け用のパレットキー（red, blue, …）。未設定は null */
+  color?: string | null;
   xUrl?: string;
+  menuImageUrl?: string;
+  /** ピンを置いた会場マップのページ。未設定は 1 ページ目 */
+  mapPage?: number | null;
   mapX?: number;
   mapY?: number;
   createdAt: number;
@@ -53,6 +60,7 @@ export interface Book {
   series?: string;
   genre?: string;
   category?: string;
+  ndcCode?: string;
   tags?: string[];
   status: string;
   price?: number;
@@ -65,7 +73,38 @@ export interface VenueMap {
   id: string;
   eventId?: string;
   hall: string;
+  /** 複数ページ PDF の何ページ目か。未設定は 1 */
+  page?: number;
   imageDataUrl: string;
+  generatedSvg?: string | null;
+}
+
+export interface EventTemplate {
+  id: string;
+  name: string;
+  date?: string;
+  venueMaps: { hall: string; imageDataUrl: string; generatedSvg?: string | null }[];
+  circles: {
+    name: string; author: string; hall: string; block: string; number: string;
+    order: number; xUrl?: string | null; menuImageUrl?: string | null;
+    mapX?: number | null; mapY?: number | null;
+  }[];
+  hallCount: number;
+  circleCount: number;
+  createdAt: number;
+}
+
+export interface MeResponse {
+  user: {
+    firebaseUid: string;
+    email: string | null;
+    role: string;
+    plan: string;
+    planStatus: string;
+    planExpiresAt: number | null;
+  };
+  limits: Record<string, number | null>;
+  usage: Record<string, number>;
 }
 
 export class ManaApiError extends Error {
@@ -101,13 +140,38 @@ export class ManaClient {
     return res.json() as Promise<T>;
   }
 
+  private post<T>(path: string, body: unknown) {
+    return this.req<T>(path, { method: 'POST', body: JSON.stringify(body) });
+  }
+
+  private put<T>(path: string, body: unknown) {
+    return this.req<T>(path, { method: 'PUT', body: JSON.stringify(body) });
+  }
+
+  private del(path: string) {
+    return this.req<void>(path, { method: 'DELETE' });
+  }
+
+  // ── アカウント ──
+  getMe() {
+    return this.req<MeResponse>('/me');
+  }
+
   // ── 即売会 ──
   listEvents() {
     return this.req<DoujinEvent[]>('/events');
   }
 
-  createEvent(data: { name: string; date?: string; budget?: number }) {
-    return this.req<DoujinEvent>('/events', { method: 'POST', body: JSON.stringify(data) });
+  createEvent(data: Partial<DoujinEvent> & { name: string }) {
+    return this.post<DoujinEvent>('/events', data);
+  }
+
+  updateEvent(id: string, data: Partial<DoujinEvent>) {
+    return this.put<DoujinEvent>(`/events/${id}`, data);
+  }
+
+  deleteEvent(id: string) {
+    return this.del(`/events/${id}`);
   }
 
   // ── サークル ──
@@ -116,20 +180,32 @@ export class ManaClient {
   }
 
   createCircle(data: Partial<Circle> & { name: string }) {
-    return this.req<Circle>('/circles', { method: 'POST', body: JSON.stringify(data) });
+    return this.post<Circle>('/circles', data);
   }
 
   updateCircle(id: string, data: Partial<Circle>) {
-    return this.req<Circle>(`/circles/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+    return this.put<Circle>(`/circles/${id}`, data);
   }
 
-  // ── 頒布物 ──
+  deleteCircle(id: string) {
+    return this.del(`/circles/${id}`);
+  }
+
+  // ── 頒布物（サークルの購入予定） ──
   listCircleItems() {
     return this.req<CircleItem[]>('/circle-items');
   }
 
   createCircleItem(data: Partial<CircleItem> & { circleId: string; title: string }) {
-    return this.req<CircleItem>('/circle-items', { method: 'POST', body: JSON.stringify(data) });
+    return this.post<CircleItem>('/circle-items', data);
+  }
+
+  updateCircleItem(id: string, data: Partial<CircleItem>) {
+    return this.put<CircleItem>(`/circle-items/${id}`, data);
+  }
+
+  deleteCircleItem(id: string) {
+    return this.del(`/circle-items/${id}`);
   }
 
   // ── 蔵書 ──
@@ -138,12 +214,37 @@ export class ManaClient {
   }
 
   createBook(data: Partial<Book> & { title: string }) {
-    return this.req<Book>('/books', { method: 'POST', body: JSON.stringify(data) });
+    return this.post<Book>('/books', data);
+  }
+
+  updateBook(id: string, data: Partial<Book>) {
+    return this.put<Book>(`/books/${id}`, data);
+  }
+
+  deleteBook(id: string) {
+    return this.del(`/books/${id}`);
   }
 
   // ── 会場マップ ──
   listVenueMaps() {
     return this.req<VenueMap[]>('/venue-maps');
+  }
+
+  createVenueMap(data: Partial<VenueMap> & { hall: string; imageDataUrl: string }) {
+    return this.post<VenueMap>('/venue-maps', data);
+  }
+
+  deleteVenueMap(id: string) {
+    return this.del(`/venue-maps/${id}`);
+  }
+
+  // ── 公式テンプレート（認証不要の公開エンドポイント） ──
+  listEventTemplates() {
+    return this.req<EventTemplate[]>('/public/event-templates');
+  }
+
+  getEventTemplate(id: string) {
+    return this.req<EventTemplate>(`/public/event-templates/${id}`);
   }
 
   /**

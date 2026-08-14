@@ -1,6 +1,6 @@
 {
   "name": "doujin-plus-plus-mcp",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "description": "同人++ の MCP サーバ。蔵書・買い物リスト・MAP を Claude から操作する",

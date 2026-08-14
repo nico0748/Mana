@@ -1382,8 +1382,9 @@ const EventCard: React.FC<EventCardProps> = ({
   onAddItem, onEditItem, onDeleteItem, onDeleteEvent, onEditEvent, onRequestTemplate,
   expanded, onToggleExpanded,
 }) => {
-  // 色での絞り込み。null = 全て、'' 相当の未設定は null キーで表す。
-  const [colorFilter, setColorFilter] = useState<string | null>(null);
+  // 色での絞り込み。undefined = 全て、null = 色未設定のサークルだけ。
+  // 「全て」と「未設定」は別の状態なので、両方を null で表さないこと。
+  const [colorFilter, setColorFilter] = useState<string | null | undefined>(undefined);
 
   // 実際に使われている色だけをチップに出す。件数も一緒に数える。
   const colorCounts = useMemo(() => {
@@ -1405,7 +1406,7 @@ const EventCard: React.FC<EventCardProps> = ({
     return ordered;
   }, [circles, event.colorLabels]);
 
-  const visibleCircles = colorFilter === null
+  const visibleCircles = colorFilter === undefined
     ? circles
     : circles.filter(c => (c.color ?? null) === colorFilter);
 
@@ -1556,8 +1557,8 @@ const EventCard: React.FC<EventCardProps> = ({
           {colorCounts.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="色で絞り込み">
               <button
-                onClick={() => setColorFilter(null)}
-                aria-pressed={colorFilter === null}
+                onClick={() => setColorFilter(undefined)}
+                aria-pressed={colorFilter === undefined}
                 className={clsx(
                   'px-2.5 py-1 text-xs rounded-full border transition-colors',
                   colorFilter === null
@@ -1570,7 +1571,7 @@ const EventCard: React.FC<EventCardProps> = ({
               {colorCounts.map(({ key, hex, label, count }: { key: string | null; hex: string | null; label: string; count: number }) => (
                 <button
                   key={key ?? 'none'}
-                  onClick={() => setColorFilter(colorFilter === key ? null : key)}
+                  onClick={() => setColorFilter(colorFilter === key ? undefined : key)}
                   aria-pressed={colorFilter === key}
                   className={clsx(
                     'flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-full border transition-colors',

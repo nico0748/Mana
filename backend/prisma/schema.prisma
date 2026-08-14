@@ -63,6 +63,9 @@ model Circle {
   color        String?
   xUrl         String?
   menuImageUrl String?
+  // ピンを置いた会場マップのページ。null は 1 ページ目（ページ概念の導入前に
+  // 置かれたピンが 1 ページ目に残るようにするため、既定値ではなく null 許容）。
+  mapPage      Int?
   mapX         Float?
   mapY         Float?
   items        CircleItem[]
@@ -89,10 +92,16 @@ model VenueMap {
   userId       String?
   eventId      String?
   hall         String
+  // 複数ページ PDF の何ページ目か。1 始まり。
+  // ページごとに 1 レコード持つことで、切り抜き結果がページ単位で残り、
+  // ピンもページを跨いで出てこなくなる。単一画像のマップは常に 1。
+  page         Int      @default(1)
   imageDataUrl String
   generatedSvg String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  @@index([userId, hall, page])
 }
 
 model Distribution {

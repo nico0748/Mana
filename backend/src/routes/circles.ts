@@ -3,6 +3,7 @@ import { prisma } from '../prisma';
 import { guardLimit } from '../lib/enforceLimit';
 import { sanitizeHttpUrl, sanitizeImageUrl } from '../lib/url';
 import { normalizeFields } from '../lib/text';
+import { isCircleColorKey } from '../lib/circleColors';
 
 const router = Router();
 
@@ -63,8 +64,17 @@ function requireName(data: Record<string, any>, res: Response, opts: { partial: 
 // 1 行で「xUrl の安全検証」と「テキストフィールドの NFC 正規化」を順に適用するヘルパ。
 // 触るフィールドが互いに重ならないので順序は実質どちらでも良いが、URL の検証を先に
 // やってから普通のテキスト正規化、という見通しのよい順番にしておく。
+// color は自由入力ではなくパレットのキー。知らない値が入ると表示側が色を引けず
+// 無色になるだけだが、DB に残しても意味がないので保存前に落とす。
+function sanitizeColor<T extends Record<string, any>>(data: T): T {
+  if (!('color' in data)) return data;
+  const out: Record<string, any> = { ...data };
+  out.color = isCircleColorKey(out.color) ? out.color : null;
+  return out as T;
+}
+
 function prepareCircleData<T extends Record<string, any>>(rest: T): T {
-  return coerceOptionalText(normalizeFields(sanitizeCircleInput(rest), CIRCLE_TEXT_FIELDS));
+  return sanitizeColor(coerceOptionalText(normalizeFields(sanitizeCircleInput(rest), CIRCLE_TEXT_FIELDS)));
 }
 
 router.get('/', async (req, res) => {

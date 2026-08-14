@@ -30,6 +30,8 @@ export interface DoujinEvent {
   budget?: number;
   /** MAP ヘッダーの手動並べ替え順。未設定なら開催日などの自動ソートが使われる */
   order?: number | null;
+  /** 色に付けた名前。{ red: '代理購入' } の形。即売会ごとに意味づけできる */
+  colorLabels?: Record<string, string> | null;
   createdAt: number;
   updatedAt: number;
 }
@@ -44,6 +46,8 @@ export interface Circle {
   number: string;
   order: number;
   status: 'pending' | 'bought' | 'soldout';
+  /** 色分け用のパレットキー（red, blue, …）。未設定は undefined */
+  color?: string | null;
   xUrl?: string;
   menuImageUrl?: string;
   mapX?: number;

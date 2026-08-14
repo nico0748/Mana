@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
+import { clsx } from 'clsx';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -11,6 +12,8 @@ import type { Circle, CircleItem, DoujinEvent, VenueMap, EventTemplate } from '.
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Dialog } from '../components/ui/Dialog';
+import { CircleColorPicker } from '../components/shopping/CircleColorPicker';
+import { colorHex, colorLabel, CIRCLE_COLORS } from '../lib/circleColors';
 import { PageSidebar } from '../components/layout/PageSidebar';
 import {
   parseCirclesFile, parseCirclesJson, downloadCirclesTemplate,
@@ -146,6 +149,7 @@ const AddToLibraryModal: React.FC<AddToLibraryModalProps> = ({ item, circle, onC
 interface CircleCardProps {
   circle: Circle;
   items: CircleItem[];
+  colorLabels?: Record<string, string> | null;
   circleIndex?: number;
   totalCircles?: number;
   eventName?: string;
@@ -171,10 +175,12 @@ const itemStatusClass: Record<CircleItem['status'], string> = {
 };
 
 const CircleCard: React.FC<CircleCardProps> = ({
-  circle, items, circleIndex, totalCircles, eventName,
+  circle, items, circleIndex, totalCircles, eventName, colorLabels,
   onEdit, onDelete, onStatusChange, onItemStatusChange,
   onReorder, onAddItem, onEditItem, onDeleteItem,
 }) => {
+  const circleHex = colorHex(circle.color);
+  const circleColorName = colorLabel(circle.color, colorLabels);
   const [expanded, setExpanded] = useState(true);
   const [addToLibraryItem, setAddToLibraryItem] = useState<CircleItem | null>(null);
   const [addedItemIds, setAddedItemIds] = useState<Set<string>>(new Set());
@@ -199,6 +205,15 @@ const CircleCard: React.FC<CircleCardProps> = ({
           'border-zinc-800'
         }`}
       >
+        {/* サークル色の帯。ステータスで変わる枠線とは別レイヤーにして意味が混ざらないようにする */}
+        {circleHex && (
+          <div
+            className="h-1.5 w-full"
+            style={{ backgroundColor: circleHex }}
+            title={`色: ${circleColorName}`}
+            aria-label={`色: ${circleColorName}`}
+          />
+        )}
         <div className="p-4 density-card">
           <div className="flex items-start justify-between gap-2">
             {/* 優先順位バッジ: 即売会配下のサークルのみ表示（並び順 = order に連動） */}
@@ -417,10 +432,12 @@ const CircleCard: React.FC<CircleCardProps> = ({
 interface AddCircleModalProps {
   onAdd: (data: Omit<Circle, 'id' | 'eventId' | 'order' | 'status' | 'createdAt' | 'updatedAt'>) => void;
   onClose: () => void;
+  colorLabels?: Record<string, string> | null;
 }
 
-const AddCircleModal: React.FC<AddCircleModalProps> = ({ onAdd, onClose }) => {
+const AddCircleModal: React.FC<AddCircleModalProps> = ({ onAdd, onClose, colorLabels }) => {
   const [form, setForm] = useState({ name: '', author: '', hall: '', block: '', number: '', xUrl: '' });
+  const [color, setColor] = useState<string | null>(null);
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
@@ -432,7 +449,7 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ onAdd, onClose }) => {
       alert('XのURLは、http:// または https:// から始まるURLを入力してください。');
       return;
     }
-    onAdd({ ...rest, ...(xUrl ? { xUrl } : {}) });
+    onAdd({ ...rest, color, ...(xUrl ? { xUrl } : {}) });
     onClose();
   };
 
@@ -490,6 +507,13 @@ const AddCircleModal: React.FC<AddCircleModalProps> = ({ onAdd, onClose }) => {
             <label htmlFor="circle-x-url" className="block text-sm text-zinc-400 mb-1">XのプロフィールURL</label>
             <Input id="circle-x-url" name="xUrl" value={form.xUrl} onChange={handleChange} placeholder="https://x.com/example" />
           </div>
+          <div>
+            <span className="block text-sm text-zinc-400 mb-1.5">色</span>
+            <CircleColorPicker value={color} onChange={setColor} labels={colorLabels} />
+            <p className="text-xs text-zinc-600 mt-1.5">
+              ジャンル分けや、代理購入と自分用の区別に使えます。
+            </p>
+          </div>
           <div className="flex gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">キャンセル</Button>
             <Button type="submit" className="flex-1">追加</Button>
@@ -505,9 +529,11 @@ interface EditCircleModalProps {
   circle: Circle;
   onSave: (id: string, data: Partial<Omit<Circle, 'id' | 'createdAt' | 'updatedAt'>>) => void;
   onClose: () => void;
+  colorLabels?: Record<string, string> | null;
 }
 
-const EditCircleModal: React.FC<EditCircleModalProps> = ({ circle, onSave, onClose }) => {
+const EditCircleModal: React.FC<EditCircleModalProps> = ({ circle, onSave, onClose, colorLabels }) => {
+  const [color, setColor] = useState<string | null>(circle.color ?? null);
   const [form, setForm] = useState({
     name: circle.name,
     author: circle.author,
@@ -527,7 +553,7 @@ const EditCircleModal: React.FC<EditCircleModalProps> = ({ circle, onSave, onClo
       alert('XのURLは、http:// または https:// から始まるURLを入力してください。');
       return;
     }
-    onSave(circle.id, { ...rest, xUrl: xUrl || undefined });
+    onSave(circle.id, { ...rest, color, xUrl: xUrl || undefined });
     onClose();
   };
 
@@ -560,6 +586,13 @@ const EditCircleModal: React.FC<EditCircleModalProps> = ({ circle, onSave, onClo
           <div>
             <label className="block text-sm text-zinc-400 mb-1">XのプロフィールURL</label>
             <Input name="xUrl" value={form.xUrl} onChange={handleChange} placeholder="https://x.com/example" />
+          </div>
+          <div>
+            <span className="block text-sm text-zinc-400 mb-1.5">色</span>
+            <CircleColorPicker value={color} onChange={setColor} labels={colorLabels} />
+            <p className="text-xs text-zinc-600 mt-1.5">
+              ジャンル分けや、代理購入と自分用の区別に使えます。
+            </p>
           </div>
           <div className="flex gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">キャンセル</Button>
@@ -1054,7 +1087,7 @@ const AddEventModal: React.FC<AddEventModalProps> = ({ onAdd, onClose }) => {
 
 interface EditEventModalProps {
   event: DoujinEvent;
-  onSave: (id: string, data: Partial<Pick<DoujinEvent, 'name' | 'date' | 'budget'>>) => void;
+  onSave: (id: string, data: Partial<Pick<DoujinEvent, 'name' | 'date' | 'budget' | 'colorLabels'>>) => void;
   onClose: () => void;
 }
 
@@ -1064,6 +1097,9 @@ const EditEventModal: React.FC<EditEventModalProps> = ({ event, onSave, onClose 
     date: event.date ?? '',
     budget: event.budget != null ? String(event.budget) : '',
   });
+  // 色ラベルは「色キー → 名前」。空欄にすると保存時に落ちて未設定へ戻る。
+  const [colorLabels, setColorLabels] = useState<Record<string, string>>(event.colorLabels ?? {});
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name) return;
@@ -1071,6 +1107,7 @@ const EditEventModal: React.FC<EditEventModalProps> = ({ event, onSave, onClose 
       name: form.name,
       date: form.date || undefined,
       budget: form.budget ? Number(form.budget) : undefined,
+      colorLabels,
     });
     onClose();
   };
@@ -1104,6 +1141,31 @@ const EditEventModal: React.FC<EditEventModalProps> = ({ event, onSave, onClose 
               onChange={e => setForm(p => ({ ...p, budget: e.target.value }))}
               placeholder="例: 30000"
             />
+          </div>
+          <div>
+            <span className="block text-sm text-zinc-400 mb-1.5">色の名前</span>
+            <p className="text-xs text-zinc-600 mb-2">
+              サークルに付けた色が何を指すかを決められます。空欄にすると未設定に戻ります。
+            </p>
+            <div className="space-y-1.5">
+              {CIRCLE_COLORS.map(c => (
+                <div key={c.key} className="flex items-center gap-2">
+                  <span
+                    className="w-4 h-4 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: c.hex }}
+                    aria-hidden
+                  />
+                  <label htmlFor={`color-label-${c.key}`} className="sr-only">{c.name} の名前</label>
+                  <Input
+                    id={`color-label-${c.key}`}
+                    value={colorLabels[c.key] ?? ''}
+                    onChange={e => setColorLabels(prev => ({ ...prev, [c.key]: e.target.value }))}
+                    placeholder={c.name}
+                    maxLength={20}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
           <div className="flex gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">キャンセル</Button>
@@ -1320,6 +1382,32 @@ const EventCard: React.FC<EventCardProps> = ({
   onAddItem, onEditItem, onDeleteItem, onDeleteEvent, onEditEvent, onRequestTemplate,
   expanded, onToggleExpanded,
 }) => {
+  // 色での絞り込み。null = 全て、'' 相当の未設定は null キーで表す。
+  const [colorFilter, setColorFilter] = useState<string | null>(null);
+
+  // 実際に使われている色だけをチップに出す。件数も一緒に数える。
+  const colorCounts = useMemo(() => {
+    const counts = new Map<string | null, number>();
+    for (const c of circles) {
+      const key = c.color ?? null;
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    // 未設定しか無いなら絞り込む意味がないので出さない
+    if (counts.size <= 1 && counts.has(null)) return [];
+
+    const ordered: { key: string | null; hex: string | null; label: string; count: number }[] = [];
+    for (const c of CIRCLE_COLORS) {
+      const count = counts.get(c.key);
+      if (count) ordered.push({ key: c.key, hex: c.hex, label: colorLabel(c.key, event.colorLabels), count });
+    }
+    const none = counts.get(null);
+    if (none) ordered.push({ key: null, hex: null, label: '未設定', count: none });
+    return ordered;
+  }, [circles, event.colorLabels]);
+
+  const visibleCircles = colorFilter === null
+    ? circles
+    : circles.filter(c => (c.color ?? null) === colorFilter);
 
   const pendingTotal = circles
     .filter(c => c.status === 'pending')
@@ -1464,11 +1552,51 @@ const EventCard: React.FC<EventCardProps> = ({
       {/* Circles list */}
       {expanded && (
         <div className="px-4 pb-4 border-t border-zinc-800 pt-3 space-y-3">
+          {/* 色での絞り込み。色を1つも使っていない即売会では出さない。 */}
+          {colorCounts.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="色で絞り込み">
+              <button
+                onClick={() => setColorFilter(null)}
+                aria-pressed={colorFilter === null}
+                className={clsx(
+                  'px-2.5 py-1 text-xs rounded-full border transition-colors',
+                  colorFilter === null
+                    ? 'bg-zinc-100 text-zinc-900 border-zinc-100'
+                    : 'border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500',
+                )}
+              >
+                全て {circles.length}
+              </button>
+              {colorCounts.map(({ key, hex, label, count }: { key: string | null; hex: string | null; label: string; count: number }) => (
+                <button
+                  key={key ?? 'none'}
+                  onClick={() => setColorFilter(colorFilter === key ? null : key)}
+                  aria-pressed={colorFilter === key}
+                  className={clsx(
+                    'flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-full border transition-colors',
+                    colorFilter === key
+                      ? 'bg-zinc-100 text-zinc-900 border-zinc-100'
+                      : 'border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500',
+                  )}
+                >
+                  <span
+                    className="w-2.5 h-2.5 rounded-full flex-shrink-0 border border-zinc-600"
+                    style={hex ? { backgroundColor: hex, borderColor: hex } : undefined}
+                    aria-hidden
+                  />
+                  {label} {count}
+                </button>
+              ))}
+            </div>
+          )}
+
           {circles.length === 0 ? (
             <p className="text-sm text-zinc-600 italic">サークルがまだありません</p>
+          ) : visibleCircles.length === 0 ? (
+            <p className="text-sm text-zinc-600 italic">この色のサークルはありません</p>
           ) : (
             <AnimatePresence mode="popLayout">
-              {circles.map(circle => (
+              {visibleCircles.map(circle => (
                 <CircleCard
                   key={circle.id}
                   circle={circle}
@@ -1476,6 +1604,7 @@ const EventCard: React.FC<EventCardProps> = ({
                   circleIndex={circles.indexOf(circle)}
                   totalCircles={circles.length}
                   eventName={event.name}
+                  colorLabels={event.colorLabels}
                   onEdit={onEditCircle}
                   onDelete={onDeleteCircle}
                   onStatusChange={onStatusChange}
@@ -2136,6 +2265,7 @@ const ShoppingListPage: React.FC = () => {
           <AddCircleModal
             onAdd={handleAddCircle}
             onClose={() => setAddCircleForEvent(null)}
+            colorLabels={events?.find(e => e.id === addCircleForEvent)?.colorLabels}
           />
         )}
         {editingCircle && (
@@ -2143,6 +2273,7 @@ const ShoppingListPage: React.FC = () => {
             circle={editingCircle}
             onSave={handleEditCircle}
             onClose={() => setEditingCircle(null)}
+            colorLabels={events?.find(e => e.id === editingCircle.eventId)?.colorLabels}
           />
         )}
         {addItemForCircle && (

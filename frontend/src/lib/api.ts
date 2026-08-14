@@ -76,7 +76,7 @@ export const eventsApi = {
   list: () => req<DoujinEvent[]>('/events'),
   create: (data: Omit<DoujinEvent, 'id' | 'createdAt' | 'updatedAt'>) =>
     req<DoujinEvent>('/events', { method: 'POST', body: JSON.stringify(data) }),
-  update: (id: string, data: Partial<Pick<DoujinEvent, 'name' | 'date' | 'budget'>>) =>
+  update: (id: string, data: Partial<Pick<DoujinEvent, 'name' | 'date' | 'budget' | 'colorLabels'>>) =>
     req<DoujinEvent>(`/events/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id: string) => req<void>(`/events/${id}`, { method: 'DELETE' }),
   /** MAP ヘッダーの手動並べ替えを一括保存する。ids の並びがそのまま order になる */

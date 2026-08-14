@@ -38,6 +38,9 @@ model DoujinEvent {
   budget    Int?
   // MAP ヘッダーでの手動並べ替え順。null = 未設定で、開催日などの自動ソートにフォールバックする。
   order     Int?
+  // 色に付ける名前。{ "red": "代理購入", "blue": "自分用" } の形。
+  // 即売会ごとに意味が変わるのでイベント側に持つ。
+  colorLabels Json?
   circles   Circle[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -55,6 +58,9 @@ model Circle {
   number       String
   order        Int
   status       String
+  // サークルの色分け（ジャンル分け / 代理購入と自分用の区別など）。
+  // 値は共有パレットのキー（red, blue, …）。null は未設定。
+  color        String?
   xUrl         String?
   menuImageUrl String?
   mapX         Float?

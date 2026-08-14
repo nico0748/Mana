@@ -21,6 +21,7 @@ import type { MapEventSortKey, MapHallSortKey, SortDir } from '../contexts/AppSe
 import { sortEvents, sortHalls, todayKey, moveItem, isManuallyOrdered, isPastEvent } from '../lib/mapHeaderSort';
 import { CircleCutCards } from '../components/map/CircleCutCards';
 import { cardPositionKey } from '../lib/mapCutCards';
+import { colorHex, colorLabel } from '../lib/circleColors';
 import { exportMapImage, safeFileName } from '../lib/mapExport';
 import type { MapCardPosition } from '../contexts/AppSettingsContext';
 
@@ -701,8 +702,8 @@ const MapPage: React.FC = () => {
     queryClient.invalidateQueries({ queryKey: ['circles'] });
   };
 
-  const selectedEventName =
-    sortedEvents.find(e => e.id === selectedEventId)?.name ?? '未分類';
+  const selectedEvent = sortedEvents.find(e => e.id === selectedEventId);
+  const selectedEventName = selectedEvent?.name ?? '未分類';
 
   // ── お品書きカード ────────────────────────────────────────────────────────
 
@@ -1261,6 +1262,9 @@ const MapPage: React.FC = () => {
                   const isEditSelected = editMode && selectedCircleId === circle.id;
                   const isBumped = isHighlighted || isEditSelected;
                   const isCompleted = circle.status !== 'pending';
+                  // 塗りは購入ステータス（黄/緑/赤）のまま。サークル色は外周のリングで示すので、
+                  // 「まだ買っていない」の読み取りを壊さずに色分けを重ねられる。
+                  const circleHex = colorHex(circle.color);
 
                   // ピンサイズは数字あり/なしに関わらず常に旧仕様（小さなドット）を維持。
                   // 数字ありモードでは、その小さなドットの中央に小さなフォントで番号を表示する。
@@ -1292,7 +1296,7 @@ const MapPage: React.FC = () => {
                       type="button"
                       className="relative flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
                       data-pin-id={circle.id}
-                      aria-label={`${circle.name}、${circle.hall} ${circle.block}-${circle.number}、${statusLabel[circle.status] ?? '未購入'}`}
+                      aria-label={`${circle.name}、${circle.hall} ${circle.block}-${circle.number}、${statusLabel[circle.status] ?? '未購入'}${circle.color ? `、${colorLabel(circle.color, selectedEvent?.colorLabels)}` : ''}`}
                       aria-pressed={clickedPopup?.circleId === circle.id || isEditSelected}
                       onClick={e => {
                         e.stopPropagation();
@@ -1321,7 +1325,13 @@ const MapPage: React.FC = () => {
                           transition={{ repeat: Infinity, duration: 1.5 }}
                         />
                       )}
-                      <span className={clsx(
+                      <span
+                        style={circleHex
+                          // ドットが小さいので box-shadow の spread でリングを描く。
+                          // 内側に暗い縁を挟み、白いマップ上でも色の境目が見えるようにする。
+                          ? { boxShadow: `0 0 0 1px #09090b, 0 0 0 3.5px ${circleHex}` }
+                          : undefined}
+                        className={clsx(
                         markerShape === 'circle' ? 'rounded-full' : 'rounded-md',
                         'border shadow-lg transition-all',
                         showPinNumbers

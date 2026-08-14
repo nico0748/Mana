@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { prisma } from '../prisma';
 import { guardLimit } from '../lib/enforceLimit';
 import { normalizeFields } from '../lib/text';
+import { normalizeColorLabels } from '../lib/circleColors';
 
 const router = Router();
 
@@ -15,6 +16,18 @@ const toEvent = (e: any) => ({
   createdAt: e.createdAt instanceof Date ? e.createdAt.getTime() : e.createdAt,
   updatedAt: e.updatedAt instanceof Date ? e.updatedAt.getTime() : e.updatedAt,
 });
+
+// colorLabels はユーザー入力の Json。未知の色キーや空ラベルを持ち込ませないよう
+// 保存前に正規化する。キーを送ってこなければ触らない（部分更新を壊さないため）。
+function prepareEventData<T extends Record<string, any>>(rest: T): T {
+  const data = normalizeFields(rest, EVENT_TEXT_FIELDS);
+  if (!('colorLabels' in data)) return data;
+  const out: Record<string, any> = { ...data };
+  const labels = normalizeColorLabels(out.colorLabels);
+  // 空になったら列ごと null にして「ラベル未設定」と同じ状態に揃える
+  out.colorLabels = labels && Object.keys(labels).length > 0 ? labels : null;
+  return out as T;
+}
 
 router.get('/', async (req, res) => {
   const uid = (req as any).uid as string;
@@ -31,7 +44,7 @@ router.post('/', async (req, res) => {
   const uid = (req as any).uid as string;
   if (!(await guardLimit(res, req.user!, 'events'))) return;
   const { id, createdAt, updatedAt, userId, ...rest } = req.body;
-  const data = normalizeFields(rest, EVENT_TEXT_FIELDS);
+  const data = prepareEventData(rest);
   const event = await prisma.doujinEvent.create({ data: { ...data, userId: uid } });
   res.status(201).json(toEvent(event));
 });
@@ -80,7 +93,7 @@ router.put('/reorder/reset', async (req, res) => {
 router.put('/:id', async (req, res) => {
   const uid = (req as any).uid as string;
   const { id, createdAt, updatedAt, userId, ...rest } = req.body;
-  const data = normalizeFields(rest, EVENT_TEXT_FIELDS);
+  const data = prepareEventData(rest);
   const event = await prisma.doujinEvent.update({
     where: { id: req.params.id, userId: uid },
     data,

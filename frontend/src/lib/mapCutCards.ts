@@ -1,5 +1,6 @@
 import type { Circle } from '../types';
 import type { MapCardPosition } from '../contexts/AppSettingsContext';
+import { colorHex } from './circleColors';
 
 /**
  * お品書きカードの配置計算。
@@ -119,7 +120,8 @@ export function layoutCards(
       anchorY: pos.y + cardH / 2,
       pinX,
       pinY,
-      color: lineColorFor(circle.id),
+      // サークルに色を付けていればそれを使う。付けていなければ id から自動生成した色。
+      color: colorHex(circle.color) ?? lineColorFor(circle.id),
       manual: !!manualPos,
     };
   });

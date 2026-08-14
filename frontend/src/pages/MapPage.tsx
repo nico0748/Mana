@@ -1260,6 +1260,9 @@ const MapPage: React.FC = () => {
                 {pinnedCircles.map(circle => {
                   const isHighlighted = circle.id === highlightId;
                   const isEditSelected = editMode && selectedCircleId === circle.id;
+                  // 配置編集で「置くサークル」を選んでいる状態。この間はマップのタップを
+                  // 邪魔しないよう、選択中以外のピンを不活性にする。
+                  const isPlacing = editMode && selectedCircleId !== null;
                   const isBumped = isHighlighted || isEditSelected;
                   const isCompleted = circle.status !== 'pending';
                   // 塗りは購入ステータス（黄/緑/赤）のまま。サークル色は外周のリングで示すので、
@@ -1294,7 +1297,14 @@ const MapPage: React.FC = () => {
                   >
                     <button
                       type="button"
-                      className="relative flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                      className={clsx(
+                        'relative flex h-11 w-11 items-center justify-center rounded-full',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white',
+                        // 配置するサークルを選んでいる間は、他のピンにタップを吸わせない。
+                        // ピンは 44px の当たり判定を持つので、既存ピンの近くを狙うと
+                        // マップではなくピンのクリックになり、そこへ置けなくなる。
+                        isPlacing && !isEditSelected && 'pointer-events-none opacity-50',
+                      )}
                       data-pin-id={circle.id}
                       aria-label={`${circle.name}、${circle.hall} ${circle.block}-${circle.number}、${statusLabel[circle.status] ?? '未購入'}${circle.color ? `、${colorLabel(circle.color, selectedEvent?.colorLabels)}` : ''}`}
                       aria-pressed={clickedPopup?.circleId === circle.id || isEditSelected}
@@ -1355,8 +1365,9 @@ const MapPage: React.FC = () => {
 
                       {/* Hover preview (desktop): block・name のみのコンパクト tooltip。
                           クリック時の本ポップアップは createPortal で外側に描画される。
-                          このピンの click popup が開いている間は隠す（重複防止） */}
-                      {clickedPopup?.circleId !== circle.id && (
+                          このピンの click popup が開いている間は隠す（重複防止）。
+                          配置編集中は、置きたい場所にカーソルを動かすたびに出て邪魔になるので隠す。 */}
+                      {!editMode && clickedPopup?.circleId !== circle.id && (
                         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 pointer-events-none transition-opacity duration-150">
                           <div className="bg-zinc-800 text-zinc-100 text-xs rounded-lg shadow-xl border border-zinc-700 text-left min-w-[140px] max-w-[200px]">
                             <div className="px-2.5 py-1.5">
@@ -1375,7 +1386,9 @@ const MapPage: React.FC = () => {
                         </div>
                       )}
 
-                      {editMode && (
+                      {/* 削除ボタンはピンのすぐ脇に出るので、配置中は出さない。
+                          置きたい場所に重なってタップを奪ってしまうため。 */}
+                      {editMode && !isPlacing && (
                         <button
                           type="button"
                           onClick={(e) => handleRemovePin(circle.id, e)}
@@ -1662,7 +1675,9 @@ const MapPage: React.FC = () => {
           <div className="ml-auto">
             {currentMap && (
               <button
-                onClick={() => { setEditMode(e => !e); setSelectedCircleId(null); }}
+                // 配置編集の出入りで詳細ポップアップは畳む。
+                // 開いたまま編集に入ると、ピンを置く場所にカードが被って邪魔になる。
+                onClick={() => { setEditMode(e => !e); setSelectedCircleId(null); setClickedPopup(null); }}
                 className={clsx(
                   'flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md font-medium transition-colors',
                   editMode ? 'bg-zinc-700 border border-zinc-500 text-zinc-100' : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'

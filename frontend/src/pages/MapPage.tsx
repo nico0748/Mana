@@ -391,6 +391,9 @@ const MapPage: React.FC = () => {
     setPdfTotalPages(0);
     setCropMode(false);
     setCropRect(null);
+    // 配置対象を選んだままホールを移ると、次のマップのクリックで
+    // 別ホールのサークルに座標が入ってしまうので解除する
+    setSelectedCircleId(null);
   }, [selectedHall]);
 
   const hallCircles = eventCircles.filter(c => c.hall === selectedHall);
@@ -688,13 +691,19 @@ const MapPage: React.FC = () => {
   const handleMapClick = useCallback(async (e: React.MouseEvent<HTMLDivElement>) => {
     setClickedPopup(null);
     if (cropMode || !editMode || !selectedCircleId) return;
+    // 選択が別ホールのサークルのまま残っていた場合に、いま見ているマップの
+    // 座標を書き込んでしまわないようにする（上の解除が漏れたときの保険）
+    if (!hallCircles.some(c => c.id === selectedCircleId)) {
+      setSelectedCircleId(null);
+      return;
+    }
     const rect = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
     await circlesApi.update(selectedCircleId, { mapX: x, mapY: y });
     queryClient.invalidateQueries({ queryKey: ['circles'] });
     setSelectedCircleId(null);
-  }, [editMode, selectedCircleId, cropMode]);
+  }, [editMode, selectedCircleId, cropMode, hallCircles]);
 
   const handleRemovePin = async (circleId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -1305,6 +1314,9 @@ const MapPage: React.FC = () => {
                         // マップではなくピンのクリックになり、そこへ置けなくなる。
                         isPlacing && !isEditSelected && 'pointer-events-none opacity-50',
                       )}
+                      // pointer-events-none だけだと Tab で辿って Enter を押せてしまうので、
+                      // 配置中の他のピンはキーボードからも触れないようにする
+                      disabled={isPlacing && !isEditSelected}
                       data-pin-id={circle.id}
                       aria-label={`${circle.name}、${circle.hall} ${circle.block}-${circle.number}、${statusLabel[circle.status] ?? '未購入'}${circle.color ? `、${colorLabel(circle.color, selectedEvent?.colorLabels)}` : ''}`}
                       aria-pressed={clickedPopup?.circleId === circle.id || isEditSelected}

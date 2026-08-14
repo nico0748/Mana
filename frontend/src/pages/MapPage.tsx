@@ -402,12 +402,27 @@ const MapPage: React.FC = () => {
   const pinnedCircles = hallCircles.filter(c =>
     c.mapX != null
       && c.mapY != null
+      // ピンは置いたページにだけ出す。mapPage 未設定はページ概念の導入前に
+      // 置かれたものなので 1 ページ目として扱う。
+      && (c.mapPage ?? 1) === pdfPage
       && (completedVisibility !== 'hidden' || c.status === 'pending'),
   );
 
-  const currentMap = (venueMaps ?? []).find(
-    m => m.hall === selectedHall && m.eventId === (selectedEventId ?? undefined)
+  // この即売会・ホールに属するマップをページ順に並べたもの。
+  // 複数ページ PDF はページごとに 1 レコード持つ。
+  const hallMaps = useMemo(
+    () => (venueMaps ?? [])
+      .filter(m => m.hall === selectedHall && m.eventId === (selectedEventId ?? undefined))
+      .sort((a, b) => (a.page ?? 1) - (b.page ?? 1)),
+    [venueMaps, selectedHall, selectedEventId],
   );
+
+  const currentMap = hallMaps.find(m => (m.page ?? 1) === pdfPage);
+
+  // 保存済みページ数。PDF を読み込み直さなくてもページ送りできるようにするため、
+  // メモリ上の pdfTotalPages ではなくレコードからも上限を導く。
+  const savedPageCount = hallMaps.reduce((max, m) => Math.max(max, m.page ?? 1), 0);
+  const totalPages = Math.max(savedPageCount, pdfTotalPages);
 
   // Reset zoom/pan/popup when map changes
   useEffect(() => {
@@ -558,7 +573,7 @@ const MapPage: React.FC = () => {
         const newY = dir === 'cw' ? (c.mapX as number) : 100 - (c.mapX as number);
         return circlesApi.update(c.id, { mapX: newX, mapY: newY });
       }));
-      await saveMapDataUrl(selectedHall, dataUrl);
+      await saveMapDataUrl(selectedHall, dataUrl, pdfPage);
       setImgNaturalSize(null);
       queryClient.invalidateQueries({ queryKey: ['circles'] });
     } finally {
@@ -621,7 +636,7 @@ const MapPage: React.FC = () => {
         }
         return circlesApi.update(c.id, { mapX: newX, mapY: newY });
       }));
-      await saveMapDataUrl(selectedHall, dataUrl);
+      await saveMapDataUrl(selectedHall, dataUrl, pdfPage);
       setImgNaturalSize(null);
       queryClient.invalidateQueries({ queryKey: ['circles'] });
       setCropMode(false);
@@ -631,9 +646,11 @@ const MapPage: React.FC = () => {
     }
   };
 
-  const saveMapDataUrl = async (hall: string, imageDataUrl: string) => {
+  // ページ単位で保存する。同じページのレコードがあれば差し替え、無ければ作る。
+  // これにより切り抜き結果がページごとに残る。
+  const saveMapDataUrl = async (hall: string, imageDataUrl: string, page = 1) => {
     const existing = (venueMaps ?? []).find(
-      m => m.hall === hall && m.eventId === (selectedEventId ?? undefined)
+      m => m.hall === hall && m.eventId === (selectedEventId ?? undefined) && (m.page ?? 1) === page
     );
     if (existing) {
       await venueMapsApi.update(existing.id, { imageDataUrl });
@@ -641,6 +658,7 @@ const MapPage: React.FC = () => {
       await venueMapsApi.upsert({
         eventId: selectedEventId ?? undefined,
         hall,
+        page,
         imageDataUrl,
       });
     }
@@ -654,16 +672,20 @@ const MapPage: React.FC = () => {
     if (file.type === 'application/pdf') {
       setPdfFile(file);
       setPdfPage(1);
-      const { dataUrl, totalPages } = await renderPdfPageToDataUrl(file, 1);
-      setPdfTotalPages(totalPages);
-      await saveMapDataUrl(hall, dataUrl);
+      const { dataUrl, totalPages: pages } = await renderPdfPageToDataUrl(file, 1);
+      setPdfTotalPages(pages);
+      // 差し替えの場合、前の PDF のページが残らないよう一度片付ける
+      await Promise.all(
+        hallMaps.filter(m => (m.page ?? 1) !== 1).map(m => venueMapsApi.delete(m.id)),
+      );
+      await saveMapDataUrl(hall, dataUrl, 1);
     } else {
       setPdfFile(null);
       setPdfTotalPages(0);
       const reader = new FileReader();
       reader.onload = async (ev) => {
         if (!mountedRef.current) return;
-        await saveMapDataUrl(hall, ev.target?.result as string);
+        await saveMapDataUrl(hall, ev.target?.result as string, 1);
       };
       reader.readAsDataURL(file);
     }
@@ -671,16 +693,31 @@ const MapPage: React.FC = () => {
   };
 
   const handlePdfPageChange = async (newPage: number) => {
-    if (!pdfFile || newPage < 1 || newPage > pdfTotalPages) return;
+    if (newPage < 1 || newPage > totalPages) return;
+
+    // すでに保存済みのページなら、そのレコードを表示するだけにする。
+    // ここで PDF から描き直すと、そのページに施した切り抜きが失われる。
+    const saved = hallMaps.find(m => (m.page ?? 1) === newPage);
+    if (saved) {
+      setPdfPage(newPage);
+      return;
+    }
+
+    // 未保存のページは、読み込み中の PDF があるときだけ描き起こせる
+    if (!pdfFile) return;
     setPdfPage(newPage);
     const { dataUrl } = await renderPdfPageToDataUrl(pdfFile, newPage);
-    await saveMapDataUrl(selectedHall, dataUrl);
+    await saveMapDataUrl(selectedHall, dataUrl, newPage);
   };
 
   const handleDeleteMap = async () => {
     if (!currentMap) return;
-    if (!confirm(`${selectedHall} の会場マップを削除しますか？`)) return;
-    await venueMapsApi.delete(currentMap.id);
+    const pageNote = hallMaps.length > 1 ? `（全 ${hallMaps.length} ページ）` : '';
+    if (!confirm(`${selectedHall} の会場マップ${pageNote}を削除しますか？`)) return;
+    // ページが分かれている場合は全ページ消す。1 ページだけ残すと
+    // ページ番号が飛んで表示と操作が噛み合わなくなる。
+    await Promise.all(hallMaps.map(m => venueMapsApi.delete(m.id)));
+    setPdfPage(1);
     queryClient.invalidateQueries({ queryKey: ['venueMaps'] });
     setEditMode(false);
     setSelectedCircleId(null);
@@ -700,10 +737,10 @@ const MapPage: React.FC = () => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
-    await circlesApi.update(selectedCircleId, { mapX: x, mapY: y });
+    await circlesApi.update(selectedCircleId, { mapX: x, mapY: y, mapPage: pdfPage });
     queryClient.invalidateQueries({ queryKey: ['circles'] });
     setSelectedCircleId(null);
-  }, [editMode, selectedCircleId, cropMode, hallCircles]);
+  }, [editMode, selectedCircleId, cropMode, hallCircles, pdfPage]);
 
   const handleRemovePin = async (circleId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -1118,7 +1155,7 @@ const MapPage: React.FC = () => {
                   onChange={handleImageUpload}
                 />
               </label>
-              {pdfTotalPages > 1 && (
+              {totalPages > 1 && (
                 <div className="flex items-center gap-0.5 bg-zinc-800 rounded-md">
                   <button
                     onClick={() => handlePdfPageChange(pdfPage - 1)}
@@ -1127,10 +1164,11 @@ const MapPage: React.FC = () => {
                   >
                     <ChevronLeft className="w-3.5 h-3.5" />
                   </button>
-                  <span className="text-xs text-zinc-400 px-1 tabular-nums">{pdfPage}/{pdfTotalPages}</span>
+                  <span className="text-xs text-zinc-400 px-1 tabular-nums">{pdfPage}/{totalPages}</span>
                   <button
                     onClick={() => handlePdfPageChange(pdfPage + 1)}
-                    disabled={pdfPage >= pdfTotalPages}
+                    // 保存済みでもなく PDF も手元に無いページへは進めない
+                    disabled={pdfPage >= totalPages || (pdfPage + 1 > savedPageCount && !pdfFile)}
                     className="p-1.5 text-zinc-400 hover:text-zinc-200 disabled:text-zinc-600 disabled:cursor-not-allowed"
                   >
                     <ChevronRight className="w-3.5 h-3.5" />

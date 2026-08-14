@@ -48,6 +48,8 @@ export interface Circle {
   status: 'pending' | 'bought' | 'soldout';
   /** 色分け用のパレットキー（red, blue, …）。未設定は undefined */
   color?: string | null;
+  /** ピンを置いた会場マップのページ（1 始まり）。未設定は 1 ページ目とみなす */
+  mapPage?: number | null;
   xUrl?: string;
   menuImageUrl?: string;
   mapX?: number;
@@ -59,6 +61,8 @@ export interface Circle {
 export interface VenueMap {
   id: string;
   eventId?: string;
+  /** 複数ページ PDF の何ページ目か。1 始まり。単一画像は常に 1 */
+  page?: number;
   hall: string;
   imageDataUrl: string;
   generatedSvg?: string;

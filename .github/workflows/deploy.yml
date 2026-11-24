@@ -1,8 +1,9 @@
 name: Deploy to VPS
 
+# 本番は Vercel（main への push で自動デプロイ）に移行したため、
+# VPS へのデプロイは手動実行のときだけ走らせる。
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 jobs:
   deploy:
